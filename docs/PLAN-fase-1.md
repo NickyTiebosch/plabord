@@ -1,11 +1,19 @@
 # Plan fase 1: "vervangt de Excel"
 
-**Status: voorstel, wacht op je akkoord.** Er is nog geen applicatiecode geschreven. Dit plan hoort bij de opdracht in `docs/SPEC.md`. De vaste afspraken staan in `CLAUDE.md`.
+**Status: goedgekeurd op 29 september 2026** ("akkoord met je voorstellen, bouw fase 1"). Dit plan hoort bij de opdracht in `docs/SPEC.md`. De vaste afspraken staan in `CLAUDE.md`.
 
-## Wat ik van je nodig heb
-1. Beantwoord de vijf vragen in §1. "Akkoord met je voorstellen" mag ook.
-2. Kijk de keuzes in §2 door. Zeg het als je iets anders wilt; anders bouw ik het zo.
-3. Zeg daarna "akkoord, bouw fase 1".
+## Besluiten
+Alle voorstellen uit §1 zijn aangenomen:
+
+| Vraag | Besluit |
+|---|---|
+| V1 | Een feestdag geldt voor alle groepen. Per jaar kun je per groep afwijken. |
+| V2 | Er komt een aparte instelling "standaarddienst zaterdag". De seed is 07:30–18:00, net als doordeweeks. |
+| V3 | y = de actieve medewerkers met die vestiging als groep; x = hoeveel van hen in die week (ma–za) minstens één dagdeel afwezig zijn. |
+| V4 | De secret key mag ook een e-mailadres wijzigen en inloggen blokkeren als iemand op inactief staat. |
+| V5 | Een agendalink is alleen direct na het aanmaken te zien; er wordt alleen een hash bewaard. |
+
+De keuzes in §2 gelden zoals ze er staan.
 
 ---
 
@@ -230,7 +238,7 @@ Ik gebruik geen UI-bibliotheek en geen datumbibliotheek. Een paar eigen componen
 
 **`settings`**: één rij.
 - `standard_shift_start` 07:30 en `standard_shift_end` 18:00.
-- `saturday_shift_start` en `saturday_shift_end`, afhankelijk van V2.
+- `saturday_shift_start` en `saturday_shift_end` (besluit V2): seed 07:30–18:00.
 - `day_part_boundary`: 13:00.
 - `lookahead_weeks`: 8.
 
@@ -318,7 +326,9 @@ Fase 2 voegt de tabel `substitutions` (invallen) toe.
   - Inloggen loopt via Supabase Auth.
   - De feeds lopen via de server.
 - `authenticated` krijgt per tabel precies de grants uit de tabel hierboven. RLS beperkt ze tot de juiste rijen.
-- `service_role`, de secret key, gebruiken we alleen voor accounts aanmaken (en wat je bij V4 kiest) en voor het serveren van feeds.
+- `service_role`, de secret key, gebruiken we alleen voor:
+  - accountbeheer: aanmaken, e-mailadres wijzigen en inloggen blokkeren bij inactief (besluit V4);
+  - het serveren van feeds.
 - De hulpfuncties `private.current_employee_id()` en `private.is_admin()` staan in schema `private`. Dat schema is niet via de API te bereiken.
 - Er komen twee RPC's:
   - **`claim_account()`** koppelt je inlogaccount aan je medewerker, via het geverifieerde e-mailadres in je sessie. Handig voor de eerste beheerder, en voor als het koppelen ooit misging.

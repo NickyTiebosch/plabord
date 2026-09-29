@@ -72,7 +72,10 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Nooit een e-mailadres in roosters, feeds, het logboek of in meldingen die anderen zien.
 - De secret key (service role) blijft op de server.
   - Een module die hem gebruikt, begint met `import 'server-only'`. Nooit in de client-bundel en nooit in een `NEXT_PUBLIC_`-variabele.
-  - Alleen gebruiken voor: accounts aanmaken, agendafeeds serveren en (fase 3) een medewerker volledig verwijderen.
+  - Alleen gebruiken voor:
+    - accountbeheer: aanmaken, e-mailadres wijzigen en inloggen blokkeren als iemand op inactief staat (besluit V4 in het plan van fase 1);
+    - agendafeeds serveren;
+    - (fase 3) een medewerker volledig verwijderen.
 - Een agendatoken bestaat uit minstens 32 willekeurige bytes. De database bewaart alleen de SHA-256-hash.
 - Het logboek legt vast wie wat wanneer deed. Het is alleen zichtbaar voor beheerders.
   - Geen e-mailadressen, tokens of namen als tekst; verwijs naar id's.
