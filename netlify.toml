@@ -1,0 +1,15 @@
+# Netlify herkent Next.js zelf en gebruikt daarvoor de Next.js-runtime.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Geen telemetrie van Next.js tijdens de build.
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Nooit indexeren, ook niet voor bestanden die Netlify direct serveert.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
