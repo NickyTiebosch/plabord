@@ -103,6 +103,7 @@ begin
     employee_ids := employee_ids || jsonb_build_object(item ->> 'key', target);
   end loop;
 
+  -- Eerst afsluiten en bijwerken, daarna pas nieuwe diensten: zo overlapt er nooit iets tussendoor.
   for item in select value from jsonb_array_elements(coalesce(plan -> 'shifts', '[]'::jsonb)) loop
     owner := (employee_ids ->> (item ->> 'employee_key'))::uuid;
     if owner is null then
@@ -117,30 +118,36 @@ begin
       shifts_closed := shifts_closed + affected;
     end if;
 
-    if nullif(item ->> 'id', '') is null then
-      insert into public.recurring_shifts (employee_id, weekday, group_id, role, start_time, end_time, valid_from)
-      values (
-        owner,
-        (item ->> 'weekday')::smallint,
-        item ->> 'group_id',
-        item ->> 'role',
-        (item ->> 'start_time')::time,
-        (item ->> 'end_time')::time,
-        (item ->> 'valid_from')::date
-      );
-      shifts_created := shifts_created + 1;
-    else
+    if nullif(item ->> 'id', '') is not null then
       update public.recurring_shifts
          set group_id = item ->> 'group_id',
              role = item ->> 'role',
              start_time = (item ->> 'start_time')::time,
-             end_time = (item ->> 'end_time')::time
+             end_time = (item ->> 'end_time')::time,
+             valid_to = (item ->> 'valid_to')::date
        where id = (item ->> 'id')::uuid and employee_id = owner;
       get diagnostics affected = row_count;
       if affected = 0 then
         raise exception 'Een vaste dienst bestaat niet meer. Laad de import opnieuw.';
       end if;
       shifts_updated := shifts_updated + 1;
+    end if;
+  end loop;
+
+  for item in select value from jsonb_array_elements(coalesce(plan -> 'shifts', '[]'::jsonb)) loop
+    if nullif(item ->> 'id', '') is null then
+      insert into public.recurring_shifts (employee_id, weekday, group_id, role, start_time, end_time, valid_from, valid_to)
+      values (
+        (employee_ids ->> (item ->> 'employee_key'))::uuid,
+        (item ->> 'weekday')::smallint,
+        item ->> 'group_id',
+        item ->> 'role',
+        (item ->> 'start_time')::time,
+        (item ->> 'end_time')::time,
+        (item ->> 'valid_from')::date,
+        (item ->> 'valid_to')::date
+      );
+      shifts_created := shifts_created + 1;
     end if;
   end loop;
 
