@@ -1,0 +1,15 @@
+{
+  "fase-1": {
+    "title": "Fase 1: vervangt de Excel",
+    "migrations": [
+      "20261001000100_foundation.sql",
+      "20261001000200_employees.sql",
+      "20261001000300_recurring_shifts.sql",
+      "20261001000400_absences_closures.sql",
+      "20261001000500_calendar_feeds.sql",
+      "20261001000600_audit_log.sql",
+      "20261001000700_rpc.sql",
+      "20261001000800_seed.sql"
+    ]
+  }
+}
