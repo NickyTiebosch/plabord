@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
-import { bundlePath } from '../../scripts/bundle-sql.ts';
+import { bundlePath, readPhases } from '../../scripts/bundle-sql.ts';
 
 export const SUPABASE_MOCK_SQL = `
 create role anon nologin noinherit;
@@ -36,8 +36,11 @@ grant execute on function auth.jwt() to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 `;
 
+/** Alle bundels op volgorde (fase-1, fase-2, …), zoals de eigenaar ze in de SQL-editor draait. */
 export function setupSql(): string {
-  return readFileSync(bundlePath('fase-1'), 'utf8');
+  return Object.keys(readPhases())
+    .map((phase) => readFileSync(bundlePath(phase), 'utf8'))
+    .join('\n');
 }
 
 export async function createDatabase(): Promise<PGlite> {

@@ -169,6 +169,67 @@ export interface Database {
         };
         Relationships: [];
       };
+      substitutions: {
+        Row: {
+          id: string;
+          employee_id: string;
+          date: string;
+          group_id: string;
+          day_part: string;
+          status: string;
+          handled_at: Timestamp | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: { employee_id: string; date: string; group_id: string; day_part?: string };
+        Update: { day_part?: string; status?: string; handled_at?: Timestamp | null };
+        Relationships: [];
+      };
+      shift_overrides: {
+        Row: {
+          id: string;
+          employee_id: string;
+          date: string;
+          kind: string;
+          group_id: string | null;
+          role: string | null;
+          start_time: string | null;
+          end_time: string | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          employee_id: string;
+          date: string;
+          kind: string;
+          group_id?: string | null;
+          role?: string | null;
+          start_time?: string | null;
+          end_time?: string | null;
+        };
+        Update: {
+          kind?: string;
+          group_id?: string | null;
+          role?: string | null;
+          start_time?: string | null;
+          end_time?: string | null;
+        };
+        Relationships: [];
+      };
+      gap_dismissals: {
+        Row: {
+          id: string;
+          group_id: string;
+          date: string;
+          day_part: string;
+          shortage: number;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: { group_id: string; date: string; day_part: string; shortage: number };
+        Update: { shortage?: number };
+        Relationships: [];
+      };
       closure_days: {
         Row: {
           id: string;
@@ -220,6 +281,31 @@ export interface Database {
     Functions: {
       claim_account: { Args: Record<string, never>; Returns: string | null };
       apply_import: { Args: { plan: Json }; Returns: Json };
+      set_shift_override: {
+        Args: {
+          p_employee_id: string;
+          p_date: string;
+          p_kind: string;
+          p_group_id: string | null;
+          p_role: string | null;
+          p_start_time: string | null;
+          p_end_time: string | null;
+        };
+        Returns: string;
+      };
+      move_shift: {
+        Args: {
+          p_employee_id: string;
+          p_from: string;
+          p_to: string;
+          p_group_id: string;
+          p_role: string;
+          p_start_time: string | null;
+          p_end_time: string | null;
+        };
+        Returns: string;
+      };
+      apply_substitution_review: { Args: { changes: Json }; Returns: number };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
