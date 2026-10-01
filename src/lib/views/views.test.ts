@@ -26,6 +26,13 @@ describe('Mijn rooster', () => {
     expect(weeks[0]?.days[5]?.lines).toEqual([]);
   });
 
+  it('zegt een hele dag afwezig maar één keer', () => {
+    const snapshot = teamSnapshot({ absences: [absence('a1', 'sanne', '2026-10-14')] });
+    const day = buildMySchedule(computePersonalSchedule(snapshot, 'sanne', '2026-10-14', '2026-10-14'), groups, '2026-10-14')[0]?.days[0];
+    expect(day?.lines).toEqual([{ title: 'Den Bosch', detail: 'balie · 07:30–18:00', tone: 'absent', note: null }]);
+    expect(day?.absence).toEqual({ label: 'Afwezig', requested: false });
+  });
+
   it('meldt sluitingsdagen en invallen', () => {
     const kingsDay = buildMySchedule(computePersonalSchedule(teamSnapshot(), 'sanne', '2026-04-27', '2026-04-27'), groups, '2026-04-27');
     expect(kingsDay[0]?.days[0]?.lines).toEqual([

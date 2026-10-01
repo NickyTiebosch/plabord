@@ -43,7 +43,8 @@ function lineFor(entry: ShiftEntry, groupName: (id: string) => string): Schedule
       title: `Invallen in ${place}`,
       detail: withRole(times),
       tone: entry.working ? 'deviation' : 'absent',
-      note: entry.working ? null : 'afwezig',
+      // Afwezig staat al als label bij de dag; niet nog een keer bij de regel.
+      note: null,
     };
   }
   const state = entryState(entry);
@@ -56,7 +57,7 @@ function lineFor(entry: ShiftEntry, groupName: (id: string) => string): Schedule
         note: `Gesloten: ${entry.closure?.name ?? 'sluitingsdag'}`,
       };
     case 'absent':
-      return { title: place, detail: withRole(planned), tone: 'absent', note: 'afwezig' };
+      return { title: place, detail: withRole(planned), tone: 'absent', note: null };
     case 'elsewhere':
       return { title: place, detail: withRole(planned), tone: 'deviation', note: 'je valt elders in' };
     case 'partly_absent':
