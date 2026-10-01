@@ -323,6 +323,35 @@ describe('logboek', () => {
     expect(handled.what).toBe('Vervallen inval afgehandeld – Sanne');
   });
 
+  it('noemt een ingetrokken inval zo, en zegt om welke inval het gaat (fase 2)', () => {
+    const slot = (id: string | null | undefined) => (id === 's1' ? { date: '2026-10-14', group_id: 'breda', day_part: 'morning' } : null);
+    const withdrawn = describeAudit(
+      {
+        ...base,
+        entity: 'substitutions',
+        entity_id: 's1',
+        action: 'update',
+        changed_fields: ['handled_at', 'status'],
+        details: { handled_at: { old: null, new: '2026-10-15T08:00:00Z' }, status: { old: 'active', new: 'not_needed' } },
+      },
+      { ...lookups, substitution: slot },
+    );
+    expect(withdrawn).toMatchObject({ what: 'Inval ingetrokken – Sanne', detail: 'Breda, 14 okt 2026, ochtend' });
+    const review = describeAudit(
+      {
+        ...base,
+        entity: 'substitutions',
+        entity_id: 's1',
+        action: 'update',
+        changed_fields: ['status'],
+        details: { status: { old: 'active', new: 'reschedule' } },
+        source: 'controle',
+      },
+      { ...lookups, substitution: slot },
+    );
+    expect(review).toMatchObject({ what: 'Inval opnieuw regelen – Sanne', detail: 'Breda, 14 okt 2026, ochtend' });
+  });
+
   it('beschrijft roosterwijzigingen en genegeerde gaten (fase 2)', () => {
     const off = describeAudit({ ...base, entity: 'shift_overrides', details: { date: '2026-10-14', kind: 'off' } }, lookups);
     expect(off).toMatchObject({ what: 'Roosterwijziging voor één dag – Sanne', detail: '14 okt 2026, geen dienst' });

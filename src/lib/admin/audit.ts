@@ -104,6 +104,8 @@ const SUBSTITUTION_STATUS_LABELS: Record<string, string> = {
 interface Lookups {
   employeeName: (id: string | null | undefined) => string;
   groupName: (id: string | null | undefined) => string;
+  /** Vestiging, datum en dagdeel van een inval: bij een wijziging staan die niet in het logboek zelf. */
+  substitution?: (id: string | null | undefined) => Record<string, unknown> | null;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -264,13 +266,19 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
       break;
     case 'substitutions': {
       const changed = row.changed_fields ?? [];
-      const status = record(record(details).status).new;
+      const status = record(details.status).new;
+      const who = row.employee_id ? ` – ${lookups.employeeName(row.employee_id)}` : '';
       if (row.action === 'update' && changed.includes('status') && typeof status === 'string') {
-        what = `Inval ${SUBSTITUTION_STATUS_LABELS[status] ?? status}${row.employee_id ? ` – ${lookups.employeeName(row.employee_id)}` : ''}`;
+        // Intrekken zet de status en "afgehandeld" in één keer; de controle zet alleen de status.
+        what =
+          status === 'not_needed' && changed.includes('handled_at')
+            ? `Inval ingetrokken${who}`
+            : `Inval ${SUBSTITUTION_STATUS_LABELS[status] ?? status}${who}`;
       } else if (row.action === 'update' && changed.length === 1 && changed[0] === 'handled_at') {
-        what = `Vervallen inval afgehandeld${row.employee_id ? ` – ${lookups.employeeName(row.employee_id)}` : ''}`;
+        what = `Vervallen inval afgehandeld${who}`;
       }
-      detail = row.action === 'update' ? null : slotText(details, lookups);
+      const slot = row.action === 'update' ? (lookups.substitution?.(row.entity_id) ?? null) : details;
+      detail = slot ? slotText(slot, lookups) : null;
       break;
     }
     case 'shift_overrides':
