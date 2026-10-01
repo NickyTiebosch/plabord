@@ -55,7 +55,23 @@ export function AbsenceForm({
       {defaults.id ? <input type="hidden" name="id" value={defaults.id} /> : null}
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}
       {state.ok && state.message ? (
-        <Notice tone={state.message.includes('Let op') ? 'warning' : 'success'}>{state.message}</Notice>
+        <Notice tone={state.message === 'Opgeslagen.' ? 'success' : 'warning'}>{state.message}</Notice>
+      ) : null}
+      {state.confirm ? (
+        <Notice tone="warning">
+          <p className="font-medium">Gevolgen van deze afwezigheid</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {state.confirm.lines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <p className="mt-2">Opslaan mag altijd. De gaten komen daarna in Nog te regelen.</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <SubmitButton name="bevestigd" value={state.confirm.token} size="sm">
+              Toch opslaan
+            </SubmitButton>
+          </div>
+        </Notice>
       ) : null}
 
       <Field label="Medewerker" htmlFor="employeeId" error={errors.employeeId}>

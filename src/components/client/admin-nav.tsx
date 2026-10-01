@@ -7,6 +7,7 @@ import { cx } from '../ui';
 const ITEMS = [
   { href: '/beheer', label: 'Overzicht', exact: true },
   { href: '/beheer/afwezigheid', label: 'Afwezigheid' },
+  { href: '/beheer/invallen', label: 'Invallen' },
   { href: '/beheer/medewerkers', label: 'Medewerkers' },
   { href: '/beheer/sluitingsdagen', label: 'Sluitingsdagen' },
   { href: '/beheer/instellingen', label: 'Instellingen' },

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
-import { Badge, Card, EmptyState, Notice, PageHeader, SectionTitle } from '@/components/ui';
+import { Badge, Card, EmptyState, Field, Notice, PageHeader, SectionTitle, buttonClass, inputClass } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
 import { shiftsByWeekday } from '@/lib/admin/shifts';
 import { requireAdmin } from '@/lib/auth/session';
@@ -235,6 +235,23 @@ export default async function EmployeeDetailPage({
             <SectionTitle className="mb-3">Vaste dienst laten stoppen</SectionTitle>
             <ShiftEndForm employeeId={employee.id} today={today} />
           </Card>
+
+          {employee.isActive ? (
+            <Card className="p-4">
+              <SectionTitle className="mb-1">Rooster voor één dag</SectionTitle>
+              <p className="mb-3 text-sm text-slate-600">
+                Geen dienst, een andere dienst of verplaatsen, alleen voor die dag. De vaste diensten blijven staan.
+              </p>
+              <form action={`/beheer/rooster/${employee.id}`} method="get" className="flex flex-wrap items-end gap-2">
+                <Field label="Datum" htmlFor="day-change-date">
+                  <input id="day-change-date" name="datum" type="date" required defaultValue={today} className={inputClass} />
+                </Field>
+                <button type="submit" className={buttonClass('secondary')}>
+                  Bekijken
+                </button>
+              </form>
+            </Card>
+          ) : null}
         </div>
       </div>
     </>

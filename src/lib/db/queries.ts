@@ -1,4 +1,6 @@
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
+import { addDays } from '../engine/dates';
+import { HISTORY_DAYS } from '../engine/history';
 import type { IsoDate, PlanningSnapshot } from '../engine/types';
 import type { Database } from './database.types';
 import {
@@ -9,6 +11,9 @@ import {
   mapGroup,
   mapRecurringShift,
   mapSettings,
+  mapShiftOverride,
+  mapStaffingNorm,
+  mapSubstitution,
 } from './mappers';
 
 export type DbClient = SupabaseClient<Database>;
@@ -34,27 +39,37 @@ export async function loadGroups(client: DbClient) {
   return rows.map(mapGroup);
 }
 
+export async function loadStaffingNorms(client: DbClient) {
+  const rows = must(await client.from('staffing_norms').select('group_id, weekday, day_part, min_staff'), 'de normen');
+  return rows.map(mapStaffingNorm);
+}
+
 /**
- * Alle gegevens die de engine nodig heeft voor een periode: vaste diensten en afwezigheid die
- * de periode raken, en de afwijkingen op de sluitingsdagen erin.
+ * Alle gegevens die de engine nodig heeft voor een periode: vaste diensten, afwezigheid,
+ * roosterwijzigingen en sluitingsdagen die de periode raken, en de normen. Invallen vanaf
+ * 90 dagen vóór de periode, voor de teller "het minst ingevallen" (besluit V7).
  */
 export async function loadPlanningSnapshot(
   client: DbClient,
   range: { from: IsoDate; to: IsoDate },
 ): Promise<PlanningSnapshot> {
-  const [settings, groups, employees, eligibility, shifts, absences, closures] = await Promise.all([
-    loadSettings(client),
-    loadGroups(client),
-    client.from('employees').select('*'),
-    client.from('counter_eligibility').select('employee_id, group_id'),
-    client
-      .from('recurring_shifts')
-      .select('*')
-      .lte('valid_from', range.to)
-      .or(`valid_to.is.null,valid_to.gte.${range.from}`),
-    client.from('absences').select('*').lte('start_date', range.to).gte('end_date', range.from),
-    client.from('closure_days').select('*').gte('date', range.from).lte('date', range.to),
-  ]);
+  const [settings, groups, employees, eligibility, shifts, absences, closures, substitutions, overrides, norms] =
+    await Promise.all([
+      loadSettings(client),
+      loadGroups(client),
+      client.from('employees').select('*'),
+      client.from('counter_eligibility').select('employee_id, group_id'),
+      client
+        .from('recurring_shifts')
+        .select('*')
+        .lte('valid_from', range.to)
+        .or(`valid_to.is.null,valid_to.gte.${range.from}`),
+      client.from('absences').select('*').lte('start_date', range.to).gte('end_date', range.from),
+      client.from('closure_days').select('*').gte('date', range.from).lte('date', range.to),
+      client.from('substitutions').select('*').gte('date', addDays(range.from, -HISTORY_DAYS)).lte('date', range.to),
+      client.from('shift_overrides').select('*').gte('date', range.from).lte('date', range.to),
+      loadStaffingNorms(client),
+    ]);
   const counters = counterGroupsByEmployee(must(eligibility, 'de inzetbaarheid'));
   return {
     settings,
@@ -63,8 +78,8 @@ export async function loadPlanningSnapshot(
     recurringShifts: must(shifts, 'de vaste diensten').map(mapRecurringShift),
     absences: must(absences, 'de afwezigheid').map(mapAbsence),
     closureOverrides: must(closures, 'de sluitingsdagen').map(mapClosure),
-    substitutions: [],
-    shiftOverrides: [],
-    staffingNorms: [],
+    substitutions: must(substitutions, 'de invallen').map(mapSubstitution),
+    shiftOverrides: must(overrides, 'de roosterwijzigingen').map(mapShiftOverride),
+    staffingNorms: norms,
   };
 }

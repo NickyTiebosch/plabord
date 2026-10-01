@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { LinkTabs, PeriodNav, PersonLineView } from '@/components/schedule';
-import { Badge, Card } from '@/components/ui';
+import Link from 'next/link';
+import { LinkTabs, PeriodNav, PersonLineView, StaffingPills } from '@/components/schedule';
+import { Badge, Card, buttonClass } from '@/components/ui';
 import { requireViewer } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
 import {
@@ -15,7 +16,7 @@ import {
 } from '@/lib/engine/dates';
 import { formatDateRange } from '@/lib/engine/format';
 import { buildGroupWeek } from '@/lib/views/group-week';
-import { findTab, rosterTabs } from '@/lib/views/tabs';
+import { findTab, groupSlug, rosterTabs } from '@/lib/views/tabs';
 
 export const metadata: Metadata = { title: 'Rooster' };
 
@@ -40,6 +41,9 @@ export default async function GroupRosterPage({
   const hrefFor = (slug: string, date: string) =>
     date === currentMonday ? `/rooster/${slug}` : `/rooster/${slug}?week=${isoWeekKey(date)}`;
   const title = `Week ${isoWeekOf(monday).week} · ${formatDateRange(monday, addDays(monday, 5))}`;
+  // Beheerders tikken op een naam voor een roosterwijziging, of op "Regelen" bij een tekort.
+  const changeHref = (employeeId: string, date: string) =>
+    viewer.isAdmin ? `/beheer/rooster/${employeeId}/${date}` : undefined;
 
   return (
     <>
@@ -74,8 +78,9 @@ export default async function GroupRosterPage({
                 {day.sections.map((section) => {
                   const empty =
                     !section.closure &&
-                    section.working.length + section.absent.length + section.elsewhere.length === 0;
-                  if (empty && (day.sections.length > 1 || nobody)) return null;
+                    section.working.length + section.absent.length + section.elsewhere.length === 0 &&
+                    section.daysOff.length === 0;
+                  if (empty && section.staffing.length === 0 && (day.sections.length > 1 || nobody)) return null;
                   return (
                     <div key={section.groupId}>
                       {day.sections.length > 1 ? (
@@ -86,17 +91,34 @@ export default async function GroupRosterPage({
                           <Badge tone="closed">Gesloten: {section.closure}</Badge>
                         </p>
                       ) : null}
+                      {section.staffing.length > 0 ? (
+                        <div className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                          <StaffingPills pills={section.staffing} />
+                          {section.short && viewer.isAdmin ? (
+                            <Link
+                              href={`/beheer/regelen/${groupSlug(section.groupId)}/${day.date}`}
+                              className={buttonClass('primary', 'sm')}
+                            >
+                              Regelen
+                            </Link>
+                          ) : null}
+                        </div>
+                      ) : null}
                       {section.working.length > 0 ? (
                         <ul className="divide-y divide-slate-100">
                           {section.working.map((line) => (
-                            <PersonLineView key={`${line.employeeId}-${line.borrowed}`} line={line} />
+                            <PersonLineView
+                              key={`${line.employeeId}-${line.borrowed}`}
+                              line={line}
+                              href={line.borrowed ? undefined : changeHref(line.employeeId, day.date)}
+                            />
                           ))}
                         </ul>
                       ) : null}
                       {section.elsewhere.length > 0 ? (
                         <ul className="divide-y divide-slate-100">
                           {section.elsewhere.map((line) => (
-                            <PersonLineView key={line.employeeId} line={line} />
+                            <PersonLineView key={line.employeeId} line={line} href={changeHref(line.employeeId, day.date)} />
                           ))}
                         </ul>
                       ) : null}
@@ -105,10 +127,30 @@ export default async function GroupRosterPage({
                           <p className="text-xs font-medium text-slate-500">Afwezig</p>
                           <ul>
                             {section.absent.map((line) => (
-                              <PersonLineView key={line.employeeId} line={line} absent />
+                              <PersonLineView key={line.employeeId} line={line} absent href={changeHref(line.employeeId, day.date)} />
                             ))}
                           </ul>
                         </div>
+                      ) : null}
+                      {section.daysOff.length > 0 ? (
+                        <p className="mt-1 border-t border-dashed border-slate-200 pt-1 text-sm text-slate-500">
+                          Geen dienst (gewijzigd):{' '}
+                          {section.daysOff.map((person, index) => {
+                            const href = changeHref(person.employeeId, day.date);
+                            return (
+                              <span key={person.employeeId}>
+                                {index > 0 ? ', ' : ''}
+                                {href ? (
+                                  <Link href={href} className="underline decoration-slate-300 underline-offset-2">
+                                    {person.name}
+                                  </Link>
+                                ) : (
+                                  person.name
+                                )}
+                              </span>
+                            );
+                          })}
+                        </p>
                       ) : null}
                     </div>
                   );

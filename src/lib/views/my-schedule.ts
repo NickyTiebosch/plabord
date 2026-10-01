@@ -71,8 +71,8 @@ function lineFor(entry: ShiftEntry, groupName: (id: string) => string): Schedule
       return {
         title: place,
         detail: withRole(entry.working ? formatTimeRange(entry.working.start, entry.working.end) : planned),
-        tone: lentOut ? 'deviation' : 'normal',
-        note: lentOut ? 'deels elders invallen' : null,
+        tone: lentOut || entry.changed ? 'deviation' : 'normal',
+        note: lentOut ? 'deels elders invallen' : entry.changed ? 'gewijzigd' : null,
       };
     }
   }
@@ -97,7 +97,13 @@ export function buildMySchedule(days: readonly PersonalDay[], groups: readonly G
       date: day.date,
       label: formatDayShort(day.date),
       isToday: day.date === today,
-      lines: day.entries.map((entry) => lineFor(entry, groupName)),
+      lines: [
+        ...day.entries.map((entry) => lineFor(entry, groupName)),
+        // Door een roosterwijziging vrij: dat moet opvallen.
+        ...(day.dayOff && day.entries.every((entry) => entry.kind !== 'regular')
+          ? [{ title: 'Geen dienst', detail: '', tone: 'deviation' as const, note: 'gewijzigd' }]
+          : []),
+      ],
       absence: label ? { label, requested: isRequested(day.absences) } : null,
     });
   }

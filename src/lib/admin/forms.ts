@@ -11,6 +11,11 @@ export interface ActionState {
   message?: string;
   error?: string;
   fieldErrors?: Record<string, string>;
+  /**
+   * Eerst bevestigen (impactcheck, fase 2): de gevolgen en een sleutel die hoort bij precies deze
+   * invoer. "Toch opslaan" stuurt de sleutel mee; is de invoer intussen veranderd, dan wordt opnieuw gecontroleerd.
+   */
+  confirm?: { token: string; lines: string[] };
 }
 
 export type Parsed<T> = { ok: true; data: T } | { ok: false; state: ActionState };
@@ -154,6 +159,56 @@ export function parseShiftForm(form: FormData): Parsed<ShiftInput> {
     endTime: text(form, 'endTime'),
     validFrom: text(form, 'validFrom'),
   }) as Parsed<ShiftInput>;
+}
+
+// Roosterwijziging voor één dag (fase 2) -----------------------------------------
+
+/** Ma t/m za, net als vaste diensten. */
+function isWorkday(date: string): boolean {
+  const day = new Date(`${date}T12:00:00Z`).getUTCDay();
+  return day >= 1 && day <= 6;
+}
+
+const workday = (label: string) =>
+  isoDate(label).refine(isWorkday, { error: `Kies bij ${label} een dag van maandag t/m zaterdag.` });
+
+const dayShiftSchema = z
+  .object({
+    employeeId: z.string().regex(UUID_PATTERN, { error: 'Kies een medewerker.' }),
+    date: workday('datum'),
+    groupId: z.string().min(1, { error: 'Kies een groep.' }),
+    role: z.enum(ROLES, { error: 'Kies een rol.' }),
+    startTime: optionalTime('begintijd'),
+    endTime: optionalTime('eindtijd'),
+  })
+  .superRefine((value, context) => {
+    if (value.startTime && value.endTime && value.endTime <= value.startTime) {
+      context.addIssue({ code: 'custom', path: ['endTime'], message: 'De eindtijd moet na de begintijd liggen.' });
+    }
+  });
+
+export type DayShiftInput = z.infer<typeof dayShiftSchema>;
+
+/** "Andere dienst deze dag": groep, rol en tijden voor één datum. */
+export function parseDayShiftForm(form: FormData, dateField = 'date'): Parsed<DayShiftInput> {
+  return parse(dayShiftSchema, {
+    employeeId: text(form, 'employeeId'),
+    date: text(form, dateField),
+    groupId: text(form, 'groupId'),
+    role: text(form, 'role'),
+    startTime: text(form, 'startTime'),
+    endTime: text(form, 'endTime'),
+  });
+}
+
+const dayRefSchema = z.object({
+  employeeId: z.string().regex(UUID_PATTERN, { error: 'Kies een medewerker.' }),
+  date: workday('datum'),
+});
+
+/** Medewerker en datum, voor "geen dienst" en "terug naar de vaste dienst". */
+export function parseDayRef(form: FormData): Parsed<z.infer<typeof dayRefSchema>> {
+  return parse(dayRefSchema, { employeeId: text(form, 'employeeId'), date: text(form, 'date') });
 }
 
 // Sluitingsdag -----------------------------------------------------------------

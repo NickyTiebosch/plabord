@@ -90,6 +90,7 @@ export default async function AuditLogPage({
                 <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
                   door {row.who}
                   {row.source === 'import' ? <Badge>import</Badge> : null}
+                  {row.source === 'controle' ? <Badge>automatisch</Badge> : null}
                 </p>
               </li>
             ))}

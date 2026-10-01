@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { LineTone, ScheduleLine } from '@/lib/views/my-schedule';
-import type { PersonLine } from '@/lib/views/group-week';
+import type { PersonLine, StaffingPill } from '@/lib/views/group-week';
 import { IconChevronLeft, IconChevronRight } from './icons';
 import { Badge, buttonClass, cx } from './ui';
 
@@ -35,11 +35,17 @@ export function AbsenceBadge({ label, requested }: { label: string; requested: b
   );
 }
 
-export function PersonLineView({ line, absent = false }: { line: PersonLine; absent?: boolean }) {
+export function PersonLineView({ line, absent = false, href }: { line: PersonLine; absent?: boolean; href?: string }) {
   return (
     <li className="flex items-start justify-between gap-2 py-1.5">
       <span className={cx('min-w-0', absent ? 'text-slate-500' : 'text-slate-900')}>
-        <span className="font-medium">{line.name}</span>
+        {href ? (
+          <Link href={href} className="font-medium underline decoration-slate-300 underline-offset-2 hover:decoration-slate-600">
+            {line.name}
+          </Link>
+        ) : (
+          <span className="font-medium">{line.name}</span>
+        )}
         {line.role ? <span className="text-slate-500"> · {line.role}</span> : null}
         {line.note ? (
           <span className="ml-1 inline-block align-middle">
@@ -111,5 +117,26 @@ export function LinkTabs({ tabs, active }: { tabs: { href: string; label: string
         })}
       </ul>
     </nav>
+  );
+}
+
+/** Bezetting per dagdeel tegen de norm: groen als het genoeg is, rood bij een tekort. */
+export function StaffingPills({ pills }: { pills: readonly StaffingPill[] }) {
+  if (pills.length === 0) return null;
+  return (
+    <p className="flex flex-wrap gap-1.5" aria-label="Bezetting aan de balie">
+      {pills.map((pill) => (
+        <span
+          key={pill.dayPart}
+          className={cx(
+            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset',
+            pill.short ? 'bg-rose-600 text-white ring-rose-600' : 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+          )}
+        >
+          {pill.label}
+          {pill.short ? <span className="sr-only"> (onder de norm)</span> : null}
+        </span>
+      ))}
+    </p>
   );
 }
