@@ -175,3 +175,20 @@ export function todayInAmsterdam(now: Date): IsoDate {
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
+
+const amsterdamDateTimeFormat = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Europe/Amsterdam',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** Datum en tijd (uu:mm) van een moment in Europe/Amsterdam. */
+export function amsterdamDateTime(moment: Date): { date: IsoDate; time: string } {
+  const parts = amsterdamDateTimeFormat.formatToParts(moment);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
+}

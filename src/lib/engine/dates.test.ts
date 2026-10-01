@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addDays,
   addMonths,
+  amsterdamDateTime,
   daysBetween,
   eachDay,
   endOfMonth,
@@ -95,5 +96,15 @@ describe('todayInAmsterdam', () => {
     // Na de wissel naar wintertijd (25 okt 2026, 01:00 UTC) is het verschil één uur.
     expect(todayInAmsterdam(new Date('2026-10-25T22:30:00Z'))).toBe('2026-10-25');
     expect(todayInAmsterdam(new Date('2026-10-24T22:30:00Z'))).toBe('2026-10-25');
+  });
+});
+
+describe('amsterdamDateTime', () => {
+  it('geeft datum en 24-uurstijd in Europe/Amsterdam', () => {
+    expect(amsterdamDateTime(new Date('2026-01-14T23:30:00Z'))).toEqual({ date: '2026-01-15', time: '00:30' });
+    expect(amsterdamDateTime(new Date('2026-06-15T05:07:00Z'))).toEqual({ date: '2026-06-15', time: '07:07' });
+    // Tijdens de wissel naar wintertijd komt 02:30 twee keer voor.
+    expect(amsterdamDateTime(new Date('2026-10-25T00:30:00Z'))).toEqual({ date: '2026-10-25', time: '02:30' });
+    expect(amsterdamDateTime(new Date('2026-10-25T01:30:00Z'))).toEqual({ date: '2026-10-25', time: '02:30' });
   });
 });
