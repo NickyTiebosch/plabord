@@ -1,0 +1,21 @@
+# afhankelijkheden
+node_modules/
+
+# builds
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# omgevingsvariabelen: nooit in de repo
+.env
+.env.*
+!.env.example
+
+# Netlify en editors
+.netlify/
+.DS_Store
+.idea/
+.vscode/
