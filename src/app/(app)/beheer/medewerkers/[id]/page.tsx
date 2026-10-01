@@ -1,0 +1,241 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { SubmitButton } from '@/components/client/form-controls';
+import { Badge, Card, EmptyState, Notice, PageHeader, SectionTitle } from '@/components/ui';
+import { shiftsByWeekday } from '@/lib/admin/shifts';
+import { requireAdmin } from '@/lib/auth/session';
+import { mapEmployee, mapRecurringShift } from '@/lib/db/mappers';
+import { loadGroups, loadSettings, must } from '@/lib/db/queries';
+import { todayInAmsterdam } from '@/lib/engine/dates';
+import { formatDate, weekdayLong } from '@/lib/engine/format';
+import { ROLE_LABELS } from '@/lib/engine/labels';
+import { effectiveShiftTimes } from '@/lib/engine/schedule';
+import { formatTimeRange } from '@/lib/engine/time';
+import type { RecurringShift, Settings } from '@/lib/engine/types';
+import { revokeFeedLink } from '../../../agenda/actions';
+import { Flash } from '../../admin-shared';
+import { deleteShift, retryAccount } from '../actions';
+import { EmployeeForm } from '../employee-form';
+import { ShiftEndForm, ShiftFromForm } from '../shift-forms';
+
+export const metadata: Metadata = { title: 'Medewerker' };
+
+const FEED_LABELS: Record<string, string> = { personal: 'Mijn rooster', location: 'Vestiging', absences: 'Verlof team' };
+
+function ShiftText({ shift, settings, groupName }: { shift: RecurringShift; settings: Settings; groupName: string }) {
+  const times = effectiveShiftTimes(shift, settings);
+  const standard = shift.startTime === null && shift.endTime === null;
+  return (
+    <span>
+      <span className="font-medium text-slate-900">{groupName}</span>
+      <span className="text-slate-600">
+        {' '}
+        · {ROLE_LABELS[shift.role]} · {formatTimeRange(times.start, times.end)}
+        {standard ? ' (standaard)' : ''}
+      </span>
+    </span>
+  );
+}
+
+function DeleteShiftButton({ shift }: { shift: RecurringShift }) {
+  return (
+    <form action={deleteShift} className="inline">
+      <input type="hidden" name="id" value={shift.id} />
+      <input type="hidden" name="employeeId" value={shift.employeeId} />
+      <SubmitButton
+        size="sm"
+        variant="ghost"
+        confirm="Deze vaste dienst helemaal verwijderen? Doe dit alleen bij een vergissing; gebruik anders 'Dienst laten stoppen'."
+      >
+        Verwijderen
+      </SubmitButton>
+    </form>
+  );
+}
+
+export default async function EmployeeDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ melding?: string }>;
+}) {
+  const [{ id }, { melding }] = await Promise.all([params, searchParams]);
+  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  const { supabase } = await requireAdmin();
+  const today = todayInAmsterdam(new Date());
+
+  const [groups, settings, employeeRow, account, eligibility, shifts, feeds] = await Promise.all([
+    loadGroups(supabase),
+    loadSettings(supabase),
+    supabase.from('employees').select('*').eq('id', id).maybeSingle(),
+    supabase.from('employee_accounts').select('email, user_id').eq('employee_id', id).maybeSingle(),
+    supabase.from('counter_eligibility').select('group_id').eq('employee_id', id),
+    supabase.from('recurring_shifts').select('*').eq('employee_id', id),
+    supabase.from('calendar_feeds').select('id, kind, group_id, created_at').eq('employee_id', id).is('revoked_at', null),
+  ]);
+  if (!employeeRow.data) notFound();
+  const employee = mapEmployee(employeeRow.data, must(eligibility, 'de inzetbaarheid').map((row) => row.group_id));
+  const groupName = (groupId: string | null) => groups.find((group) => group.id === groupId)?.name ?? groupId ?? '';
+  const groupOptions = groups.map((group) => ({ id: group.id, name: group.name, hasCounter: group.hasCounter }));
+  const weekdays = shiftsByWeekday(must(shifts, 'de vaste diensten').map(mapRecurringShift), today);
+  const hasHistory = weekdays.some((day) => day.past.length > 0);
+
+  return (
+    <>
+      <PageHeader
+        title={employee.name}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-1">
+            {groupName(employee.groupId)}
+            {employee.isAdmin ? <Badge tone="brand">beheerder</Badge> : null}
+            {!employee.isActive ? <Badge tone="closed">inactief</Badge> : null}
+          </span>
+        }
+        actions={
+          <Link href="/beheer/medewerkers" className="text-sm underline">
+            Alle medewerkers
+          </Link>
+        }
+      />
+      <Flash code={melding} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <Card className="p-4">
+            <SectionTitle className="mb-3">Gegevens</SectionTitle>
+            <EmployeeForm
+              groups={groupOptions}
+              defaults={{
+                id: employee.id,
+                name: employee.name,
+                email: account.data?.email ?? null,
+                groupId: employee.groupId,
+                defaultRole: employee.defaultRole,
+                counterGroupIds: employee.counterGroupIds,
+                isAdmin: employee.isAdmin,
+                isActive: employee.isActive,
+              }}
+            />
+          </Card>
+
+          <Card className="space-y-3 p-4">
+            <SectionTitle>Inloggen</SectionTitle>
+            {!account.data ? (
+              <p className="text-sm text-slate-700">Geen werkmail: deze medewerker kan niet inloggen.</p>
+            ) : account.data.user_id ? (
+              <p className="text-sm text-slate-700">
+                Kan inloggen met <strong>{account.data.email}</strong>.
+                {!employee.isActive ? ' Inloggen is geblokkeerd zolang de medewerker inactief is.' : ''}
+              </p>
+            ) : (
+              <>
+                <Notice tone="warning">Er is nog geen inlogaccount voor {account.data.email}.</Notice>
+                <form action={retryAccount}>
+                  <input type="hidden" name="id" value={employee.id} />
+                  <SubmitButton variant="secondary">Inlogaccount aanmaken</SubmitButton>
+                </form>
+              </>
+            )}
+          </Card>
+
+          <Card className="space-y-3 p-4">
+            <SectionTitle>Agendalinks</SectionTitle>
+            {(feeds.data ?? []).length === 0 ? (
+              <p className="text-sm text-slate-600">Geen actieve agendalinks.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {(feeds.data ?? []).map((feed) => (
+                  <li key={feed.id} className="flex items-center justify-between gap-2 py-2">
+                    <span className="text-sm text-slate-800">
+                      {FEED_LABELS[feed.kind] ?? feed.kind}
+                      {feed.group_id ? ` ${groupName(feed.group_id)}` : ''}
+                      <span className="text-slate-500"> · sinds {formatDate(todayInAmsterdam(new Date(feed.created_at)))}</span>
+                    </span>
+                    <form action={revokeFeedLink}>
+                      <input type="hidden" name="id" value={feed.id} />
+                      <SubmitButton size="sm" variant="danger" confirm="Deze agendalink intrekken?">
+                        Intrekken
+                      </SubmitButton>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="p-4">
+            <SectionTitle className="mb-3">Vaste diensten</SectionTitle>
+            {weekdays.every((day) => !day.current && day.upcoming.length === 0) ? (
+              <EmptyState title="Geen vaste diensten">
+                Zonder vaste diensten staat {employee.name} wel in het verlofoverzicht, maar niet in de roosters.
+              </EmptyState>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {weekdays.map((day) => (
+                  <li key={day.weekday} className="py-2">
+                    <p className="text-sm font-semibold text-slate-500 capitalize">{weekdayLong(day.weekday)}</p>
+                    {day.current ? (
+                      <div className="flex flex-wrap items-center justify-between gap-1">
+                        <ShiftText shift={day.current} settings={settings} groupName={groupName(day.current.groupId)} />
+                        <span className="flex items-center gap-1 text-xs text-slate-500">
+                          {day.current.validTo ? `t/m ${formatDate(day.current.validTo)}` : `sinds ${formatDate(day.current.validFrom)}`}
+                          <DeleteShiftButton shift={day.current} />
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-400">Geen dienst</p>
+                    )}
+                    {day.upcoming.map((shift) => (
+                      <div key={shift.id} className="mt-1 flex flex-wrap items-center justify-between gap-1 rounded-lg bg-amber-50 px-2 py-1">
+                        <span className="text-sm">
+                          <Badge tone="warning">vanaf {formatDate(shift.validFrom)}</Badge>{' '}
+                          <ShiftText shift={shift} settings={settings} groupName={groupName(shift.groupId)} />
+                        </span>
+                        <DeleteShiftButton shift={shift} />
+                      </div>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {hasHistory ? (
+              <details className="mt-3">
+                <summary className="cursor-pointer text-sm font-medium text-slate-700">Eerdere vaste diensten</summary>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {weekdays.flatMap((day) =>
+                    day.past.map((shift) => (
+                      <li key={shift.id} className="text-slate-600">
+                        {weekdayLong(day.weekday)} {formatDate(shift.validFrom)} t/m {formatDate(shift.validTo ?? shift.validFrom)}:{' '}
+                        <ShiftText shift={shift} settings={settings} groupName={groupName(shift.groupId)} />
+                      </li>
+                    )),
+                  )}
+                </ul>
+              </details>
+            ) : null}
+          </Card>
+
+          <Card className="p-4">
+            <SectionTitle className="mb-3">Vaste dienst wijzigen of toevoegen</SectionTitle>
+            <ShiftFromForm
+              employeeId={employee.id}
+              groups={groupOptions}
+              defaultGroupId={employee.groupId}
+              defaultRole={employee.defaultRole}
+              today={today}
+            />
+          </Card>
+
+          <Card className="p-4">
+            <SectionTitle className="mb-3">Vaste dienst laten stoppen</SectionTitle>
+            <ShiftEndForm employeeId={employee.id} today={today} />
+          </Card>
+        </div>
+      </div>
+    </>
+  );
+}
