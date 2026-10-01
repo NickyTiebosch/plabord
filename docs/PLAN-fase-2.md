@@ -1,6 +1,21 @@
 # Plan fase 2: "het brein"
 
-**Status: wacht op akkoord.** Dit plan hoort bij de opdracht in `docs/SPEC.md` (fase 2 en "Vervangingsengine") en bouwt voort op fase 1. De vaste afspraken staan in `CLAUDE.md`. Er komt pas code na je akkoord.
+**Status: goedgekeurd op 1 oktober 2026** ("akkoord met je voorstellen, bouw fase 2"). Dit plan hoort bij de opdracht in `docs/SPEC.md` (fase 2 en "Vervangingsengine") en bouwt voort op fase 1. De vaste afspraken staan in `CLAUDE.md`.
+
+## Besluiten
+Alle voorstellen uit §1 zijn aangenomen:
+
+| Vraag | Besluit |
+|---|---|
+| V6 | Per medewerker per dag: geen dienst, een andere dienst (ook als toevoeging), of verplaatsen naar een andere dag (in één keer opgeslagen). |
+| V7 | "Het minst ingevallen" telt de invallen die doorgaan in de 90 dagen vóór de datum van het gat. |
+| V8 | Een genegeerd gat komt terug als het tekort groter wordt. Genegeerde gaten zijn te bekijken en terug te zetten. |
+| V9 | Invallen is altijd vanuit een andere groep. Voor de eigen vestiging gebruik je een roosterwijziging. |
+| V10 | "Niet meer nodig" alleen als de vestiging zonder de inval op de norm zit; de laatst ingeplande vervalt eerst. Vervallen invallen staan in "Let op" tot de beheerder op Afgehandeld klikt. Is de invaller zelf afwezig, dan "opnieuw regelen". |
+
+De keuzes in §2 gelden zoals ze er staan.
+
+---
 
 Fase 2 levert drie dingen:
 1. **Bezetting tegen de norm.** Per vestiging, per dag en per dagdeel: hoeveel mensen staan er aan de balie, en is dat genoeg? Onderbezetting is rood in het vestigingsrooster. De gaten verschijnen in "Nog te regelen".
