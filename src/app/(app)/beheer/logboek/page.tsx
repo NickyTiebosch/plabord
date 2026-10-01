@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Badge, Card, EmptyState, PageHeader, buttonClass } from '@/components/ui';
 import { AUDIT_ENTITIES, describeAudit, type AuditRow } from '@/lib/admin/audit';
+import { isUuid } from '@/lib/admin/forms';
 import { requireAdmin } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { loadGroups } from '@/lib/db/queries';
@@ -19,7 +20,7 @@ export default async function AuditLogPage({
   const { supabase } = await requireAdmin();
   const page = Math.max(1, Number.parseInt(params.pagina ?? '1', 10) || 1);
   const entity = params.soort && params.soort in AUDIT_ENTITIES ? params.soort : '';
-  const employeeId = params.medewerker && /^[0-9a-f-]{36}$/i.test(params.medewerker) ? params.medewerker : '';
+  const employeeId = isUuid(params.medewerker) ? params.medewerker : '';
 
   let query = supabase
     .from('audit_log')

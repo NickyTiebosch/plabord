@@ -49,6 +49,13 @@ const optionalTime = (label: string) =>
       return time;
     });
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Een uuid zoals Postgres die accepteert (8-4-4-4-12 hex), zonder eisen aan versie of variant. */
+export function isUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_PATTERN.test(value);
+}
+
 /** Naam: zonder spaties aan begin en eind, en met enkele spaties. */
 export function cleanName(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
@@ -58,7 +65,7 @@ export function cleanName(value: string): string {
 
 const absenceSchema = z
   .object({
-    employeeId: z.uuid({ error: 'Kies een medewerker.' }),
+    employeeId: z.string().regex(UUID_PATTERN, { error: 'Kies een medewerker.' }),
     startDate: isoDate('van'),
     endDate: isoDate('tot'),
     dayPart: z.enum(ABSENCE_PARTS, { error: 'Kies een dagdeel.' }),

@@ -3,7 +3,7 @@ import { shift } from '../engine/__fixtures__/team';
 import { describeAudit, type AuditRow } from './audit';
 import { closureScope, holidayOverrides, holidaySummary } from './closures';
 import { dbErrorMessage } from './errors';
-import { parseAbsenceForm, parseEmployeeForm, parseNumberFields, parseSettingsForm, parseShiftForm } from './forms';
+import { isUuid, parseAbsenceForm, parseEmployeeForm, parseNumberFields, parseSettingsForm, parseShiftForm } from './forms';
 import { planShiftEnd, planShiftFrom, shiftsByWeekday } from './shifts';
 
 function form(values: Record<string, string | string[]>): FormData {
@@ -34,6 +34,26 @@ describe('formulier afwezigheid', () => {
     expect(reversed).toMatchObject({ ok: false, state: { fieldErrors: { endDate: '"Tot" mag niet vóór "van" liggen.' } } });
     const noEmployee = parseAbsenceForm(form({ employeeId: '', startDate: '2026-02-30' }));
     expect(noEmployee).toMatchObject({ ok: false, state: { fieldErrors: { employeeId: 'Kies een medewerker.' } } });
+  });
+
+  it('accepteert een medewerker-id zonder uuid-versienummer, zoals Postgres', () => {
+    const result = parseAbsenceForm(form({ employeeId: '10000000-0000-0000-0000-000000000004', startDate: '2026-10-14' }));
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe('id uit een formulier of URL', () => {
+  it('accepteert elke uuid die Postgres accepteert', () => {
+    expect(isUuid('10000000-0000-0000-0000-000000000004')).toBe(true);
+    expect(isUuid('0DFAB63A-C266-48A9-A2B2-56F24E6B471C')).toBe(true);
+  });
+
+  it('weigert al het andere, ook 36 streepjes', () => {
+    expect(isUuid('onzin')).toBe(false);
+    expect(isUuid('-'.repeat(36))).toBe(false);
+    expect(isUuid('10000000-0000-0000-0000-00000000000g')).toBe(false);
+    expect(isUuid(' 10000000-0000-0000-0000-000000000004')).toBe(false);
+    expect(isUuid(undefined)).toBe(false);
   });
 });
 

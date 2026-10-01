@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, Notice, PageHeader, SectionTitle } from '@/components/ui';
+import { isUuid } from '@/lib/admin/forms';
 import { shiftsByWeekday } from '@/lib/admin/shifts';
 import { requireAdmin } from '@/lib/auth/session';
 import { mapEmployee, mapRecurringShift } from '@/lib/db/mappers';
@@ -62,7 +63,7 @@ export default async function EmployeeDetailPage({
   searchParams: Promise<{ melding?: string }>;
 }) {
   const [{ id }, { melding }] = await Promise.all([params, searchParams]);
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
 

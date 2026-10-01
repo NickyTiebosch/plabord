@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { changeAccountEmail, ensureAccount, setAccountBlocked } from '@/lib/admin/accounts';
 import { dbErrorMessage } from '@/lib/admin/errors';
-import { parseEmployeeForm, parseShiftForm, type ActionState, type EmployeeInput } from '@/lib/admin/forms';
+import { isUuid, parseEmployeeForm, parseShiftForm, type ActionState, type EmployeeInput } from '@/lib/admin/forms';
 import { planShiftEnd, planShiftFrom, type ShiftOp } from '@/lib/admin/shifts';
 import { requireAdmin, type Viewer } from '@/lib/auth/session';
 import { mapRecurringShift } from '@/lib/db/mappers';
@@ -74,6 +74,7 @@ export async function updateEmployee(_previous: ActionState, formData: FormData)
   const viewer = await requireAdmin();
   const { supabase } = viewer;
   const id = String(formData.get('id') ?? '');
+  if (!isUuid(id)) return { error: 'Deze medewerker bestaat niet meer.' };
   const parsed = parseEmployeeForm(formData);
   if (!parsed.ok) return parsed.state;
   const input = parsed.data;
@@ -142,6 +143,7 @@ export async function updateEmployee(_previous: ActionState, formData: FormData)
 export async function retryAccount(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();
   const id = String(formData.get('id') ?? '');
+  if (!isUuid(id)) redirect('/beheer/medewerkers');
   const account = await supabase.from('employee_accounts').select('email, user_id').eq('employee_id', id).maybeSingle();
   let melding = 'account-mislukt';
   if (account.data && !account.data.user_id) {
@@ -192,6 +194,7 @@ async function loadShifts(supabase: Supabase, employeeId: string) {
 export async function saveShiftFrom(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdmin();
   const employeeId = String(formData.get('employeeId') ?? '');
+  if (!isUuid(employeeId)) return { error: 'Deze medewerker bestaat niet meer.' };
   const parsed = parseShiftForm(formData);
   if (!parsed.ok) return parsed.state;
   const plan = planShiftFrom(await loadShifts(supabase, employeeId), parsed.data);
@@ -206,6 +209,7 @@ export async function saveShiftFrom(_previous: ActionState, formData: FormData):
 export async function endShift(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdmin();
   const employeeId = String(formData.get('employeeId') ?? '');
+  if (!isUuid(employeeId)) return { error: 'Deze medewerker bestaat niet meer.' };
   const weekday = Number(formData.get('weekday'));
   const lastDay = String(formData.get('lastDay') ?? '');
   if (!Number.isInteger(weekday) || weekday < 1 || weekday > 6) return { fieldErrors: { weekday: 'Kies een dag.' } };
@@ -223,6 +227,7 @@ export async function deleteShift(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();
   const id = String(formData.get('id') ?? '');
   const employeeId = String(formData.get('employeeId') ?? '');
+  if (!isUuid(id) || !isUuid(employeeId)) redirect('/beheer/medewerkers');
   await supabase.from('recurring_shifts').delete().eq('id', id).eq('employee_id', employeeId);
   revalidatePath('/', 'layout');
   redirect(`/beheer/medewerkers/${employeeId}?melding=verwijderd`);

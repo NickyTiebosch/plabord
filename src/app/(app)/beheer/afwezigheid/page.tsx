@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, PageHeader, SectionTitle, buttonClass } from '@/components/ui';
+import { isUuid } from '@/lib/admin/forms';
 import { requireAdmin } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { mapAbsence, mapEmployee } from '@/lib/db/mappers';
@@ -59,7 +60,8 @@ export default async function AbsenceAdminPage({
   const since = addDays(today, -60);
 
   let query = supabase.from('absences').select('*').gte('end_date', since).order('start_date').order('end_date');
-  if (params.medewerker) query = query.eq('employee_id', params.medewerker);
+  const employeeFilter = isUuid(params.medewerker) ? params.medewerker : '';
+  if (employeeFilter) query = query.eq('employee_id', employeeFilter);
   const [groups, employees, names, absences] = await Promise.all([
     loadGroups(supabase),
     supabase.from('employees').select('*').then((result) => must(result, 'de medewerkers').map((row) => mapEmployee(row))),
@@ -86,7 +88,7 @@ export default async function AbsenceAdminPage({
             <label className="text-sm font-medium text-slate-800" htmlFor="filter">
               Toon
             </label>
-            <select id="filter" name="medewerker" defaultValue={params.medewerker ?? ''} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm">
+            <select id="filter" name="medewerker" defaultValue={employeeFilter} className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm">
               <option value="">Iedereen</option>
               {options.map((option) => (
                 <option key={option.id} value={option.id}>

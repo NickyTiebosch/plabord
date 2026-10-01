@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Card, PageHeader } from '@/components/ui';
+import { isUuid } from '@/lib/admin/forms';
 import { requireAdmin } from '@/lib/auth/session';
 import { mapAbsence, mapEmployee } from '@/lib/db/mappers';
 import { loadGroups, must } from '@/lib/db/queries';
@@ -15,7 +16,7 @@ export const metadata: Metadata = { title: 'Afwezigheid wijzigen' };
 export default async function EditAbsencePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase } = await requireAdmin();
-  if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const [groups, employees, absence] = await Promise.all([
     loadGroups(supabase),
     supabase.from('employees').select('*').then((result) => must(result, 'de medewerkers').map((row) => mapEmployee(row))),
