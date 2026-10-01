@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { SubmitButton } from '@/components/client/form-controls';
+import { submitKeepingValues } from '@/components/client/keep-values';
 import { Choice, Field, Fieldset, Notice, inputClass } from '@/components/ui';
 import type { ActionState } from '@/lib/admin/forms';
 import { ROLE_LABELS } from '@/lib/engine/labels';
@@ -30,7 +31,7 @@ export function EmployeeForm({ groups, defaults }: { groups: GroupOption[]; defa
   const errors = state.fieldErrors ?? {};
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} onSubmit={submitKeepingValues(formAction)} className="space-y-4">
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}
       {defaults ? <input type="hidden" name="isActivePresent" value="1" /> : null}
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}

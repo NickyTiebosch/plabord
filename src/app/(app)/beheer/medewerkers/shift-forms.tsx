@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { SubmitButton } from '@/components/client/form-controls';
+import { submitKeepingValues } from '@/components/client/keep-values';
 import { Field, Notice, inputClass } from '@/components/ui';
 import type { ActionState } from '@/lib/admin/forms';
 import { ROLE_LABELS } from '@/lib/engine/labels';
@@ -40,7 +41,7 @@ export function ShiftFromForm({
   const [state, formAction] = useActionState<ActionState, FormData>(saveShiftFrom, {});
   const errors = state.fieldErrors ?? {};
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} onSubmit={submitKeepingValues(formAction)} className="space-y-3">
       <input type="hidden" name="employeeId" value={employeeId} />
       <Result state={state} />
       <div className="grid gap-3 sm:grid-cols-2">
@@ -93,7 +94,7 @@ export function ShiftEndForm({ employeeId, today }: { employeeId: string; today:
   const [state, formAction] = useActionState<ActionState, FormData>(endShift, {});
   const errors = state.fieldErrors ?? {};
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} onSubmit={submitKeepingValues(formAction)} className="space-y-3">
       <input type="hidden" name="employeeId" value={employeeId} />
       <Result state={state} />
       <div className="grid gap-3 sm:grid-cols-2">

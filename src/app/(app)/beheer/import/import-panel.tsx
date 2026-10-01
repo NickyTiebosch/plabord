@@ -112,7 +112,7 @@ export function ImportPanel() {
           <SectionTitle>Voorvertoning{state.fileName ? ` van ${state.fileName}` : ''}</SectionTitle>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[20rem] text-left text-sm">
-              <thead className="text-slate-500">
+              <thead className="text-xs whitespace-nowrap text-slate-500">
                 <tr>
                   <th className="py-1 pr-3 font-medium">Tabblad</th>
                   <th className="py-1 pr-3 font-medium">Nieuw</th>
@@ -171,7 +171,7 @@ export function ImportPanel() {
               </summary>
               <ul className="mt-2 space-y-1 text-sm">
                 {preview.changes.map((change, index) => (
-                  <li key={index} className="flex gap-2">
+                  <li key={index} className="flex items-start gap-2">
                     <Badge tone={change.action === 'create' ? 'success' : 'warning'} className={cx('shrink-0')}>
                       {change.action === 'create' ? 'nieuw' : 'bijgewerkt'}
                     </Badge>

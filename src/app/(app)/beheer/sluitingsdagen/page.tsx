@@ -123,7 +123,7 @@ export default async function ClosureDaysPage({ searchParams }: { searchParams: 
           )}
           <Card className="p-4">
             <SectionTitle className="mb-3">Sluitingsdag toevoegen</SectionTitle>
-            <StatefulForm action={addClosure} className="space-y-3">
+            <StatefulForm action={addClosure} resetOnSuccess className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Datum" htmlFor="closure-date">
                   <input id="closure-date" name="date" type="date" required min={`${year}-01-01`} max={`${year}-12-31`} className={inputClass} />

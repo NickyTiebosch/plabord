@@ -1,23 +1,34 @@
 'use client';
 
-import { useActionState, type ReactNode } from 'react';
+import { useActionState, useRef, type ReactNode } from 'react';
 import type { ActionState } from '@/lib/admin/forms';
 import { Notice } from '../ui';
+import { submitKeepingValues } from './keep-values';
 
-/** Formulier voor een server action die een melding teruggeeft (opgeslagen of fout). */
+/**
+ * Formulier voor een server action die een melding teruggeeft (opgeslagen of fout).
+ * De invoer blijft staan, ook bij een fout. Met resetOnSuccess wordt het formulier na opslaan leeg.
+ */
 export function StatefulForm({
   action,
   children,
   className,
+  resetOnSuccess = false,
 }: {
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>;
   children: ReactNode;
   className?: string;
+  resetOnSuccess?: boolean;
 }) {
-  const [state, formAction] = useActionState<ActionState, FormData>(action, {});
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction] = useActionState<ActionState, FormData>(async (previous, formData) => {
+    const result = await action(previous, formData);
+    if (result.ok && resetOnSuccess) formRef.current?.reset();
+    return result;
+  }, {});
   const fieldErrors = Object.values(state.fieldErrors ?? {});
   return (
-    <form action={formAction} className={className}>
+    <form ref={formRef} action={formAction} onSubmit={submitKeepingValues(formAction)} className={className}>
       {state.error ? (
         <Notice tone="error" className="mb-3">
           {state.error}

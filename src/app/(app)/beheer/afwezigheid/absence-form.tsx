@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useRef, useState } from 'react';
 import { SubmitButton } from '@/components/client/form-controls';
+import { submitKeepingValues } from '@/components/client/keep-values';
 import { Choice, Field, Fieldset, Notice, inputClass } from '@/components/ui';
 import type { ActionState } from '@/lib/admin/forms';
 import type { AbsencePart, AbsenceStatus } from '@/lib/engine/types';
@@ -31,12 +32,14 @@ export function AbsenceForm({
   defaults?: AbsenceDefaults;
   submitLabel?: string;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [startDate, setStartDate] = useState(defaults.startDate ?? '');
   const [endDate, setEndDate] = useState(defaults.endDate ?? '');
   const [state, formAction] = useActionState<ActionState, FormData>(async (previous, formData) => {
     const result = await saveAbsence(previous, formData);
     // Na het opslaan van een nieuwe afwezigheid: klaar voor de volgende.
     if (result.ok && !defaults.id) {
+      formRef.current?.reset();
       setStartDate('');
       setEndDate('');
     }
@@ -48,7 +51,7 @@ export function AbsenceForm({
   const errors = state.fieldErrors ?? {};
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form ref={formRef} action={formAction} onSubmit={submitKeepingValues(formAction)} className="space-y-4">
       {defaults.id ? <input type="hidden" name="id" value={defaults.id} /> : null}
       {state.error ? <Notice tone="error">{state.error}</Notice> : null}
       {state.ok && state.message ? (
