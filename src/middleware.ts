@@ -12,8 +12,12 @@ function isPublic(path: string): boolean {
 /**
  * Ververst bij elk verzoek de sessie (zodat je lang ingelogd blijft) en stuurt wie niet
  * is ingelogd naar /inloggen. De pagina's controleren daarna zelf nog een keer.
+ *
+ * Bewust middleware.ts (edge-runtime) en niet proxy.ts van Next.js 16: Netlify kan een
+ * proxy.ts (Node-runtime) nu niet verpakken. Zie opennextjs/opennextjs-netlify#3171, #3562
+ * en #3575. Zijn die opgelost, dan kan dit bestand terug naar proxy.ts met een export "proxy".
  */
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
