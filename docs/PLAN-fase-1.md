@@ -163,7 +163,7 @@ Dit volgt uit de spec of is gewoon handig. Zeg het als je iets anders wilt.
 | Invoercontrole | zod 4 |
 | Excel | read-excel-file 9 en write-excel-file 4 |
 | Tests | Vitest 5, en PGlite 0.5 (Postgres 18 in het geheugen) |
-| Lint | ESLint 10 met eslint-config-next |
+| Lint | ESLint 9 met eslint-config-next. ESLint 10 wordt nog niet ondersteund door de plugins van eslint-config-next. |
 | Hosting | Netlify op Node 22; Netlify herkent Next.js zelf |
 
 Ik gebruik geen UI-bibliotheek en geen datumbibliotheek. Een paar eigen componenten en eigen pure datumfuncties zijn kleiner, voorspelbaarder en makkelijk te testen.
@@ -190,7 +190,7 @@ Ik gebruik geen UI-bibliotheek en geen datumbibliotheek. Een paar eigen componen
 │   ├── setup/fase-1.sql          gegenereerde bundel om te plakken
 │   └── tests/                    PGlite: auth-mock, RLS, constraints, seed, bundel
 └── src/
-    ├── proxy.ts                  sessie verversen; niet ingelogd → /inloggen
+    ├── middleware.ts             sessie verversen; niet ingelogd → /inloggen (zie §16)
     ├── app/
     │   ├── layout.tsx, manifest.ts, robots.ts, globals.css
     │   ├── inloggen/             e-mailadres → code
@@ -347,16 +347,15 @@ Fase 2 voegt de tabel `substitutions` (invallen) toe.
 
 ```
 supabase/migrations/
-  20261001000100_extensions_and_helpers.sql   btree_gist, schema private, updated_at-trigger
-  20261001000200_groups_settings.sql          groups, settings, staffing_norms
-  20261001000300_employees.sql                employees, employee_accounts, counter_eligibility, hulpfuncties
-  20261001000400_recurring_shifts.sql
-  20261001000500_absences_closures.sql
-  20261001000600_calendar_feeds.sql
-  20261001000700_audit_log.sql                logboek, triggers, bewaartermijn
-  20261001000800_rpc.sql                      claim_account, apply_import
-  20261001000900_seed.sql
-supabase/setup/fase-1.sql                     alle migraties hierboven op volgorde, met uitleg bovenaan
+  20261001000100_foundation.sql          btree_gist, schema private, updated_at-trigger, groups, settings, staffing_norms
+  20261001000200_employees.sql           employees, employee_accounts, counter_eligibility, hulpfuncties
+  20261001000300_recurring_shifts.sql
+  20261001000400_absences_closures.sql
+  20261001000500_calendar_feeds.sql
+  20261001000600_audit_log.sql           logboek, triggers, bewaartermijn
+  20261001000700_rpc.sql                 claim_account, apply_import
+  20261001000800_seed.sql
+supabase/setup/fase-1.sql                alle migraties hierboven op volgorde, met uitleg bovenaan
 ```
 
 - Alles is herhaalbaar. Twee keer plakken geeft geen fouten en geen dubbele seed.
@@ -476,7 +475,7 @@ Alle schermen zijn mobile-first. Onderaan staat een tabbalk: Mijn rooster · Roo
   - We tonen altijd dezelfde melding: "Als dit adres bekend is, krijg je een code." Zo kan niemand uitproberen welke adressen bestaan.
 - **Lang ingelogd blijven**
   - De sessiecookie blijft 400 dagen geldig; dat is het maximum van de browser.
-  - `proxy.ts` ververst de sessie bij elk bezoek.
+  - `middleware.ts` ververst de sessie bij elk bezoek (zie §16).
   - In Supabase zet je geen sessielimiet aan; dat staat in de README.
 - **Account aanmaken** gaat via een server action, door een beheerder:
   1. de app slaat het e-mailadres op;
@@ -630,7 +629,7 @@ De tests maken hun eigen .xlsx-bestanden met write-excel-file. Er staan dus geen
 4. **Database:**
    - migraties, RLS, grants, seed, logboek en RPC's;
    - PGlite-tests en het bundelscript.
-5. **Inloggen:** Supabase-clients, proxy, inlogscherm en toegangscontrole.
+5. **Inloggen:** Supabase-clients, middleware, inlogscherm en toegangscontrole.
 6. **Schermen:** Mijn rooster en Vestigingsrooster.
 7. **Verlofoverzicht.**
 8. **Beheer, deel 1:** medewerkers, accounts en vaste diensten.
@@ -667,6 +666,7 @@ De pull request van fase 1 bevat:
 
 ## 16. Risico's en aandachtspunten
 - **Next.js 16 op Netlify.** Tijdens de bouw controleer ik of Netlify `proxy.ts` ondersteunt. Zo niet, dan gebruik ik de oudere `middleware.ts`. Aan de werking van de app verandert dat niets.
+  - *Uitkomst (1 oktober 2026):* Netlify kan een `proxy.ts` (Node-runtime) nu niet verpakken, met Turbopack noch met webpack. Zie de open issues #3171, #3562 en #3575 van `opennextjs/opennextjs-netlify`. De app gebruikt daarom `src/middleware.ts` op de edge-runtime. Next.js toont bij de build een waarschuwing dat `middleware` verouderd is; die is te verwachten. Zijn de issues opgelost, dan kan het bestand terug naar `proxy.ts`.
 - **Supabase gratis.**
   - De ingebouwde mail is alleen om te testen: weinig mails per uur, en alleen naar leden van je Supabase-team. Voor echte collega's heb je dus eigen SMTP nodig.
   - Een gratis project pauzeert na een week zonder gebruik. Met dagelijks gebruik en agendafeeds gebeurt dat niet.
