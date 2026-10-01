@@ -31,6 +31,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 | `npm run test` | Vitest: unit-tests en PGlite-databasetests |
 | `npm run build` | productiebuild; moet slagen zonder echte sleutels |
 | `npm run db:bundle` | bundelt de migraties tot `supabase/setup/fase-N.sql` |
+| `npm run icons` | tekent de app-iconen en de favicon opnieuw |
 
 ## Codeafspraken
 - Engels voor code, bestandsnamen, tabellen, kolommen en variabelen.
