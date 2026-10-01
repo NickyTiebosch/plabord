@@ -2,9 +2,11 @@
 
 De rooster- en verlofapp van het verhuurteam. Planbord vervangt de Excel: wie werkt wanneer en waar, wie is afwezig, en welke dagen zijn we dicht.
 
-De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md), het plan van fase 1 in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md) en de vaste afspraken voor de code in [`CLAUDE.md`](CLAUDE.md).
+De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md) en [`docs/PLAN-fase-2.md`](docs/PLAN-fase-2.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
 
-## Wat kan fase 1
+## Wat kan Planbord
+
+### Fase 1: de basis
 
 **Voor iedereen**
 - **Mijn rooster:** je eigen diensten, afwezigheid en sluitingsdagen.
@@ -22,6 +24,22 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md), het plan van fase 1 in [`do
 - Excel-import van medewerkers, vaste roosters en afwezigheid.
 - Logboek: wie wat wanneer wijzigde.
 
+### Fase 2: het brein
+
+**Voor iedereen**
+- **Rooster:** per vestiging en dagdeel de bezetting aan de balie, bijvoorbeeld *ochtend 1/2*. Rood betekent onder de norm. Invallers staan erbij als *ingeleend*. Een roosterwijziging voor één dag heet *gewijzigd*.
+- **Mijn rooster:** je ziet waar je invalt en wanneer je rooster voor één dag anders is.
+
+**Voor beheerders**
+- **Nog te regelen** op het overzicht: elk gat per vestiging en dagdeel.
+  - Je ziet de drie beste invallers, met de reden in gewone taal.
+  - Met **Inzetten** wijs je iemand toe. Planbord wijst nooit zelf iemand toe.
+  - Een gat kun je **negeren**. Het komt terug als het tekort groter wordt.
+- **Impactcheck:** bij nieuwe of gewijzigde afwezigheid zie je eerst welke gaten ontstaan en welke invallen vervallen. Opslaan mag altijd.
+- **Let op:** invallen die niet meer nodig zijn, of opnieuw geregeld moeten worden omdat de invaller zelf afwezig is. Ze blijven staan tot je op **Afgehandeld** klikt. Na een wijziging van een vaste dienst of sluitingsdag toont het overzicht welke invallen niet meer kloppen; met **Invallen bijwerken** pas je ze aan.
+- **Rooster voor één dag:** geen dienst, een andere dienst, of de dienst verplaatsen naar een andere dag. Klik in het rooster op een naam.
+- **Invallen:** de lijst van komende en recente invallen. **Intrekken** verwijdert niets: de inval krijgt de status *niet meer nodig*.
+
 ---
 
 ## Eenmalig: de app in de lucht zetten
@@ -37,6 +55,7 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
    - Het script nog een keer draaien kan geen kwaad: bestaande tabellen en gegevens blijven staan.
+4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), in een nieuwe query. Altijd na fase 1.
 
 ### Stap 2. Inloggen instellen
 
@@ -162,7 +181,7 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
 
 ## Privacy en beveiliging
 
-- Planbord bewaart alleen wat de planning nodig heeft: naam, werkmail, groep, rol, waar iemand mag invallen, vaste diensten en afwezigheid.
+- Planbord bewaart alleen wat de planning nodig heeft: naam, werkmail, groep, rol, waar iemand mag invallen, vaste diensten, roosterwijzigingen, afwezigheid en invallen.
 - Afwezigheid heeft geen reden en geen soort. Alles heet "Afwezig".
 - Een e-mailadres zien alleen beheerders en de medewerker zelf. Het staat nooit in roosters, feeds of het logboek.
 - Elke tabel is beveiligd met row level security. De rechten worden ook in de app zelf nog een keer gecontroleerd.
@@ -199,10 +218,14 @@ npm run dev                  # http://localhost:3000
   1. maak een nieuw bestand in `supabase/migrations/` (`YYYYMMDDHHMMSS_naam.sql`); pas een uitgeleverde migratie nooit meer aan;
   2. zet het in `supabase/setup/phases.json` bij de juiste fase;
   3. draai `npm run db:bundle`. Een test controleert of de bundel actueel is.
-- Alle rooster-, verlof- en sluitingsdaglogica staat in pure functies in `src/lib/engine/`, met tests ernaast.
+- Alle rooster-, verlof-, sluitingsdag- en vervangingslogica staat in pure functies in `src/lib/engine/`, met tests ernaast. Geen AI of taalmodel: dezelfde invoer geeft altijd dezelfde voorstellen.
 
 ### Bekende punten
 
 - **`middleware.ts` in plaats van `proxy.ts`.** Next.js 16 noemt `middleware` verouderd en toont daarover een waarschuwing bij de build. Die is te verwachten. Netlify kan een `proxy.ts` nu niet verpakken (opennextjs-netlify #3171, #3562 en #3575); zie §16 van het plan.
 - **Tijdvelden** tonen de tijd zoals het toestel is ingesteld. Op een Nederlands ingesteld toestel is dat 24-uurs.
-- **Supabase gratis** pauzeert een project na een week zonder gebruik. Met dagelijks gebruik en agendafeeds gebeurt dat niet.
+- **Supabase gratis:**
+  - pauzeert een project na een week zonder gebruik; met dagelijks gebruik en agendafeeds gebeurt dat niet;
+  - staat maximaal twee actieve gratis projecten per account toe; gepauzeerde projecten tellen niet mee;
+  - maakt geen back-ups.
+- **Supabase Pro** kost ongeveer $25 per maand per organisatie en maakt dagelijks een back-up die 7 dagen bewaard blijft. Voor een rooster waar het team op leunt, is dat het overwegen waard.
