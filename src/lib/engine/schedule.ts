@@ -13,7 +13,9 @@ import type {
   RecurringShift,
   Role,
   Settings,
+  ShiftOverride,
   ShiftTimes,
+  ShiftWeekday,
   TimeOfDay,
   Weekday,
 } from './types';
@@ -36,8 +38,10 @@ export interface ShiftEntry {
   groupId: string;
   role: Role;
   kind: EntryKind;
-  /** Id van de vaste dienst of van de inval. */
+  /** Id van de vaste dienst, de roosterwijziging of de inval. */
   sourceId: string;
+  /** De dienst van deze dag komt uit een roosterwijziging voor één dag (fase 2). */
+  changed: boolean;
   /** Geplande tijden, nog niet ingekort. */
   start: TimeOfDay;
   end: TimeOfDay;
@@ -164,6 +168,16 @@ function groupBy<T>(items: readonly T[], key: (item: T) => string): Map<string, 
   return map;
 }
 
+/** Iemand die volgens de vaste dienst zou werken, maar door een roosterwijziging die dag geen dienst heeft. */
+export interface DayOff {
+  date: IsoDate;
+  employeeId: string;
+  employeeName: string;
+  /** De groep van de vaste dienst die vervalt. */
+  groupId: string;
+  overrideId: string;
+}
+
 export interface ScheduleContext {
   readonly settings: Settings;
   readonly groupsById: ReadonlyMap<string, Group>;
@@ -172,6 +186,20 @@ export interface ScheduleContext {
   entriesOn(date: IsoDate): ShiftEntry[];
   absencesOn(employeeId: string, date: IsoDate): AbsenceMark[];
   closure(date: IsoDate, groupId: string): ClosureInfo;
+  /** De roosterwijziging van iemand op een datum, of `null`. */
+  overrideOn(employeeId: string, date: IsoDate): ShiftOverride | null;
+  /** Wie die dag door een roosterwijziging geen dienst heeft, terwijl de vaste dienst er wel een gaf. */
+  daysOffOn(date: IsoDate): DayOff[];
+}
+
+/** De dienst van één dag: uit de vaste dienst of uit een roosterwijziging. */
+interface DayShift {
+  sourceId: string;
+  groupId: string;
+  role: Role;
+  times: ShiftTimes;
+  updatedAt: string;
+  changed: boolean;
 }
 
 /** Bereidt de momentopname voor, zodat je daarna snel per datum kunt rekenen. */
@@ -188,6 +216,11 @@ export function createScheduleContext(snapshot: PlanningSnapshot): ScheduleConte
     (sub) => sub.date,
   );
   const resolveClosure = createClosureResolver(snapshot.closureOverrides);
+  const overridesByKey = new Map(
+    snapshot.shiftOverrides
+      .filter((override) => employeesById.has(override.employeeId))
+      .map((override) => [`${override.employeeId}|${override.date}`, override] as const),
+  );
 
   const groupOrder = (groupId: string) => groupsById.get(groupId)?.sortOrder ?? Number.MAX_SAFE_INTEGER;
   const compareEntries = (a: ShiftEntry, b: ShiftEntry) =>
@@ -210,11 +243,60 @@ export function createScheduleContext(snapshot: PlanningSnapshot): ScheduleConte
       .sort((a, b) => (a.absenceId < b.absenceId ? -1 : a.absenceId > b.absenceId ? 1 : 0));
   }
 
+  function overrideOn(employeeId: string, date: IsoDate): ShiftOverride | null {
+    return overridesByKey.get(`${employeeId}|${date}`) ?? null;
+  }
+
+  /** De dienst van die dag: een roosterwijziging gaat voor de vaste dienst. */
+  function dayShiftOf(employeeId: string, date: IsoDate): DayShift | null {
+    const override = overrideOn(employeeId, date);
+    if (override) {
+      if (override.kind === 'off' || !override.groupId || !override.role) return null;
+      const weekday = weekdayOf(date) as ShiftWeekday;
+      return {
+        sourceId: override.id,
+        groupId: override.groupId,
+        role: override.role,
+        times: effectiveShiftTimes({ startTime: override.startTime, endTime: override.endTime, weekday }, settings),
+        updatedAt: override.updatedAt,
+        changed: true,
+      };
+    }
+    const shift = findRecurringShift(shiftsByEmployee.get(employeeId) ?? [], date);
+    if (!shift) return null;
+    return {
+      sourceId: shift.id,
+      groupId: shift.groupId,
+      role: shift.role,
+      times: effectiveShiftTimes(shift, settings),
+      updatedAt: shift.updatedAt,
+      changed: false,
+    };
+  }
+
+  function daysOffOn(date: IsoDate): DayOff[] {
+    const result: DayOff[] = [];
+    for (const employee of employees) {
+      const override = overrideOn(employee.id, date);
+      if (override?.kind !== 'off') continue;
+      const shift = findRecurringShift(shiftsByEmployee.get(employee.id) ?? [], date);
+      if (!shift) continue;
+      result.push({ date, employeeId: employee.id, employeeName: employee.name, groupId: shift.groupId, overrideId: override.id });
+    }
+    return result.sort(
+      (a, b) =>
+        groupOrder(a.groupId) - groupOrder(b.groupId) ||
+        compareNames(a.employeeName, b.employeeName) ||
+        (a.employeeId < b.employeeId ? -1 : a.employeeId > b.employeeId ? 1 : 0),
+    );
+  }
+
   function makeEntry(input: {
     date: IsoDate;
     employee: Employee;
     kind: EntryKind;
     sourceId: string;
+    changed: boolean;
     groupId: string;
     role: Role;
     times: ShiftTimes;
@@ -238,6 +320,7 @@ export function createScheduleContext(snapshot: PlanningSnapshot): ScheduleConte
       role: input.role,
       kind: input.kind,
       sourceId: input.sourceId,
+      changed: input.changed,
       start: input.times.start,
       end: input.times.end,
       dayParts: input.dayParts,
@@ -262,30 +345,31 @@ export function createScheduleContext(snapshot: PlanningSnapshot): ScheduleConte
     const entries: ShiftEntry[] = [];
 
     for (const employee of employees) {
-      const shift = findRecurringShift(shiftsByEmployee.get(employee.id) ?? [], date);
+      const dayShift = dayShiftOf(employee.id, date);
       const ownSubstitutions = substitutions.filter((sub) => sub.employeeId === employee.id);
-      if (!shift && ownSubstitutions.length === 0) continue;
+      if (!dayShift && ownSubstitutions.length === 0) continue;
 
       const absences = absencesOn(employee.id, date);
       const absentParts = sortParts(absences.flatMap((absence) => dayPartsOfAbsence(absence.dayPart)));
-      const shiftTimes = shift ? effectiveShiftTimes(shift, settings) : standardShiftFor(settings, weekday);
+      const shiftTimes = dayShift ? dayShift.times : standardShiftFor(settings, weekday);
 
-      if (shift) {
+      if (dayShift) {
         entries.push(
           makeEntry({
             date,
             employee,
             kind: 'regular',
-            sourceId: shift.id,
-            groupId: shift.groupId,
-            role: shift.role,
+            sourceId: dayShift.sourceId,
+            changed: dayShift.changed,
+            groupId: dayShift.groupId,
+            role: dayShift.role,
             times: shiftTimes,
             dayParts: overlappedDayParts(shiftTimes, boundary),
             absences,
             absentParts,
             lentOutParts: sortParts(ownSubstitutions.flatMap((sub) => sub.dayParts)),
-            closure: resolveClosure(date, shift.groupId),
-            timestamps: [shift.updatedAt, ...ownSubstitutions.map((sub) => sub.updatedAt)],
+            closure: resolveClosure(date, dayShift.groupId),
+            timestamps: [dayShift.updatedAt, ...ownSubstitutions.map((sub) => sub.updatedAt)],
           }),
         );
       }
@@ -298,6 +382,7 @@ export function createScheduleContext(snapshot: PlanningSnapshot): ScheduleConte
             employee,
             kind: 'substitution',
             sourceId: sub.id,
+            changed: false,
             groupId: sub.groupId,
             role: 'counter',
             times: clipToDayParts(shiftTimes, dayParts, boundary) ?? shiftTimes,
@@ -306,7 +391,7 @@ export function createScheduleContext(snapshot: PlanningSnapshot): ScheduleConte
             absentParts,
             lentOutParts: [],
             closure: resolveClosure(date, sub.groupId),
-            timestamps: [sub.updatedAt, ...(shift ? [shift.updatedAt] : [])],
+            timestamps: [sub.updatedAt, ...(dayShift ? [dayShift.updatedAt] : [])],
           }),
         );
       }
@@ -322,6 +407,8 @@ export function createScheduleContext(snapshot: PlanningSnapshot): ScheduleConte
     entriesOn,
     absencesOn,
     closure: resolveClosure,
+    overrideOn,
+    daysOffOn,
   };
 }
 
@@ -381,6 +468,8 @@ export interface PersonalDay {
   entries: ShiftEntry[];
   /** Eigen afwezigheid op deze datum, ook op een dag zonder dienst. */
   absences: AbsenceMark[];
+  /** Door een roosterwijziging geen dienst, terwijl de vaste dienst er wel een gaf. */
+  dayOff: boolean;
 }
 
 /** Het rooster van één medewerker, per datum. */
@@ -396,5 +485,6 @@ export function computePersonalSchedule(
     date,
     entries: active ? context.entriesOn(date).filter((entry) => entry.employeeId === employeeId) : [],
     absences: active ? context.absencesOn(employeeId, date) : [],
+    dayOff: active && context.daysOffOn(date).some((dayOff) => dayOff.employeeId === employeeId),
   }));
 }

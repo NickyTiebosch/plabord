@@ -43,6 +43,8 @@ describe('persoonlijke feed', () => {
       groupId: 'eindhoven',
       dayParts: ['afternoon'],
       status: 'active',
+      handledAt: null,
+      createdAt: '2026-10-01T10:00:00.000Z',
       updatedAt: '2026-10-01T10:00:00.000Z',
     };
     const events = personalFeedEvents(teamSnapshot({ substitutions: [substitution] }), 'danique', '2026-10-14', '2026-10-14');

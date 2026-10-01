@@ -106,7 +106,45 @@ export interface Substitution {
   groupId: string;
   dayParts: readonly DayPart[];
   status: SubstitutionStatus;
+  /** Wanneer de beheerder een vervallen inval heeft afgehandeld (besluit V10). */
+  handledAt: string | null;
+  /** Wanneer de inval is toegewezen (ISO-timestamp). Bij "niet meer nodig" vervalt de laatste eerst. */
+  createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Roosterwijziging voor één dag (fase 2). `off` = geen dienst; `shift` = deze dienst,
+ * in plaats van de vaste dienst of erbij. De vaste diensten blijven ongemoeid.
+ */
+export interface ShiftOverride {
+  id: string;
+  employeeId: string;
+  date: IsoDate;
+  kind: 'off' | 'shift';
+  /** Alleen bij `shift`. */
+  groupId: string | null;
+  role: Role | null;
+  /** Leeg = standaardtijd. */
+  startTime: TimeOfDay | null;
+  endTime: TimeOfDay | null;
+  updatedAt: string;
+}
+
+/** Minimaal aantal mensen aan de balie per vestiging, weekdag en dagdeel. */
+export interface StaffingNorm {
+  groupId: string;
+  weekday: ShiftWeekday;
+  dayPart: DayPart;
+  minStaff: number;
+}
+
+/** Een genegeerd gat (fase 2): verborgen zolang het tekort niet groter is dan `shortage`. */
+export interface GapDismissal {
+  groupId: string;
+  date: IsoDate;
+  dayPart: DayPart;
+  shortage: number;
 }
 
 /** Momentopname van alle gegevens die de engine nodig heeft. */
@@ -118,4 +156,6 @@ export interface PlanningSnapshot {
   absences: readonly Absence[];
   closureOverrides: readonly ClosureOverride[];
   substitutions: readonly Substitution[];
+  shiftOverrides: readonly ShiftOverride[];
+  staffingNorms: readonly StaffingNorm[];
 }

@@ -8,17 +8,21 @@
  *   Gert (zonder vaste diensten).
  * - Backoffice: Danique. Overig: Petra, Hans, Iris en Wouter.
  */
-import type {
-  Absence,
-  ClosureOverride,
-  Employee,
-  Group,
-  PlanningSnapshot,
-  RecurringShift,
-  Role,
-  Settings,
-  ShiftWeekday,
-  Substitution,
+import {
+  DAY_PARTS,
+  type Absence,
+  type ClosureOverride,
+  type DayPart,
+  type Employee,
+  type Group,
+  type PlanningSnapshot,
+  type RecurringShift,
+  type Role,
+  type Settings,
+  type ShiftOverride,
+  type ShiftWeekday,
+  type StaffingNorm,
+  type Substitution,
 } from '../types';
 
 export const FIXTURE_TIMESTAMP = '2026-01-01T09:00:00.000Z';
@@ -153,6 +157,56 @@ export function absence(
   };
 }
 
+/** De norm uit de seed: 2 aan de balie per vestiging per dagdeel op ma–vr, 0 op zaterdag. */
+export const staffingNorms: StaffingNorm[] = groups
+  .filter((group) => group.hasCounter)
+  .flatMap((group) =>
+    ([1, 2, 3, 4, 5, 6] as ShiftWeekday[]).flatMap((weekday) =>
+      DAY_PARTS.map((dayPart) => ({ groupId: group.id, weekday, dayPart, minStaff: weekday === 6 ? 0 : 2 })),
+    ),
+  );
+
+export function substitution(
+  id: string,
+  employeeId: string,
+  date: string,
+  groupId: string,
+  dayParts: DayPart[] = ['morning', 'afternoon'],
+  options: Partial<Pick<Substitution, 'status' | 'handledAt' | 'createdAt' | 'updatedAt'>> = {},
+): Substitution {
+  return {
+    id,
+    employeeId,
+    date,
+    groupId,
+    dayParts,
+    status: options.status ?? 'active',
+    handledAt: options.handledAt ?? null,
+    createdAt: options.createdAt ?? FIXTURE_TIMESTAMP,
+    updatedAt: options.updatedAt ?? FIXTURE_TIMESTAMP,
+  };
+}
+
+/** Roosterwijziging voor één dag: `off`, of een dienst in een groep met een rol. */
+export function override(
+  id: string,
+  employeeId: string,
+  date: string,
+  change: { kind: 'off' } | { kind: 'shift'; groupId: string; role: Role; startTime?: string; endTime?: string },
+): ShiftOverride {
+  return {
+    id,
+    employeeId,
+    date,
+    kind: change.kind,
+    groupId: change.kind === 'shift' ? change.groupId : null,
+    role: change.kind === 'shift' ? change.role : null,
+    startTime: change.kind === 'shift' ? (change.startTime ?? null) : null,
+    endTime: change.kind === 'shift' ? (change.endTime ?? null) : null,
+    updatedAt: FIXTURE_TIMESTAMP,
+  };
+}
+
 export function teamSnapshot(
   extra: {
     absences?: Absence[];
@@ -160,6 +214,8 @@ export function teamSnapshot(
     substitutions?: Substitution[];
     recurringShifts?: RecurringShift[];
     employees?: Employee[];
+    shiftOverrides?: ShiftOverride[];
+    staffingNorms?: StaffingNorm[];
   } = {},
 ): PlanningSnapshot {
   return {
@@ -170,5 +226,7 @@ export function teamSnapshot(
     absences: extra.absences ?? [],
     closureOverrides: extra.closureOverrides ?? [],
     substitutions: extra.substitutions ?? [],
+    shiftOverrides: extra.shiftOverrides ?? [],
+    staffingNorms: extra.staffingNorms ?? staffingNorms,
   };
 }

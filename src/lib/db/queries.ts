@@ -64,5 +64,7 @@ export async function loadPlanningSnapshot(
     absences: must(absences, 'de afwezigheid').map(mapAbsence),
     closureOverrides: must(closures, 'de sluitingsdagen').map(mapClosure),
     substitutions: [],
+    shiftOverrides: [],
+    staffingNorms: [],
   };
 }
