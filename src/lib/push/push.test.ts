@@ -196,3 +196,43 @@ describe('push: de tekst (V26)', () => {
     expect(push('day_changed', 'sanne', dates).body.length).toBeLessThanOrEqual(180);
   });
 });
+
+describe('push: het verzoek aan de pushdienst', () => {
+  it('heeft de headers van RFC 8030 en een inhoud die alleen het toestel kan lezen', async () => {
+    const { buildPushRequest } = await import('./request');
+    const server = createECDH('prime256v1');
+    server.generateKeys();
+    const keys: VapidKeys = {
+      publicKey: toBase64url(server.getPublicKey()),
+      privateKey: toBase64url(server.getPrivateKey()),
+      subject: 'mailto:planbord@voorbeeld.nl',
+    };
+    const device = createECDH('prime256v1');
+    device.generateKeys();
+    const authSecret = randomBytes(16);
+    const content = { title: 'Planbord', body: 'Je inval op wo 14 okt gaat niet door', url: '/', tag: 'substitution_cancelled-2026-10-14' };
+    const request = buildPushRequest(
+      { endpoint: 'https://web.push.apple.com/abc', p256dh: toBase64url(device.getPublicKey()), auth: toBase64url(authSecret) },
+      content,
+      keys,
+      new Date('2026-10-14T12:00:00Z'),
+    );
+    expect(request.url).toBe('https://web.push.apple.com/abc');
+    expect(request.headers).toMatchObject({
+      'Content-Encoding': 'aes128gcm',
+      'Content-Type': 'application/octet-stream',
+      TTL: '86400',
+      Urgency: 'normal',
+    });
+    expect(request.headers.Authorization).toMatch(/^vapid t=[\w-]+\.[\w-]+\.[\w-]+, k=[\w-]+$/);
+    const claims = JSON.parse(fromBase64url(request.headers.Authorization?.split('.')[1] ?? '').toString());
+    expect(claims.aud).toBe('https://web.push.apple.com');
+    // In de inhoud staat de tekst niet leesbaar.
+    expect(request.body.toString('latin1')).not.toContain('gaat niet door');
+  });
+
+  it('bewaart een testmelding maar kort', async () => {
+    const { pushTtl } = await import('./request');
+    expect(pushTtl({ title: 'Planbord', body: '', url: '/', tag: 'test-test' })).toBe(600);
+  });
+});
