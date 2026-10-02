@@ -10,6 +10,8 @@ import type { Json } from '@/lib/db/database.types';
 import { mapAbsence, mapCurrentEmployees, mapRecurringShift } from '@/lib/db/mappers';
 import { loadGroups, loadSettings, must } from '@/lib/db/queries';
 import { reviewAfterChange } from '@/lib/db/review';
+import { mailAfterAction } from '@/lib/mail/after-action';
+import { MAIL_OUTCOME_MESSAGES } from '@/lib/mail/outcome';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { changedDates } from '@/lib/engine/impact';
 import { MAX_FILE_BYTES } from '@/lib/import/columns';
@@ -119,6 +121,7 @@ export async function importAction(previous: ImportState, formData: FormData): P
   const today = todayInAmsterdam(new Date());
   const ranges = (plan.payload.absences ?? []).map((absence) => ({ startDate: absence.start_date, endDate: absence.end_date }));
   const review = await reviewAfterChange(supabase, changedDates(ranges, today), today);
+  const mail = await mailAfterAction(supabase, review.notices);
 
   revalidatePath('/', 'layout');
   const summary = preview.summary;
@@ -131,7 +134,9 @@ export async function importAction(previous: ImportState, formData: FormData): P
       absences: summary.absences.create + summary.absences.update,
       accountsCreated,
       accountErrors,
-      reviewNote: review.error ?? reviewSummary(review.changes),
+      reviewNote: [review.error ?? reviewSummary(review.changes), mail ? MAIL_OUTCOME_MESSAGES[mail].text : '']
+        .filter(Boolean)
+        .join(' '),
     },
   };
 }

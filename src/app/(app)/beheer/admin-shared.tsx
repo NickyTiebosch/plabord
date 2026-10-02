@@ -1,6 +1,7 @@
 import { Notice } from '@/components/ui';
 import type { Employee, Group } from '@/lib/engine/types';
 import { compareByNameThenId, compareGroups } from '@/lib/engine/sort';
+import { isMailOutcome, MAIL_OUTCOME_MESSAGES } from '@/lib/mail/outcome';
 import type { EmployeeOption } from './afwezigheid/absence-form';
 
 const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: string }> = {
@@ -19,7 +20,7 @@ const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: st
   // Fase 2: invallen, gaten en roosterwijzigingen.
   ingezet: {
     tone: 'success',
-    text: 'Inval ingezet. Hij staat nu in beide roosters en in de agenda van de invaller. Laat het de invaller ook even weten.',
+    text: 'Inval ingezet. Hij staat nu in beide roosters en in de agenda van de invaller.',
   },
   'inval-ongeldig': { tone: 'error', text: 'Dat ging niet: de gegevens klopten niet. Probeer het opnieuw.' },
   'inval-verleden': { tone: 'error', text: 'Een inval in het verleden kan niet meer.' },
@@ -33,7 +34,7 @@ const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: st
   'negeren-mislukt': { tone: 'error', text: 'Negeren is niet gelukt. Probeer het opnieuw.' },
   teruggezet: { tone: 'success', text: 'Het gat staat weer bij Nog te regelen.' },
   afgehandeld: { tone: 'success', text: 'Afgehandeld.' },
-  ingetrokken: { tone: 'success', text: 'Inval ingetrokken. Laat het de invaller weten.' },
+  ingetrokken: { tone: 'success', text: 'Inval ingetrokken.' },
   bijgewerkt: { tone: 'success', text: 'Invallen bijgewerkt.' },
   'bijwerken-mislukt': { tone: 'error', text: 'Bijwerken is niet gelukt. Probeer het opnieuw.' },
   gewijzigd: { tone: 'success', text: 'Rooster voor deze dag aangepast.' },
@@ -50,14 +51,17 @@ const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: st
   },
 };
 
-/** Korte melding na een actie, via ?melding=… in de URL. */
-export function Flash({ code }: { code?: string }) {
+/** Korte melding na een actie, via ?melding=… in de URL, en (fase 3) hoe het met de mails ging via ?mail=…. */
+export function Flash({ code, mail }: { code?: string; mail?: string }) {
   const message = code ? MESSAGES[code] : undefined;
-  return message ? (
-    <Notice tone={message.tone} className="mb-4">
-      {message.text}
-    </Notice>
-  ) : null;
+  const mailMessage = isMailOutcome(mail) ? MAIL_OUTCOME_MESSAGES[mail] : undefined;
+  if (!message && !mailMessage) return null;
+  return (
+    <div className="mb-4 space-y-2">
+      {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+      {mailMessage ? <Notice tone={mailMessage.tone}>{mailMessage.text}</Notice> : null}
+    </div>
+  );
 }
 
 /** Actieve medewerkers voor een keuzelijst, per groep en op naam. */

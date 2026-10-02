@@ -60,9 +60,9 @@ export default async function EmployeeDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ melding?: string }>;
+  searchParams: Promise<{ melding?: string; mail?: string }>;
 }) {
-  const [{ id }, { melding }] = await Promise.all([params, searchParams]);
+  const [{ id }, { melding, mail }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
   const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
@@ -100,7 +100,7 @@ export default async function EmployeeDetailPage({
           </Link>
         }
       />
-      <Flash code={melding} />
+      <Flash code={melding} mail={mail} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">

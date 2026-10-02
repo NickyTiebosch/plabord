@@ -1,4 +1,4 @@
-import { attentionItems, buildGapViews, planningWindow, warningTexts } from '../admin/planning';
+import { attentionItems, buildGapViews, planningWindow, warningTexts, type AttentionMailState } from '../admin/planning';
 import { eachDay } from '../engine/dates';
 import { reviewSubstitutions } from '../engine/review';
 import type { Employee, IsoDate } from '../engine/types';
@@ -61,13 +61,51 @@ export async function loadPlanningOverview(client: DbClient, today: IsoDate) {
   const names = new Map(snapshot.employees.map((employee) => [employee.id, employee.name]));
   const groupNames = new Map(snapshot.groups.map((group) => [group.id, group.name]));
   const { gaps, ignored } = buildGapViews(snapshot, window, dismissals);
+  const mailStates = await loadCancellationMailStates(client, unhandled.map((sub) => sub.employeeId));
   return {
     window,
     snapshot,
     dismissals,
     gaps,
     ignored,
-    attention: attentionItems(unhandled, names, groupNames),
+    attention: attentionItems(unhandled, names, groupNames, (employeeId, date) => mailStates.get(`${employeeId}|${date}`) ?? null),
     warnings: warningTexts(reviewSubstitutions(snapshot, eachDay(window.from, window.to), today), names, groupNames),
   };
+}
+
+/**
+ * Per invaller en dag: hoe het staat met de laatste mail over een vervallen inval (fase 3, V19).
+ * Een verstuurde mail telt niet: die inval is dan al afgehandeld.
+ */
+async function loadCancellationMailStates(client: DbClient, employeeIds: readonly string[]): Promise<Map<string, AttentionMailState>> {
+  const states = new Map<string, AttentionMailState>();
+  const ids = [...new Set(employeeIds)];
+  if (ids.length === 0) return states;
+  const rows = must(
+    await client
+      .from('mail_queue')
+      .select('employee_id, dates, status, last_error, created_at')
+      .eq('kind', 'substitution_cancelled')
+      .in('employee_id', ids)
+      .order('created_at'),
+    'de mails',
+  );
+  for (const row of rows) {
+    const state: AttentionMailState | null =
+      row.status === 'pending'
+        ? 'pending'
+        : row.status === 'failed'
+          ? 'failed'
+          : row.status === 'skipped'
+            ? row.last_error === 'mails uit'
+              ? 'off'
+              : 'no-address'
+            : null;
+    for (const date of row.dates) {
+      // De nieuwste mail per dag telt; een verstuurde wist de oude stand.
+      if (state) states.set(`${row.employee_id}|${date}`, state);
+      else states.delete(`${row.employee_id}|${date}`);
+    }
+  }
+  return states;
 }

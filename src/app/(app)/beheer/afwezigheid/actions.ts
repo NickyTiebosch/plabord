@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { dbErrorMessage } from '@/lib/admin/errors';
 import { isUuid, parseAbsenceForm, type ActionState } from '@/lib/admin/forms';
-import { impactLines, reviewSummary } from '@/lib/admin/planning';
+import { impactLines, reviewSummary, withNotice } from '@/lib/admin/planning';
 import { requireAdmin } from '@/lib/auth/session';
 import { mapAbsence } from '@/lib/db/mappers';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
@@ -13,6 +13,8 @@ import { todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDateRange } from '@/lib/engine/format';
 import { absenceImpact, changedDates } from '@/lib/engine/impact';
 import type { Absence } from '@/lib/engine/types';
+import { mailAfterAction } from '@/lib/mail/after-action';
+import { MAIL_OUTCOME_MESSAGES } from '@/lib/mail/outcome';
 
 /** De melding na het opslaan, met de uitkomst van de controle op invallen. */
 function noticeCode(review: { changes: unknown[]; error: string | null }, fallback: string): string {
@@ -86,14 +88,17 @@ export async function saveAbsence(_previous: ActionState, formData: FormData): P
     .gte('end_date', input.startDate)
     .neq('id', saved.data.id);
   const other = overlapping.data?.[0];
-  // Achterhaalde invallen (besluit V10): niet meer nodig of opnieuw regelen.
+  // Achterhaalde invallen (besluit V10): niet meer nodig of opnieuw regelen. De invallers krijgen
+  // een mail (fase 3, V14); wie afwezig is zelf niet: dat vraag je aan in MyHR.
   const review = await reviewAfterChange(supabase, dates, today);
+  const mail = await mailAfterAction(supabase, review.notices);
   revalidatePath('/', 'layout');
 
-  if (id) redirect(`/beheer/afwezigheid?melding=${noticeCode(review, 'opgeslagen')}`);
+  if (id) redirect(withNotice('/beheer/afwezigheid', noticeCode(review, 'opgeslagen'), mail));
   const notes = [
     other ? `Let op: dit overlapt met een andere afwezigheid (${formatDateRange(other.start_date, other.end_date)}).` : null,
     review.error ?? (reviewSummary(review.changes) || null),
+    mail ? MAIL_OUTCOME_MESSAGES[mail].text : null,
   ].filter(Boolean);
   return { ok: true, message: notes.length > 0 ? `Opgeslagen. ${notes.join(' ')}` : 'Opgeslagen.' };
 }
@@ -115,7 +120,8 @@ export async function deleteAbsence(formData: FormData): Promise<void> {
   const today = todayInAmsterdam(new Date());
   const range = current.data ? { startDate: current.data.start_date, endDate: current.data.end_date } : null;
   const review = await reviewAfterChange(supabase, changedDates([range], today), today);
+  const mail = await mailAfterAction(supabase, review.notices);
   revalidatePath('/', 'layout');
   const code = noticeCode(review, 'verwijderd');
-  if (formData.get('terug') === 'lijst' || code !== 'verwijderd') redirect(`/beheer/afwezigheid?melding=${code}`);
+  if (formData.get('terug') === 'lijst' || code !== 'verwijderd' || mail) redirect(withNotice('/beheer/afwezigheid', code, mail));
 }

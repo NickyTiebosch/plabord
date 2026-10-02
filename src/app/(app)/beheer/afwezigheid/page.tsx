@@ -52,7 +52,7 @@ function AbsenceRow({ absence, name }: { absence: Absence; name: string }) {
 export default async function AbsenceAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ medewerker?: string; melding?: string }>;
+  searchParams: Promise<{ medewerker?: string; melding?: string; mail?: string }>;
 }) {
   const params = await searchParams;
   const { supabase } = await requireAdmin();
@@ -76,7 +76,7 @@ export default async function AbsenceAdminPage({
   return (
     <>
       <PageHeader title="Afwezigheid" subtitle="Invoeren, wijzigen en goedkeuren. Geen reden of soort: alles heet “Afwezig”." />
-      <Flash code={params.melding} />
+      <Flash code={params.melding} mail={params.mail} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
         <Card className="h-fit p-4">
           <SectionTitle className="mb-3">Nieuwe afwezigheid</SectionTitle>

@@ -96,6 +96,42 @@ describe('Let op', () => {
     ]);
   });
 
+  it('zegt erbij als de mail aan de invaller niet is verstuurd (fase 3, V19)', () => {
+    const states = new Map([
+      ['danique|2026-10-12', 'failed' as const],
+      ['hans|2026-10-12', 'no-address' as const],
+    ]);
+    const items = attentionItems(
+      [
+        substitution('s1', 'danique', MON, 'eindhoven', ['morning', 'afternoon'], { status: 'not_needed' }),
+        substitution('s2', 'hans', MON, 'eindhoven', ['afternoon'], { status: 'not_needed' }),
+      ],
+      names,
+      groupNames,
+      (employeeId, date) => states.get(`${employeeId}|${date}`) ?? null,
+    );
+    expect(items.map((item) => item.text)).toEqual([
+      'Niet meer nodig: Danique (Eindhoven, ma 12 okt, ochtend en middag). De mail aan de invaller is niet gelukt; laat het hem zelf weten.',
+      'Niet meer nodig: Hans (Eindhoven, ma 12 okt, middag). De invaller heeft geen werkmail; laat het hem zelf weten.',
+    ]);
+    expect(
+      attentionItems(
+        [substitution('s1', 'danique', MON, 'eindhoven', ['morning'], { status: 'not_needed' })],
+        names,
+        groupNames,
+        () => 'off',
+      )[0]?.text,
+    ).toBe('Niet meer nodig: Danique (Eindhoven, ma 12 okt, ochtend). Mails staan uit; laat het de invaller weten.');
+    expect(
+      attentionItems(
+        [substitution('s1', 'danique', MON, 'eindhoven', ['morning'], { status: 'not_needed' })],
+        names,
+        groupNames,
+        () => 'pending',
+      )[0]?.text,
+    ).toBe('Niet meer nodig: Danique (Eindhoven, ma 12 okt, ochtend). De mail aan de invaller wordt nog verstuurd.');
+  });
+
   it('beschrijft invallen die niet meer kloppen', () => {
     expect(
       warningTexts(
@@ -149,6 +185,11 @@ describe('terugweg na een actie', () => {
   it('zet een melding in de URL', () => {
     expect(withNotice('/beheer', 'ingezet')).toBe('/beheer?melding=ingezet');
     expect(withNotice('/rooster/breda?week=2026-W42&melding=oud', 'ingezet')).toBe('/rooster/breda?week=2026-W42&melding=ingezet');
+  });
+
+  it('zet ook de uitkomst van de mails in de URL, en haalt een oude weg', () => {
+    expect(withNotice('/beheer', 'ingezet', 'verstuurd')).toBe('/beheer?melding=ingezet&mail=verstuurd');
+    expect(withNotice('/beheer?mail=mislukt', 'ingezet', null)).toBe('/beheer?melding=ingezet');
   });
 });
 

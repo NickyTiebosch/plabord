@@ -7,8 +7,10 @@ import {
   substitution,
   teamSnapshot,
 } from '../engine/__fixtures__/team';
+import { reviewNotices } from '../db/review';
 import { composeMail, escapeHtml, formatDateList, personalDaysFor } from './messages';
 import { cancelledSubstitutionNotices, mergeNotices } from './notices';
+import { isMailOutcome, mailOutcome, NO_MAILS } from './outcome';
 import { MAX_ATTEMPTS, queueCleanupBefore, reminderDateAt, reminderTargets, shouldRetry } from './reminders';
 
 const WED = '2026-10-14';
@@ -268,5 +270,40 @@ describe('mails: opnieuw proberen en opruimen', () => {
 
   it('ruimt regels op die ouder zijn dan 90 dagen', () => {
     expect(queueCleanupBefore(new Date('2026-10-14T12:00:00Z'))).toBe('2026-07-16T12:00:00.000Z');
+  });
+});
+
+describe('mails: de melding na een actie', () => {
+  it('zegt in één woord hoe het met de mails ging', () => {
+    expect(mailOutcome(NO_MAILS)).toBeNull();
+    expect(mailOutcome({ ...NO_MAILS, sent: 2 })).toBe('verstuurd');
+    expect(mailOutcome({ ...NO_MAILS, failed: 1 })).toBe('mislukt');
+    expect(mailOutcome({ ...NO_MAILS, disabled: 3 })).toBe('uit');
+    expect(mailOutcome({ ...NO_MAILS, noAddress: 1 })).toBe('geen-adres');
+    expect(mailOutcome({ ...NO_MAILS, sent: 1, failed: 1 })).toBe('deels');
+    expect(mailOutcome({ ...NO_MAILS, sent: 1, noAddress: 1 })).toBe('deels');
+  });
+
+  it('herkent alleen bekende codes uit de URL', () => {
+    expect(isMailOutcome('verstuurd')).toBe(true);
+    expect(isMailOutcome('toString')).toBe(false);
+    expect(isMailOutcome(undefined)).toBe(false);
+  });
+});
+
+describe('mails: vervallen invallen na de controle', () => {
+  const sub = substitution('s1', 'danique', WED, 'eindhoven', ['afternoon']);
+  const change = { substitutionId: 's1', employeeId: 'danique', date: WED, groupId: 'eindhoven', reason: '' };
+
+  it('mailt de invaller, ook als hij alleen in een ander dagdeel afwezig is', () => {
+    const snapshot = teamSnapshot({ substitutions: [sub], absences: [absence('a1', 'danique', WED, WED, { dayPart: 'morning' })] });
+    expect(reviewNotices(snapshot, [{ ...change, status: 'not_needed' }])).toEqual([
+      { employeeId: 'danique', kind: 'substitution_cancelled', dates: [WED] },
+    ]);
+  });
+
+  it('mailt niet als hij afwezig is in een dagdeel van de inval', () => {
+    const snapshot = teamSnapshot({ substitutions: [sub], absences: [absence('a1', 'danique', WED, WED, { dayPart: 'afternoon' })] });
+    expect(reviewNotices(snapshot, [{ ...change, status: 'reschedule' }])).toEqual([]);
   });
 });

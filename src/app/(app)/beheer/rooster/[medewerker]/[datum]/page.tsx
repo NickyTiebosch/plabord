@@ -24,9 +24,9 @@ export default async function DayChangePage({
   searchParams,
 }: {
   params: Promise<{ medewerker: string; datum: string }>;
-  searchParams: Promise<{ terug?: string; melding?: string }>;
+  searchParams: Promise<{ terug?: string; melding?: string; mail?: string }>;
 }) {
-  const [{ medewerker, datum }, { terug, melding }] = await Promise.all([params, searchParams]);
+  const [{ medewerker, datum }, { terug, melding, mail }] = await Promise.all([params, searchParams]);
   if (!isUuid(medewerker) || !isIsoDate(datum)) notFound();
   const { supabase } = await requireAdmin();
   const snapshot = await loadPlanningSnapshot(supabase, { from: datum, to: datum });
@@ -67,7 +67,7 @@ export default async function DayChangePage({
           </Link>
         }
       />
-      <Flash code={melding} />
+      <Flash code={melding} mail={mail} />
 
       <Card className="mb-6 p-4">
         <SectionTitle className="mb-2">Deze dag</SectionTitle>
