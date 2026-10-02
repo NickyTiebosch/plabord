@@ -54,8 +54,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Niet voor statische bestanden, iconen, het manifest en de agendafeeds (die hebben een eigen token).
+  // Niet voor statische bestanden, iconen, het manifest, de agendafeeds (die hebben een eigen token)
+  // en de geplande taak (die heeft CRON_SECRET).
   matcher: [
-    '/((?!_next/static|_next/image|feed/|icons/|favicon.ico|icon|apple-icon|manifest.webmanifest|robots.txt).*)',
+    '/((?!_next/static|_next/image|feed/|taken/|icons/|favicon.ico|icon|apple-icon|manifest.webmanifest|robots.txt).*)',
   ],
 };

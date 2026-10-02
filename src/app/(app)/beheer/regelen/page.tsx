@@ -10,8 +10,8 @@ import { GapCard } from './gap-card';
 
 export const metadata: Metadata = { title: 'Nog te regelen' };
 
-export default async function GapsPage({ searchParams }: { searchParams: Promise<{ melding?: string }> }) {
-  const { melding } = await searchParams;
+export default async function GapsPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
+  const { melding, mail } = await searchParams;
   const { supabase } = await requireAdmin();
   const planning = await loadPlanningOverview(supabase, todayInAmsterdam(new Date()));
 
@@ -34,7 +34,7 @@ export default async function GapsPage({ searchParams }: { searchParams: Promise
           </>
         }
       />
-      <Flash code={melding} />
+      <Flash code={melding} mail={mail} />
       {planning.gaps.length === 0 ? (
         <EmptyState title="Niets te regelen">Alle vestigingen zitten op de norm.</EmptyState>
       ) : (

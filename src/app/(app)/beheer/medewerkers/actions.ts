@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { changeAccountEmail, ensureAccount, setAccountBlocked } from '@/lib/admin/accounts';
+import { changeAccountEmail, deleteAccount, ensureAccount, setAccountBlocked } from '@/lib/admin/accounts';
+import { confirmsName, deletionBlocker } from '@/lib/admin/deletion';
 import { dbErrorMessage } from '@/lib/admin/errors';
 import {
   isUuid,
@@ -252,4 +253,31 @@ export async function deleteShift(formData: FormData): Promise<void> {
   await supabase.from('recurring_shifts').delete().eq('id', id).eq('employee_id', employeeId);
   revalidatePath('/', 'layout');
   redirect(`/beheer/medewerkers/${employeeId}?melding=verwijderd`);
+}
+
+/**
+ * Een medewerker volledig verwijderen (fase 3, V21): alleen een inactieve medewerker, niet jezelf,
+ * en alleen als de naam goed is overgetypt. Eerst het inlogaccount (secret key), dan de rest in één
+ * transactie via delete_employee, die de rechten nog een keer controleert en het logboek bijwerkt.
+ */
+export async function deleteEmployeeCompletely(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase, employeeId: viewerId } = await requireAdmin();
+  const id = String(formData.get('id') ?? '');
+  if (!isUuid(id)) return { error: 'Deze medewerker bestaat niet meer.' };
+  const target = await supabase.from('employees').select('id, name, is_active').eq('id', id).maybeSingle();
+  if (!target.data) return { error: 'Deze medewerker bestaat niet meer.' };
+  const blocker = deletionBlocker({ id, isActive: target.data.is_active }, viewerId);
+  if (blocker) return { error: blocker };
+  if (!confirmsName(formData.get('naam'), target.data.name)) {
+    return { error: 'Typ de naam precies over om te bevestigen.', fieldErrors: { naam: 'De naam klopt niet.' } };
+  }
+  const account = await supabase.from('employee_accounts').select('user_id').eq('employee_id', id).maybeSingle();
+  if (account.data?.user_id) {
+    const removed = await deleteAccount(account.data.user_id);
+    if (!removed.ok) return { error: removed.error };
+  }
+  const deleted = await supabase.rpc('delete_employee', { p_employee_id: id });
+  if (deleted.error) return { error: dbErrorMessage(deleted.error) };
+  revalidatePath('/', 'layout');
+  redirect('/beheer/medewerkers?melding=volledig-verwijderd');
 }

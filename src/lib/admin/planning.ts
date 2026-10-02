@@ -146,11 +146,25 @@ export interface AttentionItem {
   text: string;
 }
 
+/**
+ * Hoe het staat met de mail aan de invaller over een vervallen inval (fase 3). Is hij verstuurd,
+ * dan is de inval vanzelf afgehandeld (V19) en staat hij hier niet meer.
+ */
+export type AttentionMailState = 'pending' | 'failed' | 'off' | 'no-address';
+
+const ATTENTION_MAIL_NOTES: Record<AttentionMailState, string> = {
+  pending: 'De mail aan de invaller wordt nog verstuurd.',
+  failed: 'De mail aan de invaller is niet gelukt; laat het hem zelf weten.',
+  off: 'Mails staan uit; laat het de invaller weten.',
+  'no-address': 'De invaller heeft geen werkmail; laat het hem zelf weten.',
+};
+
 /** Vervallen invallen die de beheerder nog moet afhandelen (besluit V10). */
 export function attentionItems(
   substitutions: readonly Substitution[],
   names: ReadonlyMap<string, string>,
   groupNames: ReadonlyMap<string, string>,
+  mailState: (employeeId: string, date: IsoDate) => AttentionMailState | null = () => null,
 ): AttentionItem[] {
   return substitutions
     .filter((sub): sub is Substitution & { status: 'not_needed' | 'reschedule' } => sub.status !== 'active' && !sub.handledAt)
@@ -158,14 +172,16 @@ export function attentionItems(
     .map((sub) => {
       const name = names.get(sub.employeeId) ?? 'Een collega';
       const where = `${groupNames.get(sub.groupId) ?? sub.groupId}, ${formatDayShort(sub.date)}, ${dayPartsLabel(sub.dayParts)}`;
+      const state = mailState(sub.employeeId, sub.date);
+      const note = state ? ` ${ATTENTION_MAIL_NOTES[state]}` : sub.status === 'not_needed' ? ' Laat het de invaller weten.' : '';
       return {
         substitutionId: sub.id,
         status: sub.status,
         date: sub.date,
         text:
           sub.status === 'not_needed'
-            ? `Niet meer nodig: ${name} (${where}). Laat het de invaller weten.`
-            : `Opnieuw regelen: ${name} kan niet invallen (${where}). Het gat staat weer bij Nog te regelen.`,
+            ? `Niet meer nodig: ${name} (${where}).${note}`
+            : `Opnieuw regelen: ${name} kan niet invallen (${where}). Het gat staat weer bij Nog te regelen.${note}`,
       };
     });
 }
@@ -227,11 +243,16 @@ export function safeReturnPath(value: unknown, fallback: string): string {
   return /^\/(beheer|rooster)(\/[A-Za-z0-9_\-/]*)?(\?[A-Za-z0-9_=&\-%]*)?$/.test(value) && !value.includes('//') ? value : fallback;
 }
 
-/** Zet `?melding=…` op een pad (vervangt een bestaande melding). */
-export function withNotice(path: string, code: string): string {
+/**
+ * Zet `?melding=…` op een pad (vervangt een bestaande melding), en met fase 3 ook `?mail=…`:
+ * hoe het met de mails ging. Zonder mail verdwijnt een oude `mail` van het pad.
+ */
+export function withNotice(path: string, code: string, mail?: string | null): string {
   const [base = path, query = ''] = path.split('?');
   const params = new URLSearchParams(query);
   params.set('melding', code);
+  if (mail) params.set('mail', mail);
+  else params.delete('mail');
   return `${base}?${params.toString()}`;
 }
 

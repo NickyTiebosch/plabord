@@ -10,17 +10,31 @@ import { loadGroups } from '@/lib/db/queries';
 import { reviewAfterChange } from '@/lib/db/review';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import type { IsoDate } from '@/lib/engine/types';
+import { mailAfterAction } from '@/lib/mail/after-action';
 
 function returnPath(formData: FormData): string {
   return safeReturnPath(formData.get('terug'), '/beheer');
 }
 
-/** Na een roosterwijziging: invallen op die dag(en) controleren (besluit V10), dan terug met een melding. */
-async function finish(supabase: Viewer['supabase'], formData: FormData, dates: IsoDate[], code: string): Promise<never> {
+/**
+ * Na een roosterwijziging: invallen op die dag(en) controleren (besluit V10), de mails versturen
+ * (fase 3, V14: aan de medewerker zelf, en aan invallers van wie de inval vervalt), en dan terug
+ * met een melding.
+ */
+async function finish(
+  supabase: Viewer['supabase'],
+  formData: FormData,
+  employeeId: string,
+  dates: IsoDate[],
+  code: string,
+): Promise<never> {
   const today = todayInAmsterdam(new Date());
   const review = await reviewAfterChange(supabase, dates, today);
+  const mail = await mailAfterAction(supabase, [{ employeeId, kind: 'day_changed', dates }, ...review.notices]);
   revalidatePath('/', 'layout');
-  redirect(withNotice(returnPath(formData), review.error ? 'controle-mislukt' : review.changes.length > 0 ? 'invallen-vervallen' : code));
+  redirect(
+    withNotice(returnPath(formData), review.error ? 'controle-mislukt' : review.changes.length > 0 ? 'invallen-vervallen' : code, mail),
+  );
 }
 
 async function groupExists(supabase: Viewer['supabase'], groupId: string): Promise<boolean> {
@@ -43,7 +57,7 @@ export async function setDayOff(formData: FormData): Promise<void> {
     p_end_time: null,
   });
   if (saved.error) redirect(withNotice(returnPath(formData), 'wijziging-mislukt'));
-  await finish(supabase, formData, [date], 'gewijzigd');
+  await finish(supabase, formData, employeeId, [date], 'gewijzigd');
 }
 
 /** Een andere dienst deze dag: andere groep, rol of tijden. Ook om een dienst toe te voegen. */
@@ -63,7 +77,7 @@ export async function setDayShift(_previous: ActionState, formData: FormData): P
     p_end_time: input.endTime,
   });
   if (saved.error) return { error: dbErrorMessage(saved.error) };
-  return finish(supabase, formData, [input.date], 'gewijzigd');
+  return finish(supabase, formData, input.employeeId, [input.date], 'gewijzigd');
 }
 
 /** Verplaatsen naar een andere dag (besluit V6): geen dienst op de oude dag, een dienst op de nieuwe. */
@@ -91,7 +105,7 @@ export async function moveDayShift(_previous: ActionState, formData: FormData): 
     p_end_time: input.endTime,
   });
   if (saved.error) return { error: dbErrorMessage(saved.error) };
-  return finish(supabase, formData, [from.data.date, input.date], 'verplaatst');
+  return finish(supabase, formData, input.employeeId, [from.data.date, input.date], 'verplaatst');
 }
 
 /** Terug naar de vaste dienst: de wijziging voor die dag vervalt. Het logboek bewaart wat er was. */
@@ -102,5 +116,5 @@ export async function clearDayChange(formData: FormData): Promise<void> {
   const { employeeId, date } = parsed.data;
   const removed = await supabase.from('shift_overrides').delete().eq('employee_id', employeeId).eq('date', date);
   if (removed.error) redirect(withNotice(returnPath(formData), 'wijziging-mislukt'));
-  await finish(supabase, formData, [date], 'hersteld');
+  await finish(supabase, formData, employeeId, [date], 'hersteld');
 }

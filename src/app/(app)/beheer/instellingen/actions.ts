@@ -5,6 +5,8 @@ import { dbErrorMessage } from '@/lib/admin/errors';
 import { parseNumberFields, parseSettingsForm, type ActionState } from '@/lib/admin/forms';
 import { requireAdmin } from '@/lib/auth/session';
 import { must } from '@/lib/db/queries';
+import { sendTestMail } from '@/lib/mail/dispatch';
+import { siteBaseUrl } from '@/lib/site-url';
 
 export async function saveSettings(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdmin();
@@ -62,4 +64,27 @@ export async function saveRanks(_previous: ActionState, formData: FormData): Pro
   }
   revalidatePath('/', 'layout');
   return { ok: true, message: 'Invalvolgorde opgeslagen.' };
+}
+
+/** Mails aan of uit (fase 3, V18). Staat in het logboek. */
+export async function setMailEnabled(formData: FormData): Promise<void> {
+  const { supabase } = await requireAdmin();
+  const enabled = formData.get('mails') === 'aan';
+  await supabase.from('settings').update({ mail_enabled: enabled }).eq('id', true);
+  revalidatePath('/beheer', 'layout');
+}
+
+/** Een testmail aan je eigen werkmail (V18). Gaat ook als mails uit staan. */
+export async function sendTestMailAction(): Promise<ActionState> {
+  const { supabase, employeeId } = await requireAdmin();
+  const result = await sendTestMail(supabase, employeeId, { now: new Date(), appUrl: `${await siteBaseUrl()}/` });
+  revalidatePath('/beheer/mails');
+  if (result === 'verstuurd') {
+    return { ok: true, message: 'Testmail verstuurd naar je werkmail. Kijk in je inbox, en anders bij spam.' };
+  }
+  if (result === 'geen-adres') return { error: 'Je hebt geen werkmail in Planbord, dus de testmail kan nergens heen.' };
+  return {
+    error:
+      'De testmail kon niet worden verstuurd. Controleer in Netlify SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD en MAIL_FROM (zie de README).',
+  };
 }

@@ -20,9 +20,9 @@ export default async function GapDetailPage({
   searchParams,
 }: {
   params: Promise<{ vestiging: string; datum: string }>;
-  searchParams: Promise<{ melding?: string }>;
+  searchParams: Promise<{ melding?: string; mail?: string }>;
 }) {
-  const [{ vestiging, datum }, { melding }] = await Promise.all([params, searchParams]);
+  const [{ vestiging, datum }, { melding, mail }] = await Promise.all([params, searchParams]);
   if (!isIsoDate(datum) || !/^[a-z-]{1,40}$/.test(vestiging)) notFound();
   const { supabase } = await requireAdmin();
   const groupId = vestiging.replace(/-/g, '_');
@@ -50,7 +50,7 @@ export default async function GapDetailPage({
           </Link>
         }
       />
-      <Flash code={melding} />
+      <Flash code={melding} mail={mail} />
       <p className="mb-4 flex flex-wrap gap-1.5" aria-label="Bezetting aan de balie">
         {detail.staffing.map((part) => (
           <span

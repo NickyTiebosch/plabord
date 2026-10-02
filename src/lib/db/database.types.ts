@@ -37,6 +37,7 @@ export interface Database {
           saturday_shift_end: string;
           day_part_boundary: string;
           lookahead_weeks: number;
+          mail_enabled: boolean;
           updated_at: Timestamp;
         };
         Insert: { id?: boolean };
@@ -47,6 +48,7 @@ export interface Database {
           saturday_shift_end?: string;
           day_part_boundary?: string;
           lookahead_weeks?: number;
+          mail_enabled?: boolean;
         };
         Relationships: [];
       };
@@ -216,6 +218,23 @@ export interface Database {
         };
         Relationships: [];
       };
+      mail_queue: {
+        Row: {
+          id: string;
+          employee_id: string;
+          kind: string;
+          dates: string[];
+          status: string;
+          attempts: number;
+          last_error: string | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+          sent_at: Timestamp | null;
+        };
+        Insert: { employee_id: string; kind: string; dates: string[]; status?: string; last_error?: string | null };
+        Update: { status?: string; attempts?: number; last_error?: string | null; sent_at?: Timestamp | null };
+        Relationships: [];
+      };
       gap_dismissals: {
         Row: {
           id: string;
@@ -306,6 +325,8 @@ export interface Database {
         Returns: string;
       };
       apply_substitution_review: { Args: { changes: Json }; Returns: number };
+      delete_employee: { Args: { p_employee_id: string }; Returns: Json };
+      log_export: { Args: { p_kind: string; p_employee_id: string | null }; Returns: undefined };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

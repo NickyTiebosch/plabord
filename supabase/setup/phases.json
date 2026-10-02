@@ -22,5 +22,14 @@
       "20261002000400_audit_phase2.sql",
       "20261002000500_rpc_phase2.sql"
     ]
+  },
+  "fase-3": {
+    "title": "Fase 3: mails, export en volledig verwijderen",
+    "note": "Draai eerst fase-1.sql en fase-2.sql. Deze bundel voegt een tabel, een instelling en functies toe; de app van fase 2 merkt er niets van.",
+    "migrations": [
+      "20261003000100_mail_queue.sql",
+      "20261003000200_settings_mail.sql",
+      "20261003000300_rpc_phase3.sql"
+    ]
   }
 }

@@ -48,8 +48,8 @@ function ItemRow({ item }: { item: SubstitutionItem }) {
   );
 }
 
-export default async function SubstitutionsPage({ searchParams }: { searchParams: Promise<{ melding?: string }> }) {
-  const { melding } = await searchParams;
+export default async function SubstitutionsPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
+  const { melding, mail } = await searchParams;
   const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
   const [names, groups, rows] = await Promise.all([
@@ -80,7 +80,7 @@ export default async function SubstitutionsPage({ searchParams }: { searchParams
           </>
         }
       />
-      <Flash code={melding} />
+      <Flash code={melding} mail={mail} />
       <div className="space-y-6">
         <section>
           <SectionTitle className="mb-2">Komend</SectionTitle>

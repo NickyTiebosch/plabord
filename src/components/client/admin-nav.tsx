@@ -12,6 +12,8 @@ const ITEMS = [
   { href: '/beheer/sluitingsdagen', label: 'Sluitingsdagen' },
   { href: '/beheer/instellingen', label: 'Instellingen' },
   { href: '/beheer/import', label: 'Import' },
+  { href: '/beheer/export', label: 'Export' },
+  { href: '/beheer/mails', label: 'Mails' },
   { href: '/beheer/logboek', label: 'Logboek' },
 ];
 

@@ -20,8 +20,8 @@ export const metadata: Metadata = { title: 'Beheer' };
 /** Zoveel gaten op het overzicht; de rest staat op /beheer/regelen. */
 const GAPS_ON_OVERVIEW = 5;
 
-export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<{ melding?: string }> }) {
-  const { melding } = await searchParams;
+export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
+  const { melding, mail } = await searchParams;
   const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
   const monday = startOfIsoWeek(today);
@@ -62,7 +62,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         }
       />
 
-      <Flash code={melding} />
+      <Flash code={melding} mail={mail} />
 
       <section className="mb-6">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">

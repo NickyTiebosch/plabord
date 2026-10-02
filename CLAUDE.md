@@ -18,9 +18,11 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - clients via `@supabase/ssr` en `@supabase/supabase-js`.
 - Hosting op Netlify, met deploy previews per pull request. Nooit op Vercel.
 - Tests met Vitest. Databasetests draaien op PGlite met een nagebootst `auth`-schema.
-- Excel: `read-excel-file` voor de import en `write-excel-file` voor het sjabloon, allebei actief onderhouden.
+- Excel: `read-excel-file` voor de import en `write-excel-file` voor het sjabloon en de export, allebei actief onderhouden.
   - Niet `exceljs`: sinds 2023 geen release meer en er staat een audit-waarschuwing open.
   - Niet `xlsx` van npm: die versie is verouderd.
+- Mail (fase 3): `nodemailer` via SMTP, met de Google Workspace-mailbox van de eigenaar (besluit V16). Niet Resend: dat vraagt DNS-records.
+- Geplande taak (fase 3): een Netlify scheduled function in `netlify/functions/`. Die roept elk uur een beveiligde route in de app aan, met `CRON_SECRET`. Zo'n taak draait alleen op de gepubliceerde site, niet op een preview.
 
 ## Commando's
 | Commando | Wat het doet |
@@ -43,7 +45,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Alle rooster-, sluitingsdag- en verloflogica staat in pure functies in `src/lib/engine/`. In fase 2 komt de vervangingslogica erbij.
   - Geen databasetoegang, geen `Date.now()` en geen omgevingsvariabelen. Gegevens en "nu" komen binnen als parameter.
   - Deterministisch: dezelfde invoer geeft altijd dezelfde uitvoer, in dezelfde volgorde.
-- De ICS-opbouw (`src/lib/ics/`) en de Excel-import (`src/lib/import/`) zijn ook puur en los te testen.
+- De ICS-opbouw (`src/lib/ics/`), de Excel-import (`src/lib/import/`), de export (`src/lib/export/`) en de mails (`src/lib/mail/`, behalve het versturen zelf) zijn ook puur en los te testen.
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
@@ -76,14 +78,21 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Alleen gebruiken voor:
     - accountbeheer: aanmaken, e-mailadres wijzigen en inloggen blokkeren als iemand op inactief staat (besluit V4 in het plan van fase 1);
     - agendafeeds serveren;
+    - (fase 3) de geplande taak voor mails: herinneringen versturen, mislukte mails opnieuw proberen en een gemailde vervallen inval afhandelen. Die taak heeft geen sessie en leest dan de werkmails (besluit V17 in het plan van fase 3);
     - (fase 3) een medewerker volledig verwijderen.
 - Een agendatoken bestaat uit minstens 32 willekeurige bytes. De database bewaart alleen de SHA-256-hash.
 - Het logboek legt vast wie wat wanneer deed. Het is alleen zichtbaar voor beheerders.
   - Geen e-mailadressen, tokens of namen als tekst; verwijs naar id's.
+- Mails (fase 3) gaan alleen naar de medewerker zelf, en alleen over het eigen rooster.
+  - Geen namen van anderen, geen reden van afwezigheid en geen andere e-mailadressen.
+  - Geen plaatjes, trackers of leesbevestigingen.
+  - De wachtrij `mail_queue` bewaart geen adressen en geen tekst; de tekst ontstaat pas bij het versturen.
+  - Zonder de schakelaar "Mails versturen" gaat er geen mail naar collega's. De testmail gaat alleen naar je eigen werkmail.
 - Nooit echte medewerkergegevens, secrets of `.env`-bestanden in de repo. Testdata en fixtures zijn fictief.
 
 ## Teststrategie
-- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/` en `src/lib/import/`. Een test staat naast de code als `*.test.ts`.
+- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/` en `src/lib/mail/`. Een test staat naast de code als `*.test.ts`.
+- Tests versturen nooit een echte mail: het versturen gaat via een transport dat je in tests vervangt.
 - Er is één gedeelde, fictieve teamfixture: `src/lib/engine/__fixtures__/team.ts`. Die heeft dezelfde opbouw als het echte team (zie SPEC, "Tests").
 - De databasetests in `supabase/tests/` draaien alle migraties op PGlite, met een nagebootst `auth`-schema en de rollen `anon`, `authenticated` en `service_role`. Ze controleren:
   - RLS en grants;

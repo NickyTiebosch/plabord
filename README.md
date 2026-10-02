@@ -2,7 +2,7 @@
 
 De rooster- en verlofapp van het verhuurteam. Planbord vervangt de Excel: wie werkt wanneer en waar, wie is afwezig, en welke dagen zijn we dicht.
 
-De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md) en [`docs/PLAN-fase-2.md`](docs/PLAN-fase-2.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
+De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md), [`docs/PLAN-fase-2.md`](docs/PLAN-fase-2.md) en [`docs/PLAN-fase-3.md`](docs/PLAN-fase-3.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
 
 ## Wat kan Planbord
 
@@ -40,6 +40,33 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Rooster voor één dag:** geen dienst, een andere dienst, of de dienst verplaatsen naar een andere dag. Klik in het rooster op een naam.
 - **Invallen:** de lijst van komende en recente invallen. **Intrekken** verwijdert niets: de inval krijgt de status *niet meer nodig*.
 
+### Fase 3: de extra's
+
+**Voor iedereen**
+- **Mails over je eigen rooster**, zodra een beheerder mails heeft aangezet:
+  - meteen een mail als je ergens invalt, als een inval niet doorgaat, of als je rooster voor één dag verandert;
+  - om 16:00 de dag ervoor een herinnering als je rooster die dag afwijkt van je vaste rooster. Voor maandag komt die op zondag;
+  - geen mail bij afwezigheid, vaste diensten of sluitingsdagen.
+- Een mail gaat alleen over je eigen rooster: geen namen van collega's en geen reden van afwezigheid. Geen plaatjes en geen trackers.
+
+**Voor beheerders**
+- **Instellingen → Mails:**
+  - de schakelaar **Mails versturen**; die staat eerst uit;
+  - **Testmail naar mij**;
+  - een voorbeeld van de herinneringen voor morgen: wie er een krijgt, en met welk onderwerp.
+- Na een actie zie je of de mail is verstuurd.
+  - Is de mail over een vervallen inval verstuurd, dan is die inval vanzelf afgehandeld. Hij verdwijnt dan uit *Let op*.
+  - Mislukt een mail, dan probeert Planbord het elk uur opnieuw, hooguit drie keer.
+- **Mails:** de mails van de laatste 30 dagen, met hun status: verstuurd, mislukt of niet verstuurd. Met namen, zonder e-mailadressen en zonder inhoud.
+- **Export:**
+  - de hele planning als Excel, in het formaat van de import, plus de invallen en roosterwijzigingen;
+  - bij een medewerker **Gegevens downloaden**: alles wat Planbord over die persoon bewaart, bijvoorbeeld voor een inzageverzoek;
+  - elke export komt in het logboek.
+- **Volledig verwijderen:**
+  - alleen bij een inactieve medewerker, met eerst een overzicht van wat er verdwijnt. Je typt de naam over om te bevestigen;
+  - ook het inlogaccount verdwijnt;
+  - het logboek houdt één regel met de aantallen, zonder naam.
+
 ---
 
 ## Eenmalig: de app in de lucht zetten
@@ -60,7 +87,7 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
    - Het script nog een keer draaien kan geen kwaad: bestaande tabellen en gegevens blijven staan.
-4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), in een nieuwe query. Altijd na fase 1.
+4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql) en [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
 
 ### Stap 2. Inloggen instellen
 
@@ -128,10 +155,15 @@ Heeft je project alleen de oude sleutels (`anon` en `service_role`)? Dat werkt o
    | `NEXT_PUBLIC_SUPABASE_URL` | de Project URL | |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | de Publishable key | |
    | `SUPABASE_SECRET_KEY` | de Secret key | vink **Contains secret values** aan |
-   | `SITE_URL` | optioneel, bijvoorbeeld `https://planbord.netlify.app` | alleen voor de context **Production**; leeg = het adres waarop de app draait |
+   | `SITE_URL` | optioneel: het adres van de gewone app, bijvoorbeeld `https://planbord.netlify.app` | mag voor alle contexten: dan gaan agendalinks en de link in mails ook vanuit een preview naar de gewone app. Leeg = het adres waarop de app draait |
 
    - Netlify zet de `NEXT_PUBLIC_`-waarden bij het bouwen in de app. Pas je ze aan, start dan een nieuwe deploy.
-   - De secret key gebruikt de app alleen op de server: voor accountbeheer (aanmaken, e-mailadres wijzigen, blokkeren bij inactief) en om agendafeeds te serveren.
+   - De secret key gebruikt de app alleen op de server:
+     - voor accountbeheer: aanmaken, e-mailadres wijzigen en blokkeren bij inactief;
+     - om agendafeeds te serveren;
+     - voor de geplande taak voor mails;
+     - om een medewerker volledig te verwijderen.
+   - Voor de mails komen er in stap 7 nog een paar waarden bij.
 3. **Deploy Previews:** controleer onder **Build & deploy → Deploy Previews** dat er een preview komt voor elke pull request. Netlify zet dan een link in de pull request.
    - Bestond de pull request al vóór je Netlify koppelde? Dan komt de preview bij de volgende wijziging in die pull request.
 4. **Private of public:** een nieuw Netlify-project is eerst *Private*. Je ziet dan onderaan de site een balk met **Make public**, en alleen jij en je Netlify-team kunnen de site openen. Klik op **Make public** zodra collega's erin moeten. Planbord blijft dan nog steeds afgeschermd: zonder inlogcode zie je niets, en zoekmachines mogen niets indexeren.
@@ -179,6 +211,49 @@ Twee manieren, ook door elkaar:
 
   Een bestand nog een keer importeren maakt geen dubbelingen, en de import verwijdert nooit iets. Medewerkers koppelen op naam (hoofdletters tellen niet mee).
 
+### Stap 7. Mails (fase 3)
+
+Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (besluit V16 in het plan van fase 3). Aan je DNS verandert niets.
+
+1. **App-wachtwoord.** Maak een apart app-wachtwoord, alleen voor Planbord:
+   - log in met die mailbox en open [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords). *Verificatie in twee stappen* moet aan staan;
+   - noem het `Planbord` en kopieer het wachtwoord van 16 letters, zonder spaties;
+   - trek je het later in, dan stopt alleen Planbord met mailen. De inlogcodes van Supabase blijven werken.
+2. **Een geheim voor de geplande taak** (`CRON_SECRET`): een willekeurige tekst van minstens 32 tekens.
+   - Het makkelijkst: de wachtwoordgenerator van je wachtwoordkluis, bijvoorbeeld 48 tekens met letters en cijfers.
+   - Of in PowerShell op Windows:
+     ```powershell
+     $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
+     ```
+   - Of op een Mac of Linux: `openssl rand -base64 32`.
+3. **Netlify → Project configuration → Environment variables:**
+
+   | Naam | Waarde | Let op |
+   |---|---|---|
+   | `SMTP_HOST` | `smtp.gmail.com` | |
+   | `SMTP_PORT` | `465` | |
+   | `SMTP_USER` | het adres van de mailbox | |
+   | `SMTP_PASSWORD` | het app-wachtwoord | vink **Contains secret values** aan |
+   | `MAIL_FROM` | `Planbord <adres van de mailbox>` | de afzender die collega's zien |
+   | `CRON_SECRET` | het geheim uit stap 2 | vink **Contains secret values** aan |
+
+   - De namen moeten precies zo heten: de app leest alleen deze namen. Bewaar je de waarden ook in een wachtwoordkluis of een secret manager, dan mogen ze daar anders heten.
+   - De link in de mail gaat naar `SITE_URL` (stap 4). Zonder `SITE_URL` gaat hij naar het adres waarop de app draait.
+   - Start daarna een nieuwe deploy (**Deploys → Trigger deploy**), zodat de app de nieuwe waarden gebruikt.
+4. **Eerst testen**, in Planbord onder **Beheer → Instellingen**:
+   1. Klik op **Testmail naar mij**. Die gaat naar je eigen werkmail, ook als mails nog uit staan.
+   2. Bekijk het voorbeeld van de herinneringen voor morgen.
+   3. Zet daarna pas **Mails versturen** aan.
+
+   Previews en de gewone app delen één database. Staat de schakelaar aan, dan gaan ook mails van acties in een preview echt naar collega's.
+5. **De geplande taak** draait elk uur, alleen op de gepubliceerde site en niet op een preview.
+   - Wat de taak doet:
+     - om 16:00 de herinneringen voor morgen versturen. De app bepaalt zelf wanneer het 16:00 is in Nederland, ook met zomer- en wintertijd;
+     - mislukte mails opnieuw proberen;
+     - de wachtrij opruimen.
+   - Controleren: Netlify → **Logs & metrics → Functions → herinneringen**. Daar staat elk uur een run, met een eventuele fout.
+   - De taak roept de app aan via het gewone adres. Staat de site nog op **Private** (stap 4), dan komt die aanroep er niet door en gaan er geen herinneringen weg. Zet de site dan op **public**.
+
 ---
 
 ## Een fase testen en live zetten
@@ -215,6 +290,10 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
 - De secret key staat alleen op de server.
 - Een agendalink bevat 32 willekeurige bytes. De database bewaart alleen de hash; wie de database leest, kan er geen link mee maken.
 - Het logboek is alleen voor beheerders, zonder e-mailadressen of andere gevoelige inhoud. Regels ouder dan 12 maanden verdwijnen vanzelf.
+- Mails gaan alleen naar de medewerker zelf, en alleen over het eigen rooster.
+  - Er staan geen namen van collega's in, geen reden van afwezigheid, en geen plaatjes, trackers of leesbevestiging.
+  - De wachtrij voor mails bewaart geen e-mailadressen en geen tekst. Regels ouder dan 90 dagen verdwijnen vanzelf.
+- Exporteren en volledig verwijderen kunnen alleen beheerders. Allebei komen ze in het logboek.
 - Geen trackers, geen analytics, geen externe scripts of lettertypen. Zoekmachines mogen niets indexeren.
 
 ---
@@ -246,11 +325,14 @@ npm run dev                  # http://localhost:3000
   2. zet het in `supabase/setup/phases.json` bij de juiste fase;
   3. draai `npm run db:bundle`. Een test controleert of de bundel actueel is.
 - Alle rooster-, verlof-, sluitingsdag- en vervangingslogica staat in pure functies in `src/lib/engine/`, met tests ernaast. Geen AI of taalmodel: dezelfde invoer geeft altijd dezelfde voorstellen.
+- **Mails lokaal:** zonder de `SMTP_`-waarden mislukt het versturen (*mailserver niet ingesteld*); de rest van de app werkt gewoon. Tests versturen nooit een echte mail.
 
 ### Bekende punten
 
 - **`middleware.ts` in plaats van `proxy.ts`.** Next.js 16 noemt `middleware` verouderd en toont daarover een waarschuwing bij de build. Die is te verwachten. Netlify kan een `proxy.ts` nu niet verpakken (opennextjs-netlify #3171, #3562 en #3575); zie §16 van het plan.
 - **Tijdvelden** tonen de tijd zoals het toestel is ingesteld. Op een Nederlands ingesteld toestel is dat 24-uurs.
+- **Herinneringen alleen op de gewone app.** Netlify draait de geplande taak niet op een deploy preview. In een preview test je met de testmail en het voorbeeld; de echte herinnering zie je pas na de merge.
+- **Spam.** Belandt een mail van Planbord toch in de spam, laat collega's het adres dan aan hun contacten toevoegen.
 - **Supabase gratis:**
   - pauzeert een project na een week zonder gebruik; met dagelijks gebruik en agendafeeds gebeurt dat niet;
   - staat maximaal twee actieve gratis projecten per account toe; gepauzeerde projecten tellen niet mee;

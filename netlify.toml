@@ -3,6 +3,10 @@
   command = "npm run build"
   publish = ".next"
 
+# Eigen functies, zoals de geplande taak voor mails (fase 3).
+[functions]
+  directory = "netlify/functions"
+
 [build.environment]
   NODE_VERSION = "22"
   # Geen telemetrie van Next.js tijdens de build.

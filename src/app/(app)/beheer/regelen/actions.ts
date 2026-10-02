@@ -8,20 +8,23 @@ import { requireAdmin } from '@/lib/auth/session';
 import type { Json } from '@/lib/db/database.types';
 import { toDayPartColumn } from '@/lib/db/mappers';
 import { loadPlanningSnapshot, loadSettings } from '@/lib/db/queries';
+import { reviewNotices } from '@/lib/db/review';
 import { evaluateCandidates } from '@/lib/engine/candidates';
 import { eachDay, isIsoDate, todayInAmsterdam } from '@/lib/engine/dates';
 import { reviewSubstitutions } from '@/lib/engine/review';
 import { createScheduleContext } from '@/lib/engine/schedule';
 import { createNormLookup, staffingOf } from '@/lib/engine/staffing';
 import { DAY_PARTS, type DayPart } from '@/lib/engine/types';
+import { mailAfterAction } from '@/lib/mail/after-action';
+import type { MailOutcome } from '@/lib/mail/outcome';
 
 function dayPartsFrom(formData: FormData): DayPart[] {
   const values = formData.getAll('dayPart').filter((value): value is string => typeof value === 'string');
   return DAY_PARTS.filter((part) => values.includes(part));
 }
 
-function done(formData: FormData, code: string): never {
-  redirect(withNotice(safeReturnPath(formData.get('terug'), '/beheer'), code));
+function done(formData: FormData, code: string, mail?: MailOutcome | null): never {
+  redirect(withNotice(safeReturnPath(formData.get('terug'), '/beheer'), code, mail));
 }
 
 /** Een inval toewijzen. Nooit zonder deze klik van de beheerder; vlak vóór het opslaan opnieuw gecontroleerd. */
@@ -50,8 +53,10 @@ export async function assignSubstitution(formData: FormData): Promise<void> {
     .from('substitutions')
     .insert({ employee_id: employeeId, date, group_id: groupId, day_part: toDayPartColumn(dayParts) });
   if (inserted.error) done(formData, 'inval-mislukt');
+  // De invaller krijgt meteen een mail (fase 3, V14).
+  const mail = await mailAfterAction(supabase, [{ employeeId, kind: 'substitution_assigned', dates: [date] }]);
   revalidatePath('/', 'layout');
-  done(formData, 'ingezet');
+  done(formData, 'ingezet', mail);
 }
 
 /** Een gat negeren (besluit V8): per dagdeel met het tekort van nu. */
@@ -105,13 +110,19 @@ export async function withdrawSubstitution(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) done(formData, 'inval-ongeldig');
-  await supabase
+  const withdrawn = await supabase
     .from('substitutions')
     .update({ status: 'not_needed', handled_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .select('employee_id, date');
+  // De invaller krijgt een mail dat de inval niet doorgaat (fase 3, V14).
+  const mail = await mailAfterAction(
+    supabase,
+    (withdrawn.data ?? []).map((row) => ({ employeeId: row.employee_id, kind: 'substitution_cancelled' as const, dates: [row.date] })),
+  );
   revalidatePath('/', 'layout');
-  done(formData, 'ingetrokken');
+  done(formData, 'ingetrokken', mail);
 }
 
 /** Invallen die niet meer kloppen bijwerken, na een klik op het overzicht. */
@@ -121,12 +132,14 @@ export async function applyWarnings(formData: FormData): Promise<void> {
   const window = planningWindow(today, (await loadSettings(supabase)).lookaheadWeeks);
   const snapshot = await loadPlanningSnapshot(supabase, window);
   const changes = reviewSubstitutions(snapshot, eachDay(window.from, window.to), today);
+  let mail: MailOutcome | null = null;
   if (changes.length > 0) {
     const result = await supabase.rpc('apply_substitution_review', {
       changes: changes.map((change) => ({ id: change.substitutionId, status: change.status })) as unknown as Json,
     });
     if (result.error) done(formData, 'bijwerken-mislukt');
+    mail = await mailAfterAction(supabase, reviewNotices(snapshot, changes));
   }
   revalidatePath('/', 'layout');
-  done(formData, 'bijgewerkt');
+  done(formData, 'bijgewerkt', mail);
 }
