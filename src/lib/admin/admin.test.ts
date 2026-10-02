@@ -3,8 +3,18 @@ import { shift } from '../engine/__fixtures__/team';
 import { describeAudit, type AuditRow } from './audit';
 import { closureScope, holidayOverrides, holidaySummary } from './closures';
 import { dbErrorMessage } from './errors';
-import { isUuid, parseAbsenceForm, parseEmployeeForm, parseNumberFields, parseSettingsForm, parseShiftForm } from './forms';
-import { planShiftEnd, planShiftFrom, shiftsByWeekday } from './shifts';
+import {
+  isUuid,
+  parseAbsenceForm,
+  parseDayRef,
+  parseDayShiftForm,
+  parseEmployeeForm,
+  parseNumberFields,
+  parseSettingsForm,
+  parseShiftEndForm,
+  parseShiftForm,
+} from './forms';
+import { batchShiftOps, planShiftEnd, planShiftFrom, planShiftsEnd, planShiftsFrom, shiftsByWeekday, weekdayList } from './shifts';
 
 function form(values: Record<string, string | string[]>): FormData {
   const data = new FormData();
@@ -106,13 +116,42 @@ describe('formulier vaste dienst en instellingen', () => {
       parseShiftForm(form({ weekday: '2', groupId: 'breda', role: 'counter', startTime: '9:00', endTime: '', validFrom: '2026-11-02' })),
     ).toEqual({
       ok: true,
-      data: { weekday: 2, groupId: 'breda', role: 'counter', startTime: '09:00', endTime: null, validFrom: '2026-11-02' },
+      data: { weekdays: [2], groupId: 'breda', role: 'counter', startTime: '09:00', endTime: null, validFrom: '2026-11-02' },
     });
     expect(
       parseShiftForm(form({ weekday: '2', groupId: 'breda', role: 'counter', startTime: '18:00', endTime: '07:30', validFrom: '2026-11-02' })),
     ).toMatchObject({ ok: false, state: { fieldErrors: { endTime: 'De eindtijd moet na de begintijd liggen.' } } });
-    expect(parseShiftForm(form({ weekday: '7', groupId: 'breda', role: 'counter', validFrom: '2026-11-02' }))).toMatchObject({
+  });
+
+  it('leest meerdere dagen tegelijk, op volgorde en elke dag één keer', () => {
+    // Werkt ma, di, wo en vr: donderdag is de vaste vrije dag en wordt dus niet aangevinkt.
+    const result = parseShiftForm(
+      form({ weekday: ['5', '1', '3', '2', '1'], groupId: 'den_bosch', role: 'counter', validFrom: '2026-01-01' }),
+    );
+    expect(result).toMatchObject({ ok: true, data: { weekdays: [1, 2, 3, 5] } });
+  });
+
+  it('wil minstens één dag van ma t/m za', () => {
+    expect(parseShiftForm(form({ groupId: 'breda', role: 'counter', validFrom: '2026-11-02' }))).toMatchObject({
       ok: false,
+      state: { fieldErrors: { weekdays: 'Kies minstens één dag.' } },
+    });
+    expect(parseShiftForm(form({ weekday: ['1', '7'], groupId: 'breda', role: 'counter', validFrom: '2026-11-02' }))).toMatchObject({
+      ok: false,
+      state: { fieldErrors: { weekdays: 'Kies dagen van maandag t/m zaterdag.' } },
+    });
+  });
+
+  it('leest bij "dienst laten stoppen" de dagen en de laatste werkdag', () => {
+    expect(parseShiftEndForm(form({ weekday: ['4', '2'], lastDay: '2026-12-31' }))).toEqual({
+      ok: true,
+      data: { weekdays: [2, 4], lastDay: '2026-12-31' },
+    });
+    expect(parseShiftEndForm(form({ lastDay: '31-12-2026' }))).toMatchObject({
+      ok: false,
+      state: {
+        fieldErrors: { weekdays: 'Kies minstens één dag.', lastDay: 'Vul een geldige datum in bij laatste werkdag.' },
+      },
     });
   });
 
@@ -205,11 +244,71 @@ describe('vaste diensten wijzigen', () => {
       ok: true,
       ops: [{ type: 'close', id: 'sanne-1-2025-01-01', validTo: '2026-12-31' }],
     });
-    expect(planShiftEnd(current, 2, '2026-03-31')).toMatchObject({ ok: false });
+    expect(planShiftEnd(current, 2, '2026-03-31')).toEqual({
+      ok: false,
+      error: 'Op dinsdag staat al een latere vaste dienst. Verwijder of wijzig die eerst.',
+    });
     expect(planShiftEnd(current, 3, '2026-03-31')).toEqual({
       ok: false,
-      error: 'Op die datum is er geen vaste dienst op deze dag.',
+      error: 'Op woensdag is er op die datum geen vaste dienst.',
     });
+    expect(planShiftEnd(current, 1, '2024-12-31')).toEqual({
+      ok: false,
+      error: 'Op maandag is er op die datum geen vaste dienst.',
+    });
+  });
+
+  it('zet dezelfde dienst op meerdere dagen en laat de andere dagen met rust', () => {
+    // Maandag en dinsdag lopen al (dinsdag wisselt in juli van vestiging), woensdag is nog leeg.
+    expect(planShiftsFrom(current, { ...input, weekdays: [1, 2, 3], validFrom: '2026-03-02' })).toEqual({
+      ok: true,
+      ops: [
+        { type: 'close', id: 'sanne-1-2025-01-01', validTo: '2026-03-01' },
+        { type: 'insert', values: { ...input, weekday: 1, validFrom: '2026-03-02', validTo: null } },
+        { type: 'close', id: 'sanne-2-2025-01-01', validTo: '2026-03-01' },
+        { type: 'insert', values: { ...input, weekday: 2, validFrom: '2026-03-02', validTo: '2026-06-30' } },
+        { type: 'insert', values: { ...input, weekday: 3, validFrom: '2026-03-02', validTo: null } },
+      ],
+    });
+  });
+
+  it('laat meerdere diensten stoppen, of geen enkele als één dag niet kan', () => {
+    const withWednesday = [...current, shift('sanne', 3, 'den_bosch', 'counter', { validFrom: '2025-01-01' })];
+    expect(planShiftsEnd(withWednesday, [1, 3], '2026-12-31')).toEqual({
+      ok: true,
+      ops: [
+        { type: 'close', id: 'sanne-1-2025-01-01', validTo: '2026-12-31' },
+        { type: 'close', id: 'sanne-3-2025-01-01', validTo: '2026-12-31' },
+      ],
+    });
+    expect(planShiftsEnd(current, [1, 3], '2026-12-31')).toEqual({
+      ok: false,
+      error: 'Op woensdag is er op die datum geen vaste dienst. Er is niets gewijzigd.',
+    });
+  });
+
+  it('voert de stappen uit in zo weinig mogelijk databasebewerkingen, eerst stoppen en dan toevoegen', () => {
+    const plan = planShiftsFrom(
+      [...current, shift('sanne', 4, 'den_bosch', 'counter', { validFrom: '2026-03-02' })],
+      { ...input, weekdays: [1, 2, 4], validFrom: '2026-03-02' },
+    );
+    expect(plan.ok && batchShiftOps(plan.ops)).toEqual([
+      { type: 'close', ids: ['sanne-1-2025-01-01', 'sanne-2-2025-01-01'], validTo: '2026-03-01' },
+      { type: 'update', ids: ['sanne-4-2026-03-02'], values: { groupId: 'breda', role: 'counter', startTime: null, endTime: null } },
+      {
+        type: 'insert',
+        rows: [
+          { ...input, weekday: 1, validFrom: '2026-03-02', validTo: null },
+          { ...input, weekday: 2, validFrom: '2026-03-02', validTo: '2026-06-30' },
+        ],
+      },
+    ]);
+  });
+
+  it('noemt de dagen voluit, zoals in "maandag, woensdag en vrijdag"', () => {
+    expect(weekdayList([2])).toBe('dinsdag');
+    expect(weekdayList([1, 2])).toBe('maandag en dinsdag');
+    expect(weekdayList([1, 3, 5])).toBe('maandag, woensdag en vrijdag');
   });
 
   it('toont per weekdag wat nu geldt, wat komt en wat voorbij is', () => {
@@ -282,11 +381,131 @@ describe('logboek', () => {
     expect(view.detail).toBe('groep: den_bosch → Breda; geldig tot: onbepaald → 1 nov 2026');
   });
 
+  it('beschrijft een inval, de status ervan en het afhandelen (fase 2)', () => {
+    const insert = describeAudit(
+      { ...base, entity: 'substitutions', details: { date: '2026-10-14', group_id: 'breda', day_part: 'morning', status: 'active' } },
+      lookups,
+    );
+    expect(insert).toMatchObject({ what: 'Inval toegewezen – Sanne', detail: 'Breda, 14 okt 2026, ochtend' });
+    const review = describeAudit(
+      {
+        ...base,
+        entity: 'substitutions',
+        action: 'update',
+        changed_fields: ['status'],
+        details: { status: { old: 'active', new: 'not_needed' } },
+        actor_employee_id: 'e0',
+        source: 'controle',
+      },
+      lookups,
+    );
+    expect(review).toMatchObject({ what: 'Inval niet meer nodig – Sanne', detail: null, source: 'controle' });
+    const handled = describeAudit(
+      {
+        ...base,
+        entity: 'substitutions',
+        action: 'update',
+        changed_fields: ['handled_at'],
+        details: { handled_at: { old: null, new: '2026-10-15T08:00:00Z' } },
+      },
+      lookups,
+    );
+    expect(handled.what).toBe('Vervallen inval afgehandeld – Sanne');
+  });
+
+  it('noemt een ingetrokken inval zo, en zegt om welke inval het gaat (fase 2)', () => {
+    const slot = (id: string | null | undefined) => (id === 's1' ? { date: '2026-10-14', group_id: 'breda', day_part: 'morning' } : null);
+    const withdrawn = describeAudit(
+      {
+        ...base,
+        entity: 'substitutions',
+        entity_id: 's1',
+        action: 'update',
+        changed_fields: ['handled_at', 'status'],
+        details: { handled_at: { old: null, new: '2026-10-15T08:00:00Z' }, status: { old: 'active', new: 'not_needed' } },
+      },
+      { ...lookups, substitution: slot },
+    );
+    expect(withdrawn).toMatchObject({ what: 'Inval ingetrokken – Sanne', detail: 'Breda, 14 okt 2026, ochtend' });
+    const review = describeAudit(
+      {
+        ...base,
+        entity: 'substitutions',
+        entity_id: 's1',
+        action: 'update',
+        changed_fields: ['status'],
+        details: { status: { old: 'active', new: 'reschedule' } },
+        source: 'controle',
+      },
+      { ...lookups, substitution: slot },
+    );
+    expect(review).toMatchObject({ what: 'Inval opnieuw regelen – Sanne', detail: 'Breda, 14 okt 2026, ochtend' });
+  });
+
+  it('beschrijft roosterwijzigingen en genegeerde gaten (fase 2)', () => {
+    const off = describeAudit({ ...base, entity: 'shift_overrides', details: { date: '2026-10-14', kind: 'off' } }, lookups);
+    expect(off).toMatchObject({ what: 'Roosterwijziging voor één dag – Sanne', detail: '14 okt 2026, geen dienst' });
+    const shift = describeAudit(
+      {
+        ...base,
+        entity: 'shift_overrides',
+        details: { date: '2026-10-14', kind: 'shift', group_id: 'breda', role: 'counter', start_time: '09:00:00', end_time: null },
+      },
+      lookups,
+    );
+    expect(shift.detail).toBe('14 okt 2026, andere dienst, Breda, balie, 09:00–standaard');
+    const back = describeAudit({ ...base, entity: 'shift_overrides', action: 'delete', details: { date: '2026-10-14', kind: 'off' } }, lookups);
+    expect(back.what).toBe('Terug naar de vaste dienst – Sanne');
+    const gap = describeAudit(
+      {
+        ...base,
+        entity: 'gap_dismissals',
+        employee_id: null,
+        details: { group_id: 'breda', date: '2026-10-14', day_part: 'afternoon', shortage: 1 },
+      },
+      lookups,
+    );
+    expect(gap).toMatchObject({ what: 'Gat genegeerd', detail: 'Breda, 14 okt 2026, middag, tekort 1' });
+  });
+
   it('toont het e-mailadres nooit, alleen dat het veranderde', () => {
     const view = describeAudit(
       { ...base, entity: 'employee_accounts', action: 'update', changed_fields: ['email'], details: null, actor_employee_id: null },
       lookups,
     );
     expect(view).toMatchObject({ what: 'E-mailadres gewijzigd – Sanne', who: 'Systeem' });
+  });
+});
+
+describe('formulier roosterwijziging voor één dag', () => {
+  it('leest groep, rol en tijden; lege tijden zijn de standaard', () => {
+    const result = parseDayShiftForm(
+      form({ employeeId: EMPLOYEE_ID, date: '2026-10-14', groupId: 'breda', role: 'counter', startTime: '9:00', endTime: '' }),
+    );
+    expect(result).toEqual({
+      ok: true,
+      data: { employeeId: EMPLOYEE_ID, date: '2026-10-14', groupId: 'breda', role: 'counter', startTime: '09:00', endTime: null },
+    });
+  });
+
+  it('weigert zondag, een eindtijd vóór de begintijd en een onbekende rol', () => {
+    const sunday = parseDayShiftForm(form({ employeeId: EMPLOYEE_ID, date: '2026-10-18', groupId: 'breda', role: 'counter' }));
+    expect(sunday).toMatchObject({ ok: false, state: { fieldErrors: { date: 'Kies bij datum een dag van maandag t/m zaterdag.' } } });
+    const reversed = parseDayShiftForm(
+      form({ employeeId: EMPLOYEE_ID, date: '2026-10-14', groupId: 'breda', role: 'counter', startTime: '13:00', endTime: '12:00' }),
+    );
+    expect(reversed).toMatchObject({ ok: false, state: { fieldErrors: { endTime: 'De eindtijd moet na de begintijd liggen.' } } });
+    const role = parseDayShiftForm(form({ employeeId: EMPLOYEE_ID, date: '2026-10-14', groupId: 'breda', role: 'chef' }));
+    expect(role).toMatchObject({ ok: false, state: { fieldErrors: { role: 'Kies een rol.' } } });
+  });
+
+  it('kan de datum uit een ander veld lezen, voor verplaatsen', () => {
+    const result = parseDayShiftForm(form({ employeeId: EMPLOYEE_ID, to: '2026-10-17', groupId: 'eindhoven', role: 'counter' }), 'to');
+    expect(result).toMatchObject({ ok: true, data: { date: '2026-10-17' } });
+  });
+
+  it('controleert medewerker en datum voor "geen dienst"', () => {
+    expect(parseDayRef(form({ employeeId: EMPLOYEE_ID, date: '2026-10-17' }))).toMatchObject({ ok: true });
+    expect(parseDayRef(form({ employeeId: 'onzin', date: '2026-10-17' }))).toMatchObject({ ok: false });
   });
 });

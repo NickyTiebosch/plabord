@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
-import { Badge, Card, EmptyState, Notice, PageHeader, SectionTitle } from '@/components/ui';
+import { Badge, Card, EmptyState, Field, Notice, PageHeader, SectionTitle, buttonClass, inputClass } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
 import { shiftsByWeekday } from '@/lib/admin/shifts';
 import { requireAdmin } from '@/lib/auth/session';
@@ -188,12 +188,17 @@ export default async function EmployeeDetailPage({
                         </span>
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-400">Geen dienst</p>
+                      <p className="text-sm text-slate-400">
+                        {day.upcoming.length > 0 ? 'Nu nog geen vaste dienst' : 'Vrij (geen vaste dienst)'}
+                      </p>
                     )}
                     {day.upcoming.map((shift) => (
                       <div key={shift.id} className="mt-1 flex flex-wrap items-center justify-between gap-1 rounded-lg bg-amber-50 px-2 py-1">
                         <span className="text-sm">
-                          <Badge tone="warning">vanaf {formatDate(shift.validFrom)}</Badge>{' '}
+                          <Badge tone="warning">
+                            vanaf {formatDate(shift.validFrom)}
+                            {shift.validTo ? ` t/m ${formatDate(shift.validTo)}` : ''}
+                          </Badge>{' '}
                           <ShiftText shift={shift} settings={settings} groupName={groupName(shift.groupId)} />
                         </span>
                         <DeleteShiftButton shift={shift} />
@@ -221,7 +226,7 @@ export default async function EmployeeDetailPage({
           </Card>
 
           <Card className="p-4">
-            <SectionTitle className="mb-3">Vaste dienst wijzigen of toevoegen</SectionTitle>
+            <SectionTitle className="mb-3">Vaste diensten wijzigen of toevoegen</SectionTitle>
             <ShiftFromForm
               employeeId={employee.id}
               groups={groupOptions}
@@ -232,9 +237,26 @@ export default async function EmployeeDetailPage({
           </Card>
 
           <Card className="p-4">
-            <SectionTitle className="mb-3">Vaste dienst laten stoppen</SectionTitle>
+            <SectionTitle className="mb-3">Vaste diensten laten stoppen</SectionTitle>
             <ShiftEndForm employeeId={employee.id} today={today} />
           </Card>
+
+          {employee.isActive ? (
+            <Card className="p-4">
+              <SectionTitle className="mb-1">Rooster voor één dag</SectionTitle>
+              <p className="mb-3 text-sm text-slate-600">
+                Geen dienst, een andere dienst of verplaatsen, alleen voor die dag. De vaste diensten blijven staan.
+              </p>
+              <form action={`/beheer/rooster/${employee.id}`} method="get" className="flex flex-wrap items-end gap-2">
+                <Field label="Datum" htmlFor="day-change-date">
+                  <input id="day-change-date" name="datum" type="date" required defaultValue={today} className={inputClass} />
+                </Field>
+                <button type="submit" className={buttonClass('secondary')}>
+                  Bekijken
+                </button>
+              </form>
+            </Card>
+          ) : null}
         </div>
       </div>
     </>

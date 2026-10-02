@@ -4,10 +4,14 @@ import { createHash } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { ensureAccount } from '@/lib/admin/accounts';
 import { dbErrorMessage } from '@/lib/admin/errors';
+import { reviewSummary } from '@/lib/admin/planning';
 import { requireAdmin, type Viewer } from '@/lib/auth/session';
 import type { Json } from '@/lib/db/database.types';
 import { mapAbsence, mapCurrentEmployees, mapRecurringShift } from '@/lib/db/mappers';
 import { loadGroups, loadSettings, must } from '@/lib/db/queries';
+import { reviewAfterChange } from '@/lib/db/review';
+import { todayInAmsterdam } from '@/lib/engine/dates';
+import { changedDates } from '@/lib/engine/impact';
 import { MAX_FILE_BYTES } from '@/lib/import/columns';
 import { planImport, type CurrentData } from '@/lib/import/plan';
 import { importPreview, type ImportPreview } from '@/lib/import/preview';
@@ -26,6 +30,8 @@ export interface ImportState {
     absences: number;
     accountsCreated: number;
     accountErrors: string[];
+    /** Uitkomst van de controle op invallen na de geïmporteerde afwezigheid (fase 2). */
+    reviewNote: string;
   };
 }
 
@@ -109,6 +115,11 @@ export async function importAction(previous: ImportState, formData: FormData): P
     else accountErrors.push(`${account.email}: ${result.error}`);
   }
 
+  // Geïmporteerde afwezigheid kan invallen achterhalen (besluit V10).
+  const today = todayInAmsterdam(new Date());
+  const ranges = (plan.payload.absences ?? []).map((absence) => ({ startDate: absence.start_date, endDate: absence.end_date }));
+  const review = await reviewAfterChange(supabase, changedDates(ranges, today), today);
+
   revalidatePath('/', 'layout');
   const summary = preview.summary;
   return {
@@ -120,6 +131,7 @@ export async function importAction(previous: ImportState, formData: FormData): P
       absences: summary.absences.create + summary.absences.update,
       accountsCreated,
       accountErrors,
+      reviewNote: review.error ?? reviewSummary(review.changes),
     },
   };
 }

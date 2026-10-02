@@ -42,6 +42,9 @@ export const AUDIT_ENTITIES: Record<string, string> = {
   settings: 'Instellingen',
   staffing_norms: 'Normen',
   groups: 'Invalvolgorde',
+  substitutions: 'Invallen',
+  shift_overrides: 'Roosterwijzigingen',
+  gap_dismissals: 'Genegeerde gaten',
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -78,13 +81,31 @@ const FIELD_LABELS: Record<string, string> = {
   employee_id: 'medewerker',
   sort_order: 'volgorde',
   has_counter: 'balie',
+  handled_at: 'afgehandeld',
+  shortage: 'tekort',
 };
 
-const FEED_KINDS: Record<string, string> = { personal: 'mijn rooster', location: 'vestiging', absences: 'verlof team' };
+const KINDS: Record<string, string> = {
+  // Agendalinks
+  personal: 'mijn rooster',
+  location: 'vestiging',
+  absences: 'verlof team',
+  // Roosterwijzigingen voor één dag (fase 2)
+  off: 'geen dienst',
+  shift: 'andere dienst',
+};
+
+const SUBSTITUTION_STATUS_LABELS: Record<string, string> = {
+  active: 'gaat door',
+  not_needed: 'niet meer nodig',
+  reschedule: 'opnieuw regelen',
+};
 
 interface Lookups {
   employeeName: (id: string | null | undefined) => string;
   groupName: (id: string | null | undefined) => string;
+  /** Vestiging, datum en dagdeel van een inval: bij een wijziging staan die niet in het logboek zelf. */
+  substitution?: (id: string | null | undefined) => Record<string, unknown> | null;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -99,9 +120,12 @@ function formatValue(field: string, value: unknown, lookups: Lookups): string {
   if (field === 'day_part') {
     return ABSENCE_PART_LABELS[value as AbsencePart] ?? DAY_PART_LABELS[value as DayPart] ?? String(value);
   }
-  if (field === 'status') return ABSENCE_STATUS_LABELS[value as AbsenceStatus] ?? String(value);
+  if (field === 'status') {
+    return ABSENCE_STATUS_LABELS[value as AbsenceStatus] ?? SUBSTITUTION_STATUS_LABELS[String(value)] ?? String(value);
+  }
   if (field === 'weekday') return weekdayShort(Number(value) as Weekday);
-  if (field === 'kind') return FEED_KINDS[String(value)] ?? String(value);
+  if (field === 'kind') return KINDS[String(value)] ?? String(value);
+  if (field === 'handled_at' && typeof value === 'string') return 'ja';
   if (typeof value === 'string' && isIsoDate(value)) return formatDate(value);
   if (typeof value === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(value)) return parseTime(value) ?? value;
   if (field === 'revoked_at' && typeof value === 'string') return 'ja';
@@ -160,7 +184,31 @@ const VERBS: Record<string, [string, string, string]> = {
   settings: ['Instellingen aangemaakt', 'Instellingen gewijzigd', 'Instellingen verwijderd'],
   staffing_norms: ['Norm aangemaakt', 'Norm gewijzigd', 'Norm verwijderd'],
   groups: ['Groep aangemaakt', 'Groep gewijzigd', 'Groep verwijderd'],
+  substitutions: ['Inval toegewezen', 'Inval gewijzigd', 'Inval verwijderd'],
+  shift_overrides: ['Roosterwijziging voor één dag', 'Roosterwijziging aangepast', 'Terug naar de vaste dienst'],
+  gap_dismissals: ['Gat genegeerd', 'Genegeerd gat bijgewerkt', 'Gat teruggezet'],
 };
+
+/** "Eindhoven, 12 okt 2026, hele dag" voor een inval of genegeerd gat. */
+function slotText(details: Record<string, unknown>, lookups: Lookups): string {
+  return [
+    formatValue('group_id', details.group_id, lookups),
+    formatValue('date', details.date, lookups),
+    formatValue('day_part', details.day_part, lookups),
+  ].join(', ');
+}
+
+/** "12 okt 2026, geen dienst" of "12 okt 2026, andere dienst, Breda, balie, 09:00–standaard". */
+function overrideText(details: Record<string, unknown>, lookups: Lookups): string {
+  const parts = [formatValue('date', details.date, lookups), formatValue('kind', details.kind, lookups)];
+  if (details.kind === 'shift') {
+    parts.push(formatValue('group_id', details.group_id, lookups), formatValue('role', details.role, lookups));
+    const start = details.start_time ? formatValue('start_time', details.start_time, lookups) : null;
+    const end = details.end_time ? formatValue('end_time', details.end_time, lookups) : null;
+    parts.push(start || end ? `${start ?? 'standaard'}–${end ?? 'standaard'}` : 'standaardtijden');
+  }
+  return parts.join(', ');
+}
 
 export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
   const details = record(row.details);
@@ -215,6 +263,32 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
         formatValue('day_part', details.day_part, lookups),
         row.action === 'update' ? changesText(row, lookups) : `norm ${String(details.min_staff ?? '')}`,
       ].join(' · ');
+      break;
+    case 'substitutions': {
+      const changed = row.changed_fields ?? [];
+      const status = record(details.status).new;
+      const who = row.employee_id ? ` – ${lookups.employeeName(row.employee_id)}` : '';
+      if (row.action === 'update' && changed.includes('status') && typeof status === 'string') {
+        // Intrekken zet de status en "afgehandeld" in één keer; de controle zet alleen de status.
+        what =
+          status === 'not_needed' && changed.includes('handled_at')
+            ? `Inval ingetrokken${who}`
+            : `Inval ${SUBSTITUTION_STATUS_LABELS[status] ?? status}${who}`;
+      } else if (row.action === 'update' && changed.length === 1 && changed[0] === 'handled_at') {
+        what = `Vervallen inval afgehandeld${who}`;
+      }
+      const slot = row.action === 'update' ? (lookups.substitution?.(row.entity_id) ?? null) : details;
+      detail = slot ? slotText(slot, lookups) : null;
+      break;
+    }
+    case 'shift_overrides':
+      detail = row.action === 'update' ? changesText(row, lookups) : overrideText(details, lookups);
+      break;
+    case 'gap_dismissals':
+      detail =
+        row.action === 'update'
+          ? changesText(row, lookups)
+          : `${slotText(details, lookups)}, tekort ${String(details.shortage ?? '?')}`;
       break;
     default:
       detail = row.action === 'update' ? changesText(row, lookups) : null;

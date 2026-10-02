@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { absence, employees, recurringShifts, settings, shift, teamSnapshot } from './__fixtures__/team';
+import { absence, employees, override, recurringShifts, settings, shift, substitution, teamSnapshot } from './__fixtures__/team';
 import {
   clipToDayParts,
   computePersonalSchedule,
@@ -218,6 +218,8 @@ describe('invallen (voorbereiding fase 2)', () => {
     groupId: 'eindhoven',
     dayParts: ['afternoon'],
     status: 'active',
+    handledAt: null,
+    createdAt: '2026-10-01T10:00:00.000Z',
     updatedAt: '2026-10-01T10:00:00.000Z',
   };
 
@@ -256,5 +258,57 @@ describe('determinisme', () => {
       '2026-10-24',
     );
     expect(shuffled).toEqual(normal);
+  });
+});
+
+describe('roosterwijzigingen voor één dag (fase 2)', () => {
+  it('geen dienst: de vaste dienst vervalt alleen die dag', () => {
+    const snapshot = teamSnapshot({ shiftOverrides: [override('o1', 'joris', MON, { kind: 'off' })] });
+    expect(entryOf(snapshot, MON, 'joris')).toBeUndefined();
+    expect(entryOf(snapshot, TUE, 'joris')?.groupId).toBe('den_bosch');
+    const context = createScheduleContext(snapshot);
+    expect(context.daysOffOn(MON)).toEqual([
+      { date: MON, employeeId: 'joris', employeeName: 'Joris', groupId: 'den_bosch', overrideId: 'o1' },
+    ]);
+    const personal = computePersonalSchedule(snapshot, 'joris', MON, TUE);
+    expect(personal.map((day) => day.dayOff)).toEqual([true, false]);
+  });
+
+  it('een andere dienst vervangt de vaste dienst, en is gemarkeerd als gewijzigd', () => {
+    const snapshot = teamSnapshot({
+      shiftOverrides: [override('o1', 'sanne', MON, { kind: 'shift', groupId: 'eindhoven', role: 'counter', startTime: '09:00' })],
+    });
+    const entry = entryOf(snapshot, MON, 'sanne');
+    expect(entry).toMatchObject({ groupId: 'eindhoven', role: 'counter', start: '09:00', end: '18:00', changed: true, sourceId: 'o1' });
+    expect(entryOf(snapshot, TUE, 'sanne')).toMatchObject({ groupId: 'den_bosch', changed: false });
+  });
+
+  it('een dienst op een dag zonder vaste dienst komt erbij, met de standaardtijden van die dag', () => {
+    const snapshot = teamSnapshot({
+      shiftOverrides: [
+        override('o1', 'joris', '2026-10-16', { kind: 'shift', groupId: 'den_bosch', role: 'counter' }),
+        override('o2', 'gert', SAT, { kind: 'shift', groupId: 'eindhoven', role: 'counter' }),
+      ],
+    });
+    expect(entryOf(snapshot, '2026-10-16', 'joris')).toMatchObject({ start: '07:30', end: '18:00', changed: true });
+    expect(entryOf(snapshot, SAT, 'gert')).toMatchObject({ groupId: 'eindhoven', countsForCounter: true });
+  });
+
+  it('negeert wijzigingen van inactieve medewerkers', () => {
+    const inactive = employees.map((employee) => (employee.id === 'gert' ? { ...employee, isActive: false } : employee));
+    const snapshot = teamSnapshot({
+      employees: inactive,
+      shiftOverrides: [override('o1', 'gert', MON, { kind: 'shift', groupId: 'den_bosch', role: 'counter' })],
+    });
+    expect(entryOf(snapshot, MON, 'gert')).toBeUndefined();
+  });
+
+  it('een inval op een dag zonder dienst blijft zichtbaar, zodat de controle hem kan vinden', () => {
+    const snapshot = teamSnapshot({
+      shiftOverrides: [override('o1', 'danique', WED, { kind: 'off' })],
+      substitutions: [substitution('s1', 'danique', WED, 'eindhoven')],
+    });
+    const entries = entriesOn(snapshot, WED).filter((entry) => entry.employeeId === 'danique');
+    expect(entries.map((entry) => entry.kind)).toEqual(['substitution']);
   });
 });

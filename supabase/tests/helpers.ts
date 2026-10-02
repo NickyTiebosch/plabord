@@ -1,23 +1,32 @@
 /**
  * Een tijdelijke Postgres-database in het geheugen (PGlite) met een minimaal nagebootste Supabase:
  * de rollen anon, authenticated en service_role, en een auth-schema met users, uid() en jwt().
- * Net als Supabase krijgen nieuwe objecten in public standaard alle rechten, zodat de tests
- * bewijzen dat de migraties daar niet op vertrouwen.
+ * Standaard krijgen nieuwe objecten in public, net als in een Supabase-project met "Automatically
+ * expose new tables" aan, alle rechten; zo bewijzen de tests dat de migraties daar niet op vertrouwen.
+ * Met `exposeNewTables: false` krijgen ze niets, zoals met dat vinkje uit.
  */
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
-import { bundlePath } from '../../scripts/bundle-sql.ts';
+import { bundlePath, readPhases } from '../../scripts/bundle-sql.ts';
+
+const EXPOSE_NEW_TABLES_SQL = `
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+`;
+
+/** Zoals Supabase het doet met "Automatically expose new tables" uit. */
+const DO_NOT_EXPOSE_SQL = `
+alter default privileges in schema public revoke execute on functions from public;
+`;
 
 export const SUPABASE_MOCK_SQL = `
 create role anon nologin noinherit;
 create role authenticated nologin noinherit;
 create role service_role nologin noinherit bypassrls;
 grant usage on schema public to anon, authenticated, service_role;
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
-alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
-alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 
 create schema auth;
 grant usage on schema auth to anon, authenticated, service_role;
@@ -36,13 +45,17 @@ grant execute on function auth.jwt() to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 `;
 
+/** Alle bundels op volgorde (fase-1, fase-2, …), zoals de eigenaar ze in de SQL-editor draait. */
 export function setupSql(): string {
-  return readFileSync(bundlePath('fase-1'), 'utf8');
+  return Object.keys(readPhases())
+    .map((phase) => readFileSync(bundlePath(phase), 'utf8'))
+    .join('\n');
 }
 
-export async function createDatabase(): Promise<PGlite> {
+export async function createDatabase({ exposeNewTables = true }: { exposeNewTables?: boolean } = {}): Promise<PGlite> {
   const db = await PGlite.create({ extensions: { btree_gist } });
   await db.exec(SUPABASE_MOCK_SQL);
+  await db.exec(exposeNewTables ? EXPOSE_NEW_TABLES_SQL : DO_NOT_EXPOSE_SQL);
   await db.exec(setupSql());
   return db;
 }

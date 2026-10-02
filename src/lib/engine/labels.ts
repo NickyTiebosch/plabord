@@ -5,7 +5,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   counter: 'balie',
   backoffice: 'backoffice',
   transport: 'transport',
-  cleaning: 'poets',
+  // Heette eerst "poets" (besluit V11); intern blijft het `cleaning`.
+  cleaning: 'hiker/buitendienst',
   none: 'geen rol',
 };
 

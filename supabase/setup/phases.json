@@ -11,5 +11,16 @@
       "20261001000700_rpc.sql",
       "20261001000800_seed.sql"
     ]
+  },
+  "fase-2": {
+    "title": "Fase 2: het brein",
+    "note": "Draai eerst fase-1.sql. Deze bundel voegt alleen tabellen en functies toe; de app van fase 1 merkt er niets van.",
+    "migrations": [
+      "20261002000100_substitutions.sql",
+      "20261002000200_shift_overrides.sql",
+      "20261002000300_gap_dismissals.sql",
+      "20261002000400_audit_phase2.sql",
+      "20261002000500_rpc_phase2.sql"
+    ]
   }
 }

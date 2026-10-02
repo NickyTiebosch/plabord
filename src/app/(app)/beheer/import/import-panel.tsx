@@ -51,6 +51,7 @@ export function ImportPanel() {
           Import klaar: {result.employees} medewerker(s), {result.shifts} vaste dienst(en) en {result.absences} afwezigheid
           opgeslagen. {result.accountsCreated > 0 ? `${result.accountsCreated} inlogaccount(s) aangemaakt.` : ''}
         </Notice>
+        {result.reviewNote ? <Notice tone="warning">{result.reviewNote}</Notice> : null}
         {result.accountErrors.length > 0 ? (
           <Notice tone="warning">
             Niet alle accounts konden worden aangemaakt. Importeer het bestand nog een keer om het opnieuw te proberen.

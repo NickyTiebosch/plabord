@@ -4,12 +4,18 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { changeAccountEmail, ensureAccount, setAccountBlocked } from '@/lib/admin/accounts';
 import { dbErrorMessage } from '@/lib/admin/errors';
-import { isUuid, parseEmployeeForm, parseShiftForm, type ActionState, type EmployeeInput } from '@/lib/admin/forms';
-import { planShiftEnd, planShiftFrom, type ShiftOp } from '@/lib/admin/shifts';
+import {
+  isUuid,
+  parseEmployeeForm,
+  parseShiftEndForm,
+  parseShiftForm,
+  type ActionState,
+  type EmployeeInput,
+} from '@/lib/admin/forms';
+import { batchShiftOps, planShiftsEnd, planShiftsFrom, weekdayList, type ShiftOp } from '@/lib/admin/shifts';
 import { requireAdmin, type Viewer } from '@/lib/auth/session';
 import { mapRecurringShift } from '@/lib/db/mappers';
-import { isIsoDate } from '@/lib/engine/dates';
-import type { ShiftWeekday } from '@/lib/engine/types';
+import { formatDate } from '@/lib/engine/format';
 
 type Supabase = Viewer['supabase'];
 
@@ -153,33 +159,45 @@ export async function retryAccount(formData: FormData): Promise<void> {
   redirect(`/beheer/medewerkers/${id}?melding=${melding}`);
 }
 
+/** Voert de stappen uit in hoogstens drie bewerkingen: stoppen, aanpassen, toevoegen. */
 async function runShiftOps(supabase: Supabase, employeeId: string, ops: readonly ShiftOp[]): Promise<string | null> {
-  for (const op of ops) {
+  const batches = batchShiftOps(ops);
+  for (const [index, batch] of batches.entries()) {
     const result =
-      op.type === 'close'
-        ? await supabase.from('recurring_shifts').update({ valid_to: op.validTo }).eq('id', op.id).eq('employee_id', employeeId)
-        : op.type === 'update'
+      batch.type === 'close'
+        ? await supabase
+            .from('recurring_shifts')
+            .update({ valid_to: batch.validTo })
+            .in('id', batch.ids)
+            .eq('employee_id', employeeId)
+        : batch.type === 'update'
           ? await supabase
               .from('recurring_shifts')
               .update({
-                group_id: op.values.groupId,
-                role: op.values.role,
-                start_time: op.values.startTime,
-                end_time: op.values.endTime,
+                group_id: batch.values.groupId,
+                role: batch.values.role,
+                start_time: batch.values.startTime,
+                end_time: batch.values.endTime,
               })
-              .eq('id', op.id)
+              .in('id', batch.ids)
               .eq('employee_id', employeeId)
-          : await supabase.from('recurring_shifts').insert({
-              employee_id: employeeId,
-              weekday: op.values.weekday,
-              group_id: op.values.groupId,
-              role: op.values.role,
-              start_time: op.values.startTime,
-              end_time: op.values.endTime,
-              valid_from: op.values.validFrom,
-              valid_to: op.values.validTo,
-            });
-    if (result.error) return dbErrorMessage(result.error);
+          : await supabase.from('recurring_shifts').insert(
+              batch.rows.map((row) => ({
+                employee_id: employeeId,
+                weekday: row.weekday,
+                group_id: row.groupId,
+                role: row.role,
+                start_time: row.startTime,
+                end_time: row.endTime,
+                valid_from: row.validFrom,
+                valid_to: row.validTo,
+              })),
+            );
+    if (result.error) {
+      const message = dbErrorMessage(result.error);
+      // Wat al gelukt is, staat in het logboek; zeg eerlijk dat het maar half is gelukt.
+      return index === 0 ? message : `${message} Een deel is wel opgeslagen: kijk bij de vaste diensten wat er nu staat.`;
+    }
   }
   return null;
 }
@@ -190,36 +208,39 @@ async function loadShifts(supabase: Supabase, employeeId: string) {
   return (data ?? []).map(mapRecurringShift);
 }
 
-/** Vaste dienst op een weekdag vanaf een datum. Het verleden blijft zoals het was. */
+/** Vaste dienst op een of meer weekdagen vanaf een datum. Het verleden blijft zoals het was. */
 export async function saveShiftFrom(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdmin();
   const employeeId = String(formData.get('employeeId') ?? '');
   if (!isUuid(employeeId)) return { error: 'Deze medewerker bestaat niet meer.' };
   const parsed = parseShiftForm(formData);
   if (!parsed.ok) return parsed.state;
-  const plan = planShiftFrom(await loadShifts(supabase, employeeId), parsed.data);
+  const plan = planShiftsFrom(await loadShifts(supabase, employeeId), parsed.data);
   if (!plan.ok) return { error: plan.error };
   const error = await runShiftOps(supabase, employeeId, plan.ops);
   if (error) return { error };
   revalidatePath('/', 'layout');
-  return { ok: true, message: 'Vaste dienst opgeslagen.' };
+  return {
+    ok: true,
+    message: `Vaste dienst opgeslagen voor ${weekdayList(parsed.data.weekdays)}, vanaf ${formatDate(parsed.data.validFrom)}.`,
+  };
 }
 
-/** Een vaste dienst laten stoppen na een datum. */
+/** Vaste diensten op een of meer weekdagen laten stoppen na een datum. */
 export async function endShift(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdmin();
   const employeeId = String(formData.get('employeeId') ?? '');
   if (!isUuid(employeeId)) return { error: 'Deze medewerker bestaat niet meer.' };
-  const weekday = Number(formData.get('weekday'));
-  const lastDay = String(formData.get('lastDay') ?? '');
-  if (!Number.isInteger(weekday) || weekday < 1 || weekday > 6) return { fieldErrors: { weekday: 'Kies een dag.' } };
-  if (!isIsoDate(lastDay)) return { fieldErrors: { lastDay: 'Vul een geldige datum in.' } };
-  const plan = planShiftEnd(await loadShifts(supabase, employeeId), weekday as ShiftWeekday, lastDay);
+  const parsed = parseShiftEndForm(formData);
+  if (!parsed.ok) return parsed.state;
+  const { weekdays, lastDay } = parsed.data;
+  const plan = planShiftsEnd(await loadShifts(supabase, employeeId), weekdays, lastDay);
   if (!plan.ok) return { error: plan.error };
   const error = await runShiftOps(supabase, employeeId, plan.ops);
   if (error) return { error };
   revalidatePath('/', 'layout');
-  return { ok: true, message: 'De vaste dienst stopt na die datum.' };
+  const subject = weekdays.length === 1 ? 'De vaste dienst' : 'De vaste diensten';
+  return { ok: true, message: `${subject} op ${weekdayList(weekdays)} ${weekdays.length === 1 ? 'stopt' : 'stoppen'} na ${formatDate(lastDay)}.` };
 }
 
 /** Een vaste dienst verwijderen die per vergissing is ingevoerd. Staat in het logboek. */

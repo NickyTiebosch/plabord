@@ -3,24 +3,32 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
 import { requireAdmin } from '@/lib/auth/session';
-import { loadEmployeesWithAccounts } from '@/lib/db/admin-queries';
+import { loadEmployeesWithAccounts, loadPlanningOverview } from '@/lib/db/admin-queries';
 import { mapAbsence } from '@/lib/db/mappers';
 import { must } from '@/lib/db/queries';
 import { addDays, isoWeekOf, startOfIsoWeek, todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDateRange } from '@/lib/engine/format';
 import { ABSENCE_PART_LABELS } from '@/lib/engine/labels';
 import { listAbsencesInRange } from '@/lib/engine/leave-overview';
+import { Flash } from './admin-shared';
 import { approveAbsence } from './afwezigheid/actions';
+import { applyWarnings, markHandled } from './regelen/actions';
+import { GapCard } from './regelen/gap-card';
 
 export const metadata: Metadata = { title: 'Beheer' };
 
-export default async function AdminOverviewPage() {
+/** Zoveel gaten op het overzicht; de rest staat op /beheer/regelen. */
+const GAPS_ON_OVERVIEW = 5;
+
+export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<{ melding?: string }> }) {
+  const { melding } = await searchParams;
   const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
   const monday = startOfIsoWeek(today);
   const saturday = addDays(monday, 5);
 
-  const [employees, requested, thisWeek] = await Promise.all([
+  const [planning, employees, requested, thisWeek] = await Promise.all([
+    loadPlanningOverview(supabase, today),
     loadEmployeesWithAccounts(supabase),
     supabase
       .from('absences')
@@ -53,6 +61,70 @@ export default async function AdminOverviewPage() {
           </>
         }
       />
+
+      <Flash code={melding} />
+
+      <section className="mb-6">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+          <SectionTitle>Nog te regelen</SectionTitle>
+          <p className="text-sm text-slate-500">
+            {formatDateRange(planning.window.from, planning.window.to)}
+            {planning.ignored.length > 0 ? (
+              <>
+                {' · '}
+                <Link href="/beheer/regelen/genegeerd" className="underline">
+                  {planning.ignored.length} genegeerd
+                </Link>
+              </>
+            ) : null}
+          </p>
+        </div>
+        {planning.gaps.length === 0 ? (
+          <EmptyState title="Niets te regelen">Alle vestigingen zitten op de norm.</EmptyState>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {planning.gaps.slice(0, GAPS_ON_OVERVIEW).map((gap) => (
+              <GapCard key={gap.key} gap={gap} returnTo="/beheer" />
+            ))}
+          </div>
+        )}
+        {planning.gaps.length > GAPS_ON_OVERVIEW ? (
+          <p className="mt-3">
+            <LinkButton href="/beheer/regelen">Alle {planning.gaps.length} gaten</LinkButton>
+          </p>
+        ) : null}
+      </section>
+
+      {planning.attention.length + planning.warnings.length > 0 ? (
+        <section className="mb-6">
+          <SectionTitle className="mb-2">Let op</SectionTitle>
+          <Card>
+            <ul className="divide-y divide-slate-100">
+              {planning.attention.map((item) => (
+                <li key={item.substitutionId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                  <p className="min-w-0 flex-1 text-sm text-slate-800">{item.text}</p>
+                  <form action={markHandled}>
+                    <input type="hidden" name="id" value={item.substitutionId} />
+                    <SubmitButton size="sm" variant="secondary">
+                      Afgehandeld
+                    </SubmitButton>
+                  </form>
+                </li>
+              ))}
+              {planning.warnings.map((text) => (
+                <li key={text} className="px-4 py-3 text-sm text-slate-800">
+                  {text}
+                </li>
+              ))}
+            </ul>
+            {planning.warnings.length > 0 ? (
+              <form action={applyWarnings} className="border-t border-slate-100 px-4 py-3">
+                <SubmitButton size="sm">Invallen bijwerken</SubmitButton>
+              </form>
+            ) : null}
+          </Card>
+        </section>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>

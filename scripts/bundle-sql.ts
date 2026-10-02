@@ -12,6 +12,8 @@ export const SETUP_DIR = join(root, 'supabase', 'setup');
 
 interface Phase {
   title: string;
+  /** Extra uitleg bovenaan de bundel, bijvoorbeeld in welke volgorde je draait. */
+  note?: string;
   migrations: string[];
 }
 
@@ -32,6 +34,7 @@ export function buildBundle(phaseKey: string): string {
     '-- =====================================================================',
     `-- Planbord · ${phase.title}`,
     '--',
+    ...(phase.note ? [`-- ${phase.note}`, '--'] : []),
     '-- Plak dit hele bestand in Supabase: SQL Editor → New query → Run.',
     '-- Het is veilig om opnieuw te draaien: bestaande tabellen en gegevens blijven staan.',
     '--',

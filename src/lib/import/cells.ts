@@ -130,6 +130,11 @@ const ROLES: Record<string, Role> = {
   'back office': 'backoffice',
   'back-office': 'backoffice',
   transport: 'transport',
+  'hiker/buitendienst': 'cleaning',
+  'hiker / buitendienst': 'cleaning',
+  hiker: 'cleaning',
+  buitendienst: 'cleaning',
+  // De oude namen van deze rol (besluit V11), zodat eerdere importbestanden blijven werken.
   poets: 'cleaning',
   schoonmaak: 'cleaning',
   geen: 'none',
@@ -137,12 +142,12 @@ const ROLES: Record<string, Role> = {
   '-': 'none',
 };
 
-/** balie, backoffice, transport, poets of geen. Leeg = null (de aanroeper bepaalt wat dat betekent). */
+/** balie, backoffice, transport, hiker/buitendienst of geen. Leeg = null (de aanroeper bepaalt wat dat betekent). */
 export function parseRole(value: CellValue): CellResult<Role | null> {
   const text = keyword(value);
   if (text === '') return ok(null);
   const role = ROLES[text];
-  return role ? ok(role) : fail(`Onbekende rol "${cellText(value)}". Kies balie, backoffice, transport, poets of geen.`);
+  return role ? ok(role) : fail(`Onbekende rol "${cellText(value)}". Kies balie, backoffice, transport, hiker/buitendienst of geen.`);
 }
 
 const DAY_PARTS: Record<string, AbsencePart> = {

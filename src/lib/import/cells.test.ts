@@ -78,9 +78,17 @@ describe('keuzes', () => {
 
   it('leest rollen, dagdelen en statussen', () => {
     expect(parseRole('Balie')).toEqual({ ok: true, value: 'counter' });
+    expect(parseRole('Hiker/buitendienst')).toEqual({ ok: true, value: 'cleaning' });
+    expect(parseRole('hiker / buitendienst')).toEqual({ ok: true, value: 'cleaning' });
+    expect(parseRole('Buitendienst')).toEqual({ ok: true, value: 'cleaning' });
+    expect(parseRole('hiker')).toEqual({ ok: true, value: 'cleaning' });
+    // De oude naam blijft werken, zodat eerdere importbestanden nog passen.
     expect(parseRole('poets')).toEqual({ ok: true, value: 'cleaning' });
     expect(parseRole('geen rol')).toEqual({ ok: true, value: 'none' });
-    expect(parseRole('kok').ok).toBe(false);
+    expect(parseRole('kok')).toEqual({
+      ok: false,
+      error: 'Onbekende rol "kok". Kies balie, backoffice, transport, hiker/buitendienst of geen.',
+    });
     expect(parseAbsencePart('Hele dag')).toEqual({ ok: true, value: 'full_day' });
     expect(parseAbsencePart('middag')).toEqual({ ok: true, value: 'afternoon' });
     expect(parseStatus('Aangevraagd')).toEqual({ ok: true, value: 'requested' });

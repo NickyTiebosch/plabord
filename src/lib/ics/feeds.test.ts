@@ -43,6 +43,8 @@ describe('persoonlijke feed', () => {
       groupId: 'eindhoven',
       dayParts: ['afternoon'],
       status: 'active',
+      handledAt: null,
+      createdAt: '2026-10-01T10:00:00.000Z',
       updatedAt: '2026-10-01T10:00:00.000Z',
     };
     const events = personalFeedEvents(teamSnapshot({ substitutions: [substitution] }), 'danique', '2026-10-14', '2026-10-14');
@@ -54,8 +56,8 @@ describe('vestigingsfeed', () => {
   it('toont wie er werkt met rol, en wie afwezig is niet', () => {
     const snapshot = teamSnapshot({ absences: [absence('a1', 'joris', '2026-10-12')] });
     const events = locationFeedEvents(snapshot, 'den_bosch', '2026-10-12', '2026-10-12');
-    expect(summaries(events)).toEqual(['Bram (balie)', 'Ingrid (poets)', 'Sanne (balie)']);
-    expect(events.find((event) => event.summary === 'Ingrid (poets)')).toMatchObject({ start: '07:30', end: '11:30' });
+    expect(summaries(events)).toEqual(['Bram (balie)', 'Ingrid (hiker/buitendienst)', 'Sanne (balie)']);
+    expect(events.find((event) => event.summary === 'Ingrid (hiker/buitendienst)')).toMatchObject({ start: '07:30', end: '11:30' });
   });
 
   it('meldt dat de vestiging gesloten is', () => {

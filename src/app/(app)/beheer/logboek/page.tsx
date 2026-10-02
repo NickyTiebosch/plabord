@@ -33,9 +33,23 @@ export default async function AuditLogPage({
 
   const [names, groups, result] = await Promise.all([loadEmployeeNames(supabase), loadGroups(supabase), query]);
   if (result.error) throw new Error('Het logboek kon niet worden geladen.');
+  // Bij een gewijzigde inval staat alleen wat veranderde in het logboek; vestiging en dag halen we bij de inval zelf.
+  const substitutionIds = [
+    ...new Set(
+      (result.data ?? [])
+        .filter((row) => row.entity === 'substitutions' && row.action === 'update' && isUuid(row.entity_id))
+        .map((row) => row.entity_id as string),
+    ),
+  ];
+  const slots = new Map<string, Record<string, unknown>>();
+  if (substitutionIds.length > 0) {
+    const found = await supabase.from('substitutions').select('id, date, group_id, day_part').in('id', substitutionIds);
+    for (const row of found.data ?? []) slots.set(row.id, row);
+  }
   const lookups = {
     employeeName: (id: string | null | undefined) => (id ? (names.get(id) ?? 'verwijderde medewerker') : 'onbekend'),
     groupName: (id: string | null | undefined) => groups.find((group) => group.id === id)?.name ?? String(id ?? ''),
+    substitution: (id: string | null | undefined) => (id ? (slots.get(id) ?? null) : null),
   };
   const rows = (result.data ?? []).map((row) => describeAudit(row as AuditRow, lookups));
   const total = result.count ?? rows.length;
@@ -90,6 +104,7 @@ export default async function AuditLogPage({
                 <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
                   door {row.who}
                   {row.source === 'import' ? <Badge>import</Badge> : null}
+                  {row.source === 'controle' ? <Badge>automatisch</Badge> : null}
                 </p>
               </li>
             ))}
