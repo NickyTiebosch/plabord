@@ -31,5 +31,13 @@
       "20261003000200_settings_mail.sql",
       "20261003000300_rpc_phase3.sql"
     ]
+  },
+  "fase-4": {
+    "title": "Fase 4: pushmeldingen",
+    "note": "Draai eerst fase-1.sql, fase-2.sql en fase-3.sql. Deze bundel voegt een tabel, een kolom en functies toe; de app van fase 3 merkt er niets van.",
+    "migrations": [
+      "20261004000100_push_subscriptions.sql",
+      "20261004000200_push_phase4.sql"
+    ]
   }
 }
