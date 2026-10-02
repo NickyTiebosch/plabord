@@ -48,9 +48,14 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 
 ### Stap 1. Supabase-project
 
-1. Ga naar [supabase.com](https://supabase.com) en maak een nieuw project.
+1. Ga naar [supabase.com](https://supabase.com) en maak een nieuw project. Een koppeling met GitHub is niet nodig.
+   - **Project name:** bijvoorbeeld `Planbord`.
    - **Region:** kies een regio in de EU, bijvoorbeeld *Central EU (Frankfurt)*.
    - Bewaar het databasewachtwoord in je wachtwoordkluis.
+   - **Security:**
+     - laat **Enable Data API** aan; Planbord gebruikt die;
+     - **Automatically expose new tables** mag uit, zoals Supabase aanraadt. Planbord geeft elke tabel zelf de juiste rechten. Aan werkt ook;
+     - **Enable automatic RLS** maakt niet uit: de scripts zetten RLS op elke tabel zelf aan.
 2. Open **SQL Editor → New query**.
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
@@ -66,7 +71,19 @@ Open in Supabase **Authentication**.
    - Zet bij **Email** de provider aan.
    - **Email OTP Length:** `6`.
    - **Email OTP Expiration:** advies `600` seconden (10 minuten). Korter is veiliger; langer is makkelijker als de mail traag is.
-2. **Emails → Templates → Magic Link.** Supabase gebruikt dit sjabloon ook voor de inlogcode. Vervang het door een mail met alleen de code, zonder link:
+2. **Emails → SMTP Settings:** stel een eigen mailserver in. Doe dit vóór het sjabloon hieronder:
+   - zonder eigen mailserver laat Supabase je het sjabloon niet aanpassen;
+   - met het standaardsjabloon krijgt een collega alleen een inloglink, en daarmee werkt Planbord niet;
+   - de ingebouwde mail van Supabase is alleen om te testen: hij mailt alleen leden van je Supabase-team en maar een paar keer per uur.
+
+   Voorbeeld met [Resend](https://resend.com):
+   - maak een account en verifieer je domein. Dat zijn een paar DNS-records; vraag ze zo nodig aan wie de DNS van je domein beheert. Een subdomein zoals `mail.jouwdomein.nl` kan ook;
+   - maak een API-sleutel;
+   - vul in Supabase in: host `smtp.resend.com`, poort `465`, gebruikersnaam `resend`, wachtwoord = de API-sleutel;
+   - afzender bijvoorbeeld `planbord@jouwdomein.nl`, naam `Planbord`.
+
+   Elke andere SMTP-dienst werkt ook. Kies bij voorkeur een dienst die in de EU verwerkt. De mail bevat alleen de code en het e-mailadres.
+3. **Emails → Templates → Magic Link.** Supabase gebruikt dit sjabloon ook voor de inlogcode. Vervang het door een mail met alleen de code, zonder link:
    - **Subject:** `Je inlogcode voor Planbord`
    - **Body:**
      ```html
@@ -76,13 +93,6 @@ Open in Supabase **Authentication**.
      <p>De code is 10 minuten geldig. Heb je niet geprobeerd in te loggen? Dan kun je deze mail negeren.</p>
      ```
    - Pas "10 minuten" aan als je bij stap 2.1 een andere geldigheid kiest.
-3. **Emails → SMTP Settings:** stel een eigen mailserver in. De ingebouwde mail van Supabase is alleen om te testen: hij mailt alleen leden van je Supabase-team en maar een paar keer per uur.
-   - Voorbeeld met [Resend](https://resend.com):
-     - maak een account en verifieer je domein (een paar DNS-records);
-     - maak een API-sleutel;
-     - vul in Supabase in: host `smtp.resend.com`, poort `465`, gebruikersnaam `resend`, wachtwoord = de API-sleutel;
-     - afzender bijvoorbeeld `planbord@jouwdomein.nl`, naam `Planbord`.
-   - Elke andere SMTP-dienst werkt ook. Kies bij voorkeur een dienst die in de EU verwerkt. De mail bevat alleen de code en het e-mailadres.
 4. **Rate Limits:** zet het aantal mails per uur na het instellen van SMTP op een waarde die past bij het team, bijvoorbeeld `60`.
 5. **Sessions:** laat de standaard staan, dus geen *time-box* en geen *inactivity timeout*. Zo blijf je op je eigen telefoon ingelogd.
 6. **URL Configuration:**
