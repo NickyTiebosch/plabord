@@ -1,6 +1,23 @@
 # Plan fase 3: de extra's
 
-**Status: wacht op akkoord.** Dit plan hoort bij de opdracht in `docs/SPEC.md` (fase 3) en bouwt voort op fase 1 en 2. De vaste afspraken staan in `CLAUDE.md`. Er komt pas code na je akkoord.
+**Status: goedgekeurd op 2 oktober 2026** ("akkoord met je voorstellen"). Dit plan hoort bij de opdracht in `docs/SPEC.md` (fase 3) en bouwt voort op fase 1 en 2. De vaste afspraken staan in `CLAUDE.md`.
+
+## Besluiten
+V13 was al besloten. Alle voorstellen uit §1 (V14–V21) zijn aangenomen:
+
+| Vraag | Besluit |
+|---|---|
+| V13 | Zelf afwezigheid aanvragen valt af: aanvragen gaan via MyHR. Geen status "afgewezen". |
+| V14 | Directe mails bij een inval (ingezet of gaat niet door) en bij een roosterwijziging voor één dag, plus een herinnering de dag ervoor bij een afwijking. Geen mail bij afwezigheid, vaste diensten, sluitingsdagen of het verleden. Hooguit één mail per persoon per actie. |
+| V15 | De herinnering komt om 16:00 de dag ervoor (maandag: zondag; zaterdag: vrijdag). Niet bij afwezigheid de hele dag of een gesloten vestiging. |
+| V16 | Mailen via de Google Workspace-mailbox `info@22labs.nl` met een eigen app-wachtwoord, niet via Resend. |
+| V17 | De geheime sleutel mag ook gebruikt worden voor de herinneringen. Directe mails gaan met de sessie van de beheerder. |
+| V18 | Schakelaar "Mails versturen" in Instellingen, standaard uit. Testmail naar jezelf en een voorbeeld van de herinneringen voor morgen. |
+| V19 | Is de mail aan de invaller verstuurd, dan is een vervallen inval vanzelf afgehandeld. |
+| V20 | Twee exports in Excel: de planning (importformaat plus invallen en roosterwijzigingen) en de gegevens van één medewerker. Elke export in het logboek. |
+| V21 | Volledig verwijderen alleen bij een inactieve medewerker, met een overzicht vooraf en de naam overtypen. Niet jezelf. Het logboek houdt alleen id's. |
+
+De keuzes in §2 gelden zoals ze er staan.
 
 Fase 3 levert drie dingen:
 1. **Mails over je rooster.** Je krijgt een mail zodra je ergens invalt of je rooster voor een dag verandert. De dag ervoor krijg je een herinnering als je rooster die dag afwijkt van je vaste rooster.
