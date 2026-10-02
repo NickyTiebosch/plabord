@@ -1,6 +1,23 @@
 # Plan fase 4: pushmeldingen
 
-**Status: concept, wacht op je akkoord.** Na fase 3 vroeg je om pushmeldingen op de telefoon ("ik wil wel de pushmelding"). Dit plan bouwt voort op fase 1 tot en met 3. De vaste afspraken staan in `CLAUDE.md`. Er komt pas code na je akkoord.
+**Status: goedgekeurd op 2 oktober 2026** ("akkoord met je voorstellen"). Na fase 3 vroeg je om pushmeldingen op de telefoon ("ik wil wel de pushmelding"). Dit plan bouwt voort op fase 1 tot en met 3. De vaste afspraken staan in `CLAUDE.md`.
+
+## Besluiten
+Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
+
+| Vraag | Besluit |
+|---|---|
+| V23 | Een service worker, alleen om meldingen te tonen: geen cache en geen offline-modus. De regel in `CLAUDE.md` is daarop aangepast. |
+| V24 | Push op dezelfde momenten als de mails (V14 en V15), naast de mail. De mail blijft het betrouwbare kanaal. |
+| V25 | Iedere medewerker zet meldingen zelf aan, per toestel, via Mijn rooster. Op een iPhone kan dat alleen vanaf het beginscherm (iOS 16.4 of nieuwer). |
+| V26 | Een korte tekst met datum en plaats, alleen over jezelf. Een tik opent Mijn rooster. |
+| V27 | De schakelaar heet Meldingen versturen en geldt voor mail én push. Plus een knop Testmelding naar mij. |
+| V28 | Een push-abonnement per toestel: alleen zichtbaar voor de medewerker zelf (beheerders zien aantallen), weg bij uitzetten, verlopen of volledig verwijderen. |
+| V29 | Een VAPID-sleutelpaar, dat de eigenaar één keer maakt en in Netlify zet. De herinneringen via push vallen onder V17. |
+
+De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
+- **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
+- **De publieke sleutel heet `VAPID_PUBLIC_KEY`**, zonder `NEXT_PUBLIC_`. De server geeft hem door aan de pagina, dus hij hoeft niet in de build te zitten.
 
 Fase 4 levert één ding: **pushmeldingen** op de telefoon of computer van een medewerker, op dezelfde momenten als de mails van fase 3. Er komt geen app in de App Store of de Play Store. Het werkt via Planbord op het beginscherm, met *web push*: een open standaard die iPhone (vanaf iOS 16.4), Android en de gewone browsers ondersteunen.
 
@@ -136,7 +153,7 @@ RLS staat aan op elke nieuwe tabel. Eerst `revoke all` voor `anon` en `authentic
 | `src/components/client/push-toggle.tsx` | het blok Meldingen op dit toestel (V25) |
 
 - **Nieuwe omgevingsvariabelen:**
-  - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`;
+  - `VAPID_PUBLIC_KEY`;
   - `VAPID_PRIVATE_KEY`, geheim;
   - `VAPID_SUBJECT`, bijvoorbeeld `mailto:info@22labs.nl`.
 - Geen nieuwe pakketten.
@@ -190,9 +207,9 @@ RLS staat aan op elke nieuwe tabel. Eerst `revoke all` voor `anon` en `authentic
 
 ## 8. Oplevering: handmatige stappen voor jou
 1. **Supabase → SQL Editor:** draai `supabase/setup/fase-4.sql`.
-2. **VAPID-sleutels:** maak het sleutelpaar met de PowerShell-opdracht uit de README.
+2. **VAPID-sleutels:** maak het sleutelpaar in Planbord, onder Beheer → Instellingen → Sleutels voor meldingen.
 3. **Netlify → Environment variables:**
-   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`;
+   - `VAPID_PUBLIC_KEY`;
    - `VAPID_PRIVATE_KEY`, met **Contains secret values**;
    - `VAPID_SUBJECT` = `mailto:info@22labs.nl`.
 
