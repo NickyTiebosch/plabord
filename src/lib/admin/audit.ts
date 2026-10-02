@@ -198,6 +198,7 @@ const DELETED_COUNTS: [key: string, one: string, many: string][] = [
   ['substitutions', 'inval', 'invallen'],
   ['shift_overrides', 'roosterwijziging', 'roosterwijzigingen'],
   ['calendar_feeds', 'agendalink', 'agendalinks'],
+  ['push_subscriptions', 'toestel met meldingen', 'toestellen met meldingen'],
 ];
 
 function deletedText(details: Record<string, unknown>): string | null {

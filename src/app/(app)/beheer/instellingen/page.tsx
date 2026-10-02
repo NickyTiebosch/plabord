@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { SubmitButton } from '@/components/client/form-controls';
 import { StatefulForm } from '@/components/client/stateful-form';
+import { VapidGenerator } from '@/components/client/vapid-generator';
 import { Card, Field, PageHeader, SectionTitle, inputClass } from '@/components/ui';
 import { requireAdmin } from '@/lib/auth/session';
 import { loadGroups, loadPlanningSnapshot, loadSettings, must } from '@/lib/db/queries';
@@ -11,15 +12,18 @@ import type { Weekday } from '@/lib/engine/types';
 import { previewReminderDate } from '@/lib/mail/labels';
 import { composeMail, personalDaysFor } from '@/lib/mail/messages';
 import { reminderTargets } from '@/lib/mail/reminders';
-import { saveNorms, saveRanks, saveSettings, sendTestMailAction, setMailEnabled } from './actions';
+import { composePush } from '@/lib/push/messages';
+import { vapidPublicKey } from '@/lib/push/send';
+import { saveNorms, saveRanks, saveSettings, sendTestMailAction, sendTestPushAction, setMailEnabled } from './actions';
 
 export const metadata: Metadata = { title: 'Instellingen' };
 
 const numberClass = 'block w-16 min-h-11 rounded-lg border border-slate-300 bg-white px-2 text-center text-base tabular-nums';
 
 export default async function SettingsPage() {
-  const { supabase } = await requireAdmin();
+  const { supabase, email } = await requireAdmin();
   const preview = previewReminderDate(todayInAmsterdam(new Date()));
+  const pushReady = vapidPublicKey() !== null;
   const [settings, groups, norms, mailSetting, snapshot] = await Promise.all([
     loadSettings(supabase),
     loadGroups(supabase),
@@ -29,16 +33,14 @@ export default async function SettingsPage() {
   ]);
   const mailEnabled = Boolean(mailSetting.data?.mail_enabled);
   // Het voorbeeld van de herinneringen (V18): wie er een krijgt, en met welke tekst.
-  const reminders = reminderTargets(snapshot, preview.date).map((target) => ({
-    ...target,
-    content: composeMail({
-      kind: 'reminder',
-      name: target.name,
-      days: personalDaysFor(snapshot, target.employeeId, [preview.date]),
-      groups: snapshot.groups,
-      appUrl: null,
-    }),
-  }));
+  const reminders = reminderTargets(snapshot, preview.date).map((target) => {
+    const days = personalDaysFor(snapshot, target.employeeId, [preview.date]);
+    return {
+      ...target,
+      content: composeMail({ kind: 'reminder', name: target.name, days, groups: snapshot.groups, appUrl: null }),
+      push: composePush({ kind: 'reminder', days, groups: snapshot.groups }),
+    };
+  });
   const normOf = (groupId: string, weekday: number, dayPart: string) =>
     norms.find((norm) => norm.group_id === groupId && norm.weekday === weekday && norm.day_part === dayPart)?.min_staff;
   const locations = groups.filter((group) => group.hasCounter).sort(compareGroups);
@@ -50,30 +52,54 @@ export default async function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="space-y-4 p-4 lg:col-span-2">
           <div>
-            <SectionTitle className="mb-1">Mails</SectionTitle>
+            <SectionTitle className="mb-1">Meldingen</SectionTitle>
             <p className="text-sm text-slate-600">
               Collega&rsquo;s krijgen een mail als ze worden ingezet, als een inval niet doorgaat of als hun rooster voor een
-              dag verandert. De dag ervoor om 16:00 krijgen ze een herinnering als hun rooster afwijkt.
+              dag verandert. De dag ervoor om 16:00 krijgen ze een herinnering als hun rooster afwijkt. Wie meldingen aanzet
+              op een toestel, krijgt daarnaast een pushmelding.
             </p>
           </div>
           <form action={setMailEnabled} className="flex flex-wrap items-center gap-3">
             <input type="hidden" name="mails" value={mailEnabled ? 'uit' : 'aan'} />
             <p className="text-sm font-medium text-slate-900">
-              Mails versturen: {mailEnabled ? <span className="text-emerald-700">aan</span> : <span className="text-rose-700">uit</span>}
+              Meldingen versturen (mail en push):{' '}
+              {mailEnabled ? <span className="text-emerald-700">aan</span> : <span className="text-rose-700">uit</span>}
             </p>
             <SubmitButton size="sm" variant={mailEnabled ? 'secondary' : 'primary'}>
-              {mailEnabled ? 'Zet mails uit' : 'Zet mails aan'}
+              {mailEnabled ? 'Zet meldingen uit' : 'Zet meldingen aan'}
             </SubmitButton>
           </form>
           <p className="text-xs text-slate-500">
-            Staan mails uit, dan krijgt niemand een mail. Bij Beheer → Mails zie je wat er verstuurd zou zijn. Test eerst met
-            een testmail aan jezelf, en zet mails pas daarna aan.
+            Staan meldingen uit, dan krijgt niemand een mail of push. Bij Beheer → Mails zie je wat er verstuurd zou zijn.
+            Test eerst met een testmail en een testmelding aan jezelf, en zet meldingen pas daarna aan.
           </p>
-          <StatefulForm action={sendTestMailAction}>
-            <SubmitButton size="sm" variant="secondary">
-              Testmail naar mij
-            </SubmitButton>
-          </StatefulForm>
+          <div className="flex flex-wrap items-start gap-3">
+            <StatefulForm action={sendTestMailAction}>
+              <SubmitButton size="sm" variant="secondary">
+                Testmail naar mij
+              </SubmitButton>
+            </StatefulForm>
+            <StatefulForm action={sendTestPushAction}>
+              <SubmitButton size="sm" variant="secondary">
+                Testmelding naar mij
+              </SubmitButton>
+            </StatefulForm>
+          </div>
+          <div className="rounded-lg border border-slate-200 p-3">
+            <h3 className="text-sm font-semibold text-slate-900">Sleutels voor pushmeldingen</h3>
+            {pushReady ? (
+              <p className="mt-1 text-sm text-slate-600">
+                Push is ingesteld. Collega&rsquo;s zetten meldingen aan onderaan Mijn rooster, op hun eigen telefoon.
+              </p>
+            ) : (
+              <div className="mt-1 space-y-2">
+                <p className="text-sm text-slate-600">
+                  Push is nog niet ingesteld. Maak hier eenmalig de sleutels, zet ze in Netlify en start een nieuwe deploy.
+                </p>
+                <VapidGenerator subject={`mailto:${email ?? 'jij@bedrijf.nl'}`} />
+              </div>
+            )}
+          </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
               Herinneringen voor {formatDayShort(preview.date)}{' '}
@@ -91,6 +117,9 @@ export default async function SettingsPage() {
                         <span className="text-slate-500"> · {reminder.content.subject}</span>
                       </summary>
                       <pre className="mt-2 font-sans text-sm whitespace-pre-wrap text-slate-700">{reminder.content.text}</pre>
+                      <p className="mt-2 text-sm text-slate-700">
+                        <span className="font-medium">Push:</span> {reminder.push.body}
+                      </p>
                     </details>
                   </li>
                 ))}

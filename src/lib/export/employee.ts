@@ -29,6 +29,8 @@ export interface EmployeeData {
   shiftOverrides: readonly ShiftOverride[];
   feeds: readonly { kind: string; groupId: string | null; createdAt: string; revokedAt: string | null }[];
   mails: readonly { kind: MailKind; dates: readonly IsoDate[]; status: MailStatus; lastError: string | null; attempts: number; createdAt: string }[];
+  /** Toestellen met meldingen aan (fase 4, V28): alleen wanneer, nooit het adres of de sleutels. */
+  devices: readonly { createdAt: string; lastSuccessAt: string | null }[];
   /** De logboekregels over deze medewerker, al in gewone taal. */
   log: readonly { when: string; what: string; detail: string | null }[];
 }
@@ -131,6 +133,17 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
           MAIL_KIND_LABELS[mail.kind],
           formatDateList(mail.dates),
           mailStatusLabel(mail.status, mail.lastError, mail.attempts),
+        ]),
+    },
+    {
+      sheet: 'Meldingen',
+      header: ['Toestel', 'Aangezet', 'Laatste melding aangekomen'],
+      rows: [...data.devices]
+        .sort(byDate((device) => device.createdAt))
+        .map((device, index) => [
+          `Toestel ${index + 1}`,
+          formatExportMoment(device.createdAt),
+          device.lastSuccessAt ? formatExportMoment(device.lastSuccessAt) : '',
         ]),
     },
     {
