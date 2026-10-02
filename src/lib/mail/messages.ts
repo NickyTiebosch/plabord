@@ -51,7 +51,7 @@ function firstName(name: string): string {
  * niet door" terwijl er wel een inval staat (bijvoorbeeld als iets intussen weer is veranderd),
  * wordt een algemene mail "je rooster is gewijzigd". Zo spreekt een mail zichzelf nooit tegen.
  */
-function effectiveKind(kind: MailKind, days: readonly PersonalDay[]): MailKind {
+export function effectiveKind(kind: MailKind, days: readonly PersonalDay[]): MailKind {
   const hasSubstitution = days.some((day) => day.entries.some((entry) => entry.kind === 'substitution'));
   if (kind === 'substitution_assigned' && !hasSubstitution) return 'day_changed';
   if (kind === 'substitution_cancelled' && hasSubstitution) return 'day_changed';

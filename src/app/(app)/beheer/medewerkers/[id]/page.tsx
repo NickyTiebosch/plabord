@@ -47,14 +47,16 @@ async function loadDeletionCounts(
   today: string,
   account: boolean,
 ) {
-  const count = async (table: 'recurring_shifts' | 'absences' | 'substitutions' | 'shift_overrides' | 'calendar_feeds') =>
-    (await supabase.from(table).select('id', { count: 'exact', head: true }).eq('employee_id', employeeId)).count ?? 0;
-  const [recurringShifts, absences, substitutions, shiftOverrides, calendarFeeds, upcoming] = await Promise.all([
+  const count = async (
+    table: 'recurring_shifts' | 'absences' | 'substitutions' | 'shift_overrides' | 'calendar_feeds' | 'push_subscriptions',
+  ) => (await supabase.from(table).select('id', { count: 'exact', head: true }).eq('employee_id', employeeId)).count ?? 0;
+  const [recurringShifts, absences, substitutions, shiftOverrides, calendarFeeds, pushDevices, upcoming] = await Promise.all([
     count('recurring_shifts'),
     count('absences'),
     count('substitutions'),
     count('shift_overrides'),
     count('calendar_feeds'),
+    count('push_subscriptions'),
     supabase
       .from('substitutions')
       .select('id', { count: 'exact', head: true })
@@ -68,6 +70,7 @@ async function loadDeletionCounts(
     substitutions,
     upcomingSubstitutions: upcoming.count ?? 0,
     shiftOverrides,
+    pushDevices,
     calendarFeeds,
     account,
   });
@@ -101,7 +104,7 @@ export default async function EmployeeDetailPage({
   const { supabase, employeeId: viewerId } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
 
-  const [groups, settings, employeeRow, account, eligibility, shifts, feeds] = await Promise.all([
+  const [groups, settings, employeeRow, account, eligibility, shifts, feeds, devices] = await Promise.all([
     loadGroups(supabase),
     loadSettings(supabase),
     supabase.from('employees').select('*').eq('id', id).maybeSingle(),
@@ -109,7 +112,10 @@ export default async function EmployeeDetailPage({
     supabase.from('counter_eligibility').select('group_id').eq('employee_id', id),
     supabase.from('recurring_shifts').select('*').eq('employee_id', id),
     supabase.from('calendar_feeds').select('id, kind, group_id, created_at').eq('employee_id', id).is('revoked_at', null),
+    // Fase 4: alleen het aantal toestellen met meldingen, nooit het adres.
+    supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('employee_id', id),
   ]);
+  const deviceCount = devices.count ?? 0;
   if (!employeeRow.data) notFound();
   const employee = mapEmployee(employeeRow.data, must(eligibility, 'de inzetbaarheid').map((row) => row.group_id));
   const groupName = (groupId: string | null) => groups.find((group) => group.id === groupId)?.name ?? groupId ?? '';
@@ -176,6 +182,13 @@ export default async function EmployeeDetailPage({
                 </form>
               </>
             )}
+            {account.data?.user_id ? (
+              <p className="text-sm text-slate-700">
+                {deviceCount === 0
+                  ? 'Meldingen staan op geen enkel toestel aan.'
+                  : `Meldingen aan op ${deviceCount} ${deviceCount === 1 ? 'toestel' : 'toestellen'}.`}
+              </p>
+            ) : null}
           </Card>
 
           <Card className="space-y-3 p-4">

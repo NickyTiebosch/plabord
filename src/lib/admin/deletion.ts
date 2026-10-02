@@ -12,6 +12,8 @@ export interface DeletionCounts {
   upcomingSubstitutions: number;
   shiftOverrides: number;
   calendarFeeds: number;
+  /** Toestellen met meldingen aan (fase 4). */
+  pushDevices: number;
   account: boolean;
 }
 
@@ -35,6 +37,7 @@ export function deletionSummary(counts: DeletionCounts): string[] {
   }
   if (counts.shiftOverrides > 0) lines.push(counted(counts.shiftOverrides, 'roosterwijziging', 'roosterwijzigingen'));
   if (counts.calendarFeeds > 0) lines.push(counted(counts.calendarFeeds, 'agendalink', 'agendalinks'));
+  if (counts.pushDevices > 0) lines.push(`meldingen op ${counted(counts.pushDevices, 'toestel', 'toestellen')}`);
   if (counts.account) lines.push('het inlogaccount en de werkmail');
   return lines;
 }

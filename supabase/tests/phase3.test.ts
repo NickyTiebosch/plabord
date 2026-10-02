@@ -93,6 +93,8 @@ describe('fase 3: mails, export en volledig verwijderen', () => {
         'created_at',
         'updated_at',
         'sent_at',
+        // Fase 4: naar hoeveel toestellen de push ging; een aantal, geen adres.
+        'push_devices',
       ]);
     });
   });
@@ -198,6 +200,8 @@ describe('fase 3: mails, export en volledig verwijderen', () => {
         substitutions: 1,
         shift_overrides: 1,
         calendar_feeds: 1,
+        // Sinds fase 4 telt de functie ook de toestellen met meldingen.
+        push_subscriptions: 0,
         account: true,
       });
 

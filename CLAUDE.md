@@ -23,6 +23,9 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Niet `xlsx` van npm: die versie is verouderd.
 - Mail (fase 3): `nodemailer` via SMTP, met de Google Workspace-mailbox van de eigenaar (besluit V16). Niet Resend: dat vraagt DNS-records.
 - Geplande taak (fase 3): een Netlify scheduled function in `netlify/functions/`. Die roept elk uur een beveiligde route in de app aan, met `CRON_SECRET`. Zo'n taak draait alleen op de gepubliceerde site, niet op een preview.
+- Pushmeldingen (fase 4): web push volgens RFC 8030, 8291 en 8292, zelf gebouwd met `node:crypto`. Niet het pakket `web-push`: sinds januari 2024 geen release meer.
+  - Sleutels: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (geheim) en `VAPID_SUBJECT`.
+  - De service worker `public/sw.js` toont alleen meldingen (besluit V23).
 
 ## Commando's
 | Commando | Wat het doet |
@@ -45,7 +48,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Alle rooster-, sluitingsdag- en verloflogica staat in pure functies in `src/lib/engine/`. In fase 2 komt de vervangingslogica erbij.
   - Geen databasetoegang, geen `Date.now()` en geen omgevingsvariabelen. Gegevens en "nu" komen binnen als parameter.
   - Deterministisch: dezelfde invoer geeft altijd dezelfde uitvoer, in dezelfde volgorde.
-- De ICS-opbouw (`src/lib/ics/`), de Excel-import (`src/lib/import/`), de export (`src/lib/export/`) en de mails (`src/lib/mail/`, behalve het versturen zelf) zijn ook puur en los te testen.
+- De ICS-opbouw (`src/lib/ics/`), de Excel-import (`src/lib/import/`), de export (`src/lib/export/`), de mails (`src/lib/mail/`) en de pushmeldingen (`src/lib/push/`) zijn ook puur en los te testen, behalve het versturen zelf.
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
@@ -69,6 +72,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 
 ## Privacy (harde regels)
 - Sla alleen op wat de planning nodig heeft: naam, werkmail, groep, rol, waar iemand mag invallen, vaste diensten, afwezigheid en invallen.
+  - Sinds fase 4 ook de push-abonnementen van de eigen toestellen van een medewerker (besluit V28).
 - Afwezigheid heeft géén reden, soort of vrij tekstveld. Alles heet "Afwezig".
 - E-mailadressen staan alleen in `employee_accounts`.
   - Alleen beheerders en de medewerker zelf kunnen die tabel lezen.
@@ -78,7 +82,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Alleen gebruiken voor:
     - accountbeheer: aanmaken, e-mailadres wijzigen en inloggen blokkeren als iemand op inactief staat (besluit V4 in het plan van fase 1);
     - agendafeeds serveren;
-    - (fase 3) de geplande taak voor mails: herinneringen versturen, mislukte mails opnieuw proberen en een gemailde vervallen inval afhandelen. Die taak heeft geen sessie en leest dan de werkmails (besluit V17 in het plan van fase 3);
+    - (fase 3) de geplande taak voor mails: herinneringen versturen (sinds fase 4 ook als push), mislukte mails opnieuw proberen en een gemailde vervallen inval afhandelen. Die taak heeft geen sessie en leest dan de werkmails (besluit V17 in het plan van fase 3);
     - (fase 3) een medewerker volledig verwijderen.
 - Een agendatoken bestaat uit minstens 32 willekeurige bytes. De database bewaart alleen de SHA-256-hash.
 - Het logboek legt vast wie wat wanneer deed. Het is alleen zichtbaar voor beheerders.
@@ -87,12 +91,17 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Geen namen van anderen, geen reden van afwezigheid en geen andere e-mailadressen.
   - Geen plaatjes, trackers of leesbevestigingen.
   - De wachtrij `mail_queue` bewaart geen adressen en geen tekst; de tekst ontstaat pas bij het versturen.
-  - Zonder de schakelaar "Mails versturen" gaat er geen mail naar collega's. De testmail gaat alleen naar je eigen werkmail.
+  - Zonder de schakelaar "Meldingen versturen" (tot fase 4: "Mails versturen") gaat er geen mail of push naar collega's. De testmail en de testmelding gaan alleen naar jezelf.
+- Pushmeldingen (fase 4) volgen dezelfde regels als mails.
+  - Alleen naar de eigen toestellen van de medewerker, en alleen over het eigen rooster.
+  - De inhoud is versleuteld per toestel. Nooit namen van anderen of een reden van afwezigheid.
+  - Een push-abonnement zien alleen de medewerker zelf en beheerders (om te versturen). Elders alleen aantallen, nooit het adres of de sleutels.
+  - Alleen naar https-adressen van de bekende pushdiensten: Apple, Google, Mozilla en Microsoft.
 - Nooit echte medewerkergegevens, secrets of `.env`-bestanden in de repo. Testdata en fixtures zijn fictief.
 
 ## Teststrategie
-- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/` en `src/lib/mail/`. Een test staat naast de code als `*.test.ts`.
-- Tests versturen nooit een echte mail: het versturen gaat via een transport dat je in tests vervangt.
+- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/` en `src/lib/push/`. Een test staat naast de code als `*.test.ts`.
+- Tests versturen nooit een echte mail of push: het versturen gaat via een transport dat je in tests vervangt.
 - Er is één gedeelde, fictieve teamfixture: `src/lib/engine/__fixtures__/team.ts`. Die heeft dezelfde opbouw als het echte team (zie SPEC, "Tests").
 - De databasetests in `supabase/tests/` draaien alle migraties op PGlite, met een nagebootst `auth`-schema en de rollen `anon`, `authenticated` en `service_role`. Ze controleren:
   - RLS en grants;
@@ -106,6 +115,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Niet lezen of schrijven in iemands eigen agenda. Geen koppeling met Microsoft 365, Outlook of MyHR.
 - Nooit zelf een inval toewijzen: daar is altijd akkoord van een beheerder voor nodig.
 - Nooit iets stilletjes verwijderen of overschrijven. Elke wijziging komt in het logboek.
-- Geen offline-modus of service worker, en geen analytics of tracking.
+- Geen offline-modus, en geen analytics of tracking.
+  - Een service worker alleen voor pushmeldingen (besluit V23): geen cache en geen `fetch`-handler.
 - Geen magic links. Inloggen gaat alleen met de 6-cijferige code, met `shouldCreateUser: false`.
 - Niet deployen naar Vercel.

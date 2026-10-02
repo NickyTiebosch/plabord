@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { amsterdamDateTime } from '@/lib/engine/dates';
 import { formatDayShort } from '@/lib/engine/format';
-import { MAIL_KIND_LABELS, mailStatusLabel } from '@/lib/mail/labels';
+import { MAIL_KIND_LABELS, mailStatusLabel, pushLabel } from '@/lib/mail/labels';
 import { formatDateList } from '@/lib/mail/messages';
 import { MAIL_KINDS, MAIL_STATUSES } from '@/lib/mail/types';
 
@@ -25,7 +25,7 @@ export default async function MailsPage() {
     loadEmployeeNames(supabase),
     supabase
       .from('mail_queue')
-      .select('id, employee_id, kind, dates, status, attempts, last_error, created_at')
+      .select('id, employee_id, kind, dates, status, attempts, last_error, created_at, push_devices')
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(300),
@@ -46,6 +46,7 @@ export default async function MailsPage() {
         dates: formatDateList(row.dates),
         status,
         statusLabel: mailStatusLabel(status, row.last_error, row.attempts),
+        push: pushLabel(row.push_devices),
       },
     ];
   });
@@ -58,7 +59,7 @@ export default async function MailsPage() {
       />
       {!setting.data?.mail_enabled ? (
         <p className="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
-          Mails staan uit. Hieronder zie je wat er verstuurd zou zijn. Aanzetten doe je bij{' '}
+          Meldingen staan uit. Hieronder zie je wat er verstuurd zou zijn. Aanzetten doe je bij{' '}
           <Link href="/beheer/instellingen" className="underline">
             Instellingen
           </Link>
@@ -83,6 +84,7 @@ export default async function MailsPage() {
                   <Badge tone={row.status === 'sent' ? 'success' : row.status === 'failed' ? 'absent' : 'neutral'}>
                     {row.statusLabel}
                   </Badge>
+                  {row.push ? <Badge tone="brand">{row.push}</Badge> : null}
                 </p>
               </li>
             ))}

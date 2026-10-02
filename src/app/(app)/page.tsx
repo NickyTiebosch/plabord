@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
+import { PushToggle } from '@/components/client/push-toggle';
 import { AbsenceBadge, ScheduleLineView } from '@/components/schedule';
-import { Badge, Card, Notice, PageHeader } from '@/components/ui';
+import { Badge, Card, Notice, PageHeader, SectionTitle } from '@/components/ui';
 import { requireViewer } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
 import { addDays, startOfIsoWeek, todayInAmsterdam } from '@/lib/engine/dates';
 import { computePersonalSchedule } from '@/lib/engine/schedule';
+import { vapidPublicKey } from '@/lib/push/send';
 import { buildMySchedule } from '@/lib/views/my-schedule';
 
 export const metadata: Metadata = { title: 'Mijn rooster' };
@@ -60,6 +62,10 @@ export default async function MySchedulePage() {
           </section>
         ))}
       </div>
+      <Card className="mt-6 space-y-2 p-4">
+        <SectionTitle>Meldingen op dit toestel</SectionTitle>
+        <PushToggle publicKey={vapidPublicKey()} />
+      </Card>
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 De rooster- en verlofapp van het verhuurteam. Planbord vervangt de Excel: wie werkt wanneer en waar, wie is afwezig, en welke dagen zijn we dicht.
 
-De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md), [`docs/PLAN-fase-2.md`](docs/PLAN-fase-2.md) en [`docs/PLAN-fase-3.md`](docs/PLAN-fase-3.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
+De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md), [`docs/PLAN-fase-2.md`](docs/PLAN-fase-2.md), [`docs/PLAN-fase-3.md`](docs/PLAN-fase-3.md) en [`docs/PLAN-fase-4.md`](docs/PLAN-fase-4.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
 
 ## Wat kan Planbord
 
@@ -51,7 +51,7 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 
 **Voor beheerders**
 - **Instellingen → Mails:**
-  - de schakelaar **Mails versturen**; die staat eerst uit;
+  - de schakelaar **Mails versturen** (sinds fase 4: **Meldingen versturen**); die staat eerst uit;
   - **Testmail naar mij**;
   - een voorbeeld van de herinneringen voor morgen: wie er een krijgt, en met welk onderwerp.
 - Na een actie zie je of de mail is verstuurd.
@@ -66,6 +66,23 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - alleen bij een inactieve medewerker, met eerst een overzicht van wat er verdwijnt. Je typt de naam over om te bevestigen;
   - ook het inlogaccount verdwijnt;
   - het logboek houdt één regel met de aantallen, zonder naam.
+
+### Fase 4: pushmeldingen
+
+**Voor iedereen**
+- **Meldingen op dit toestel**, onderaan Mijn rooster. Wie wil, zet ze aan op de eigen telefoon of computer.
+  - Je krijgt een melding op dezelfde momenten als de mail: als je ergens invalt, als een inval niet doorgaat, als je rooster voor één dag verandert, en om 16:00 als je rooster morgen afwijkt.
+  - Bijvoorbeeld "Je valt in op wo 14 okt in Eindhoven (07:30–18:00)". Een tik opent Mijn rooster.
+  - De push komt naast de mail; de mail blijft de betrouwbare weg.
+- Op een iPhone werkt het alleen vanuit Planbord op het beginscherm, vanaf iOS 16.4.
+
+**Voor beheerders**
+- **Instellingen:**
+  - de schakelaar heet nu **Meldingen versturen** en geldt voor mail én push;
+  - de knop **Testmelding naar mij** stuurt een melding naar je eigen toestellen;
+  - zolang push niet is ingesteld, maak je hier de sleutels voor pushmeldingen.
+- **Mails:** bij elke mail staat naar hoeveel toestellen de push ging.
+- **Medewerker:** hoeveel toestellen meldingen aan hebben. Volledig verwijderen neemt die mee, en de gegevensexport noemt ze, zonder het adres van het toestel.
 
 ---
 
@@ -87,7 +104,7 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
    - Het script nog een keer draaien kan geen kwaad: bestaande tabellen en gegevens blijven staan.
-4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql) en [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
+4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql) en [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
 
 ### Stap 2. Inloggen instellen
 
@@ -243,7 +260,7 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
 4. **Eerst testen**, in Planbord onder **Beheer → Instellingen**:
    1. Klik op **Testmail naar mij**. Die gaat naar je eigen werkmail, ook als mails nog uit staan.
    2. Bekijk het voorbeeld van de herinneringen voor morgen.
-   3. Zet daarna pas **Mails versturen** aan.
+   3. Zet daarna pas **Meldingen versturen** aan (tot fase 4 heette die schakelaar **Mails versturen**).
 
    Previews en de gewone app delen één database. Staat de schakelaar aan, dan gaan ook mails van acties in een preview echt naar collega's.
 5. **De geplande taak** draait elk uur, alleen op de gepubliceerde site en niet op een preview.
@@ -253,6 +270,28 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
      - de wachtrij opruimen.
    - Controleren: Netlify → **Logs & metrics → Functions → herinneringen**. Daar staat elk uur een run, met een eventuele fout.
    - De taak roept de app aan via het gewone adres. Staat de site nog op **Private** (stap 4), dan komt die aanroep er niet door en gaan er geen herinneringen weg. Zet de site dan op **public**.
+
+### Stap 8. Pushmeldingen (fase 4)
+
+1. **Supabase:** draai [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql) in de SQL Editor, na fase 1 tot en met 3.
+2. **Sleutels maken:** ga in Planbord naar **Beheer → Instellingen → Sleutels voor pushmeldingen** en klik op **Sleutels maken**.
+   - Je eigen browser maakt het sleutelpaar. Het gaat niet naar de server en wordt nergens bewaard.
+   - Laad je de pagina opnieuw, dan zijn de sleutels weg. Maak dan gewoon nieuwe.
+3. **Netlify → Project configuration → Environment variables:** zet de drie waarden erin, voor alle contexten.
+
+   | Key | Value | Contains secret values |
+   |---|---|---|
+   | `VAPID_PUBLIC_KEY` | de publieke sleutel | nee |
+   | `VAPID_PRIVATE_KEY` | de privésleutel | **ja** |
+   | `VAPID_SUBJECT` | `mailto:` met je werkmail, bijvoorbeeld `mailto:info@22labs.nl` | nee |
+
+   - Start daarna een nieuwe deploy. Deel de privésleutel nooit via chat of mail.
+   - Vervang je de sleutels later, dan moet iedereen de meldingen op zijn toestel opnieuw aanzetten.
+4. **Op je eigen telefoon:**
+   1. Zet Planbord op je beginscherm (zie de uitleg hieronder) en open het via het icoon.
+   2. Ga naar Mijn rooster → onderaan **Meldingen aanzetten** → sta meldingen toe.
+   3. Ga naar Beheer → Instellingen → **Testmelding naar mij**.
+5. **Meldingen versturen** staat aan of uit voor mail én push. Een testmelding gaat ook als de schakelaar uit staat.
 
 ---
 
@@ -265,6 +304,17 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 3. Loop het testlijstje uit de pull request door, het liefst op je telefoon.
 4. Alles goed? **Merge** de pull request. Netlify zet `main` dan automatisch live.
 5. Iets niet goed? Zet een opmerking in de pull request.
+
+---
+
+## Meldingen op je telefoon (uitleg voor collega's)
+
+1. **Zet Planbord op je beginscherm.**
+   - **iPhone:** open Planbord in Safari, tik op de deelknop en kies **Zet op beginscherm**. Open Planbord voortaan via dat icoon. Meldingen werken alleen zo, en vanaf iOS 16.4.
+   - **Android:** open Planbord in Chrome, tik op het menu (⋮) en kies **App installeren** of **Toevoegen aan startscherm**.
+2. Ga naar **Mijn rooster** en tik onderaan op **Meldingen aanzetten**. Kies **Toestaan** als je telefoon het vraagt.
+3. Je krijgt een melding als je ergens invalt, als een inval niet doorgaat, als je rooster voor één dag verandert, en om 16:00 als je rooster morgen afwijkt. De mail blijft ook komen.
+4. Uitzetten kan op dezelfde plek. Heb je eerder **Niet toestaan** gekozen? Zet meldingen dan aan in de instellingen van je telefoon, bij Planbord.
 
 ---
 
@@ -294,6 +344,11 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
   - Er staan geen namen van collega's in, geen reden van afwezigheid, en geen plaatjes, trackers of leesbevestiging.
   - De wachtrij voor mails bewaart geen e-mailadressen en geen tekst. Regels ouder dan 90 dagen verdwijnen vanzelf.
 - Exporteren en volledig verwijderen kunnen alleen beheerders. Allebei komen ze in het logboek.
+- Pushmeldingen (fase 4):
+  - je zet ze zelf aan, per toestel, en ze gaan alleen over je eigen rooster;
+  - Planbord bewaart per toestel een push-abonnement: een adres bij de pushdienst van Apple, Google, Mozilla of Microsoft, met twee sleutels;
+  - elke melding is versleuteld voor dat ene toestel. De pushdienst kan de inhoud niet lezen, maar ziet wel dát er een melding is. Die diensten staan deels buiten de EU;
+  - het abonnement zien alleen de medewerker zelf en beheerders (om te versturen). Elders staan alleen aantallen. Het verdwijnt bij uitzetten, als het verlopen is, en bij volledig verwijderen.
 - Geen trackers, geen analytics, geen externe scripts of lettertypen. Zoekmachines mogen niets indexeren.
 
 ---
@@ -333,6 +388,10 @@ npm run dev                  # http://localhost:3000
 - **Tijdvelden** tonen de tijd zoals het toestel is ingesteld. Op een Nederlands ingesteld toestel is dat 24-uurs.
 - **Herinneringen alleen op de gewone app.** Netlify draait de geplande taak niet op een deploy preview. In een preview test je met de testmail en het voorbeeld; de echte herinnering zie je pas na de merge.
 - **Spam.** Belandt een mail van Planbord toch in de spam, laat collega's het adres dan aan hun contacten toevoegen.
+- **Pushmeldingen.**
+  - Op een iPhone werken ze alleen vanaf het beginscherm, en Apple kan een abonnement zonder melding laten verlopen. Opent iemand Mijn rooster, dan werkt Planbord het abonnement van dat toestel bij.
+  - Op Android kan batterijbesparing een melding vertragen. Daarom blijft de mail.
+  - Een push gaat niet opnieuw als hij mislukt; de mail wel.
 - **Supabase gratis:**
   - pauzeert een project na een week zonder gebruik; met dagelijks gebruik en agendafeeds gebeurt dat niet;
   - staat maximaal twee actieve gratis projecten per account toe; gepauzeerde projecten tellen niet mee;

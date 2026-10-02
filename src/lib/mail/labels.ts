@@ -27,6 +27,12 @@ export function mailStatusLabel(status: MailStatus, lastError: string | null, at
   }
 }
 
+/** "push naar 2 toestellen" bij een mail (fase 4), of `null` als er geen push ging. */
+export function pushLabel(devices: number): string | null {
+  if (devices <= 0) return null;
+  return `push naar ${devices} ${devices === 1 ? 'toestel' : 'toestellen'}`;
+}
+
 /**
  * Voor het voorbeeld in Instellingen: de eerstvolgende werkdag na vandaag, en de dag waarop de
  * herinneringen daarvoor om 16:00 weggaan (de dag ervoor; voor maandag is dat zondag).
