@@ -7,6 +7,7 @@ import { mergeNotices } from './notices';
 import { NO_MAILS, type DispatchCounts } from './outcome';
 import { queueCleanupBefore, reminderDateAt, reminderTargets, shouldRetry } from './reminders';
 import { smtpTransport, type MailTransport } from './send';
+import { mailErrorCode, serverUnavailable } from './smtp-errors';
 import { MAIL_KINDS, MAIL_STATUSES, type MailKind, type MailNotice, type QueuedMail } from './types';
 
 /**
@@ -134,6 +135,8 @@ async function deliver(
   }
 
   const counts = { ...NO_MAILS };
+  // Wordt `false` als de mailserver onbereikbaar blijkt: dan de rest deze keer niet meer proberen.
+  let usable = true;
   try {
     for (const mail of open) {
       const person = people.get(mail.employeeId);
@@ -143,7 +146,7 @@ async function deliver(
         counts.noAddress++;
         continue;
       }
-      if (!transport) {
+      if (!transport || !usable) {
         await client.from('mail_queue').update({ status: 'failed', attempts, last_error: setupError }).eq('id', mail.id);
         counts.failed++;
         continue;
@@ -158,9 +161,17 @@ async function deliver(
       try {
         await transport.send({ to: person.email, ...content });
       } catch (error) {
-        // Nooit het adres loggen; alleen dat het misging.
-        console.error('Mail versturen mislukt', mail.kind, error instanceof Error ? error.name : 'fout');
-        await client.from('mail_queue').update({ status: 'failed', attempts, last_error: 'versturen mislukt' }).eq('id', mail.id);
+        // Nooit het adres loggen: alleen de soort mail en de foutcode.
+        console.error('Mail versturen mislukt', mail.kind, mailErrorCode(error));
+        if (serverUnavailable(error)) {
+          // Elke volgende poging kost tot tien seconden; de geplande taak probeert het later opnieuw.
+          usable = false;
+          setupError = 'mailserver onbereikbaar';
+        }
+        await client
+          .from('mail_queue')
+          .update({ status: 'failed', attempts, last_error: usable ? 'versturen mislukt' : setupError })
+          .eq('id', mail.id);
         counts.failed++;
         continue;
       }
@@ -230,14 +241,14 @@ const RETRY_AFTER_MS = 10 * 60 * 1000;
 const RETRY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * De geplande taak, elk uur, met de secret key (V17): mislukte mails opnieuw proberen, om 16:00
- * de herinneringen voor morgen (V15), en regels ouder dan 90 dagen opruimen.
+ * De geplande taak, elk uur, met de secret key (V17): om 16:00 de herinneringen voor morgen (V15),
+ * mislukte mails opnieuw proberen, en regels ouder dan 90 dagen opruimen.
  */
 export async function runMailJob(client: DbClient, options: DispatchOptions): Promise<MailJobResult> {
   const today = todayInAmsterdam(options.now);
   const enabled = await mailEnabled(client);
 
-  // 1. Opnieuw proberen.
+  // 1. Wat opnieuw moet: eerst ophalen, zodat de herinneringen van zo meteen er niet tussen zitten.
   const open = await client
     .from('mail_queue')
     .select(SELECT_QUEUE)
@@ -246,18 +257,9 @@ export async function runMailJob(client: DbClient, options: DispatchOptions): Pr
     .gt('created_at', new Date(options.now.getTime() - RETRY_WINDOW_MS).toISOString());
   if (open.error) throw new Error(`Wachtrij laden mislukt: ${open.error.message}`);
   const retry = (open.data ?? []).map(toQueuedMail).filter((mail): mail is QueuedMail => mail !== null && shouldRetry(mail, today));
-  let retried = { ...NO_MAILS };
-  if (retry.length > 0) {
-    if (!enabled) {
-      await client.from('mail_queue').update({ status: 'skipped', last_error: 'mails uit' }).in('id', retry.map((mail) => mail.id));
-      retried = { ...NO_MAILS, disabled: retry.length };
-    } else {
-      const people = await recipients(client, retry.map((mail) => mail.employeeId));
-      retried = await deliver(client, retry, people, options);
-    }
-  }
 
-  // 2. Herinneringen voor morgen, om 16:00.
+  // 2. Herinneringen voor morgen, om 16:00. Vóór het opnieuw proberen: ze kunnen maar in dit ene
+  // uur worden klaargezet. Wat daarna niet verstuurd raakt, probeert de taak een uur later opnieuw.
   const reminderDate = reminderDateAt(options.now);
   let reminders = { ...NO_MAILS };
   if (reminderDate) {
@@ -282,7 +284,19 @@ export async function runMailJob(client: DbClient, options: DispatchOptions): Pr
     }
   }
 
-  // 3. Opruimen: de wachtrij is geen planning, dus niet langer bewaren dan nodig.
+  // 3. Opnieuw proberen.
+  let retried = { ...NO_MAILS };
+  if (retry.length > 0) {
+    if (!enabled) {
+      await client.from('mail_queue').update({ status: 'skipped', last_error: 'mails uit' }).in('id', retry.map((mail) => mail.id));
+      retried = { ...NO_MAILS, disabled: retry.length };
+    } else {
+      const people = await recipients(client, retry.map((mail) => mail.employeeId));
+      retried = await deliver(client, retry, people, options);
+    }
+  }
+
+  // 4. Opruimen: de wachtrij is geen planning, dus niet langer bewaren dan nodig.
   const cleaned = await client.from('mail_queue').delete({ count: 'exact' }).lt('created_at', queueCleanupBefore(options.now));
   if (cleaned.error) throw new Error(`Opruimen mislukt: ${cleaned.error.message}`);
 

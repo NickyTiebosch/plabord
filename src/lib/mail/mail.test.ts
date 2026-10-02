@@ -13,6 +13,7 @@ import { composeMail, escapeHtml, formatDateList, personalDaysFor } from './mess
 import { cancelledSubstitutionNotices, mergeNotices } from './notices';
 import { isMailOutcome, mailOutcome, NO_MAILS } from './outcome';
 import { MAX_ATTEMPTS, queueCleanupBefore, reminderDateAt, reminderTargets, shouldRetry } from './reminders';
+import { mailErrorCode, serverUnavailable } from './smtp-errors';
 
 const WED = '2026-10-14';
 
@@ -271,6 +272,21 @@ describe('mails: opnieuw proberen en opruimen', () => {
 
   it('ruimt regels op die ouder zijn dan 90 dagen', () => {
     expect(queueCleanupBefore(new Date('2026-10-14T12:00:00Z'))).toBe('2026-07-16T12:00:00.000Z');
+  });
+
+  it('stopt na een fout van de mailserver zelf, maar niet als één adres wordt geweigerd', () => {
+    const smtpError = (code: string) => Object.assign(new Error('550 geweigerd: iemand@voorbeeld.nl'), { code });
+    for (const code of ['ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'EDNS', 'ETLS', 'EAUTH']) expect(serverUnavailable(smtpError(code))).toBe(true);
+    expect(serverUnavailable(smtpError('EENVELOPE'))).toBe(false);
+    expect(serverUnavailable(smtpError('EMESSAGE'))).toBe(false);
+    expect(serverUnavailable(new Error('iets anders'))).toBe(false);
+    expect(serverUnavailable('geen fout')).toBe(false);
+  });
+
+  it('logt alleen de code van een fout, nooit de melding met het adres', () => {
+    expect(mailErrorCode(Object.assign(new Error('geweigerd: iemand@voorbeeld.nl'), { code: 'EENVELOPE' }))).toBe('EENVELOPE');
+    expect(mailErrorCode(new TypeError('iemand@voorbeeld.nl'))).toBe('TypeError');
+    expect(mailErrorCode(null)).toBe('onbekend');
   });
 });
 
