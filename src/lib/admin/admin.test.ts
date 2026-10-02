@@ -367,6 +367,43 @@ describe('logboek', () => {
     });
   });
 
+  it('beschrijft exports, volledig verwijderen en de schakelaar voor mails (fase 3)', () => {
+    expect(describeAudit({ ...base, entity: 'export', employee_id: null, details: { kind: 'planning' } }, lookups)).toMatchObject({
+      what: 'Planning geëxporteerd',
+      detail: null,
+    });
+    expect(describeAudit({ ...base, entity: 'export', details: { kind: 'employee' } }, lookups)).toMatchObject({
+      what: 'Gegevens gedownload – Sanne',
+    });
+    const deleted = describeAudit(
+      {
+        ...base,
+        action: 'delete',
+        entity: 'employees',
+        employee_id: 'gone',
+        source: 'verwijderen',
+        details: { recurring_shifts: 5, absences: 1, substitutions: 0, shift_overrides: 2, calendar_feeds: 1, account: true },
+      },
+      { ...lookups, employeeName: (id) => (id === 'e0' ? 'Anna' : 'verwijderde medewerker') },
+    );
+    expect(deleted).toMatchObject({
+      what: 'Medewerker volledig verwijderd – verwijderde medewerker',
+      detail: '5 vaste diensten, 1 afwezigheid, 2 roosterwijzigingen, 1 agendalink en het inlogaccount',
+    });
+    const mails = describeAudit(
+      {
+        ...base,
+        action: 'update',
+        entity: 'settings',
+        employee_id: null,
+        changed_fields: ['mail_enabled'],
+        details: { mail_enabled: { old: false, new: true } },
+      },
+      lookups,
+    );
+    expect(mails.detail).toBe('mails versturen: nee → ja');
+  });
+
   it('beschrijft een wijziging met oude en nieuwe waarde', () => {
     const view = describeAudit(
       {

@@ -45,6 +45,7 @@ export const AUDIT_ENTITIES: Record<string, string> = {
   substitutions: 'Invallen',
   shift_overrides: 'Roosterwijzigingen',
   gap_dismissals: 'Genegeerde gaten',
+  export: 'Exports',
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -83,6 +84,7 @@ const FIELD_LABELS: Record<string, string> = {
   has_counter: 'balie',
   handled_at: 'afgehandeld',
   shortage: 'tekort',
+  mail_enabled: 'mails versturen',
 };
 
 const KINDS: Record<string, string> = {
@@ -189,6 +191,26 @@ const VERBS: Record<string, [string, string, string]> = {
   gap_dismissals: ['Gat genegeerd', 'Genegeerd gat bijgewerkt', 'Gat teruggezet'],
 };
 
+/** Wat er bij volledig verwijderen (fase 3, V21) met de medewerker verdween, als aantallen. */
+const DELETED_COUNTS: [key: string, one: string, many: string][] = [
+  ['recurring_shifts', 'vaste dienst', 'vaste diensten'],
+  ['absences', 'afwezigheid', 'afwezigheden'],
+  ['substitutions', 'inval', 'invallen'],
+  ['shift_overrides', 'roosterwijziging', 'roosterwijzigingen'],
+  ['calendar_feeds', 'agendalink', 'agendalinks'],
+];
+
+function deletedText(details: Record<string, unknown>): string | null {
+  const parts = DELETED_COUNTS.flatMap(([key, one, many]) => {
+    const count = Number(details[key] ?? 0);
+    return count > 0 ? [`${count} ${count === 1 ? one : many}`] : [];
+  });
+  if (details.account === true) parts.push('het inlogaccount');
+  const last = parts.pop();
+  if (last === undefined) return null;
+  return parts.length === 0 ? last : `${parts.join(', ')} en ${last}`;
+}
+
 /** "Eindhoven, 12 okt 2026, hele dag" voor een inval of genegeerd gat. */
 function slotText(details: Record<string, unknown>, lookups: Lookups): string {
   return [
@@ -283,6 +305,17 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
     }
     case 'shift_overrides':
       detail = row.action === 'update' ? changesText(row, lookups) : overrideText(details, lookups);
+      break;
+    case 'employees':
+      if (row.action === 'delete' && row.source === 'verwijderen') {
+        what = `Medewerker volledig verwijderd – ${lookups.employeeName(row.employee_id)}`;
+        detail = deletedText(details);
+      } else {
+        detail = row.action === 'update' ? changesText(row, lookups) : null;
+      }
+      break;
+    case 'export':
+      what = details.kind === 'employee' ? `Gegevens gedownload – ${lookups.employeeName(row.employee_id)}` : 'Planning geëxporteerd';
       break;
     case 'gap_dismissals':
       detail =
