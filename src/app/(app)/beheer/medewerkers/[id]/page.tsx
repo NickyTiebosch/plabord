@@ -188,12 +188,17 @@ export default async function EmployeeDetailPage({
                         </span>
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-400">Vrij (geen vaste dienst)</p>
+                      <p className="text-sm text-slate-400">
+                        {day.upcoming.length > 0 ? 'Nu nog geen vaste dienst' : 'Vrij (geen vaste dienst)'}
+                      </p>
                     )}
                     {day.upcoming.map((shift) => (
                       <div key={shift.id} className="mt-1 flex flex-wrap items-center justify-between gap-1 rounded-lg bg-amber-50 px-2 py-1">
                         <span className="text-sm">
-                          <Badge tone="warning">vanaf {formatDate(shift.validFrom)}</Badge>{' '}
+                          <Badge tone="warning">
+                            vanaf {formatDate(shift.validFrom)}
+                            {shift.validTo ? ` t/m ${formatDate(shift.validTo)}` : ''}
+                          </Badge>{' '}
                           <ShiftText shift={shift} settings={settings} groupName={groupName(shift.groupId)} />
                         </span>
                         <DeleteShiftButton shift={shift} />

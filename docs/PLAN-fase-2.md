@@ -25,6 +25,7 @@ De keuzes in §2 gelden zoals ze er staan.
   - De gekozen dagen krijgen dezelfde dienst vanaf de datum bij "Geldig vanaf". Dagen zonder vinkje blijven zoals ze zijn. Een vaste vrije dag is dus een dag die je niet aanvinkt.
   - "Vaste diensten laten stoppen" werkt ook voor meerdere dagen. Kan het op één van die dagen niet, dan verandert er niets en zegt de melding welke dag het probleem is.
   - De wijzigingen gaan in hoogstens drie bewerkingen naar de database: eerst stoppen, dan aanpassen, dan toevoegen. Mislukt een latere bewerking, dan zegt de melding dat een deel wel is opgeslagen. Het logboek laat precies zien wat er is veranderd.
+  - Bij de vaste diensten van een medewerker staat bij een dag zonder dienst "Vrij (geen vaste dienst)", of "Nu nog geen vaste dienst" als er een dienst aankomt. Een komende dienst toont ook zijn einddatum.
 
 ---
 
