@@ -3,11 +3,15 @@ import { SubmitButton } from '@/components/client/form-controls';
 import { StatefulForm } from '@/components/client/stateful-form';
 import { Card, Field, PageHeader, SectionTitle, inputClass } from '@/components/ui';
 import { requireAdmin } from '@/lib/auth/session';
-import { loadGroups, loadSettings, must } from '@/lib/db/queries';
-import { weekdayShort } from '@/lib/engine/format';
+import { loadGroups, loadPlanningSnapshot, loadSettings, must } from '@/lib/db/queries';
+import { todayInAmsterdam } from '@/lib/engine/dates';
+import { formatDayShort, weekdayShort } from '@/lib/engine/format';
 import { compareGroups } from '@/lib/engine/sort';
 import type { Weekday } from '@/lib/engine/types';
-import { saveNorms, saveRanks, saveSettings } from './actions';
+import { previewReminderDate } from '@/lib/mail/labels';
+import { composeMail, personalDaysFor } from '@/lib/mail/messages';
+import { reminderTargets } from '@/lib/mail/reminders';
+import { saveNorms, saveRanks, saveSettings, sendTestMailAction, setMailEnabled } from './actions';
 
 export const metadata: Metadata = { title: 'Instellingen' };
 
@@ -15,11 +19,26 @@ const numberClass = 'block w-16 min-h-11 rounded-lg border border-slate-300 bg-w
 
 export default async function SettingsPage() {
   const { supabase } = await requireAdmin();
-  const [settings, groups, norms] = await Promise.all([
+  const preview = previewReminderDate(todayInAmsterdam(new Date()));
+  const [settings, groups, norms, mailSetting, snapshot] = await Promise.all([
     loadSettings(supabase),
     loadGroups(supabase),
     supabase.from('staffing_norms').select('group_id, weekday, day_part, min_staff').then((result) => must(result, 'de normen')),
+    supabase.from('settings').select('mail_enabled').maybeSingle(),
+    loadPlanningSnapshot(supabase, { from: preview.date, to: preview.date }),
   ]);
+  const mailEnabled = Boolean(mailSetting.data?.mail_enabled);
+  // Het voorbeeld van de herinneringen (V18): wie er een krijgt, en met welke tekst.
+  const reminders = reminderTargets(snapshot, preview.date).map((target) => ({
+    ...target,
+    content: composeMail({
+      kind: 'reminder',
+      name: target.name,
+      days: personalDaysFor(snapshot, target.employeeId, [preview.date]),
+      groups: snapshot.groups,
+      appUrl: null,
+    }),
+  }));
   const normOf = (groupId: string, weekday: number, dayPart: string) =>
     norms.find((norm) => norm.group_id === groupId && norm.weekday === weekday && norm.day_part === dayPart)?.min_staff;
   const locations = groups.filter((group) => group.hasCounter).sort(compareGroups);
@@ -29,6 +48,57 @@ export default async function SettingsPage() {
     <>
       <PageHeader title="Instellingen" />
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="space-y-4 p-4 lg:col-span-2">
+          <div>
+            <SectionTitle className="mb-1">Mails</SectionTitle>
+            <p className="text-sm text-slate-600">
+              Collega&rsquo;s krijgen een mail als ze worden ingezet, als een inval niet doorgaat of als hun rooster voor een
+              dag verandert. De dag ervoor om 16:00 krijgen ze een herinnering als hun rooster afwijkt.
+            </p>
+          </div>
+          <form action={setMailEnabled} className="flex flex-wrap items-center gap-3">
+            <input type="hidden" name="mails" value={mailEnabled ? 'uit' : 'aan'} />
+            <p className="text-sm font-medium text-slate-900">
+              Mails versturen: {mailEnabled ? <span className="text-emerald-700">aan</span> : <span className="text-rose-700">uit</span>}
+            </p>
+            <SubmitButton size="sm" variant={mailEnabled ? 'secondary' : 'primary'}>
+              {mailEnabled ? 'Zet mails uit' : 'Zet mails aan'}
+            </SubmitButton>
+          </form>
+          <p className="text-xs text-slate-500">
+            Staan mails uit, dan krijgt niemand een mail. Bij Beheer → Mails zie je wat er verstuurd zou zijn. Test eerst met
+            een testmail aan jezelf, en zet mails pas daarna aan.
+          </p>
+          <StatefulForm action={sendTestMailAction}>
+            <SubmitButton size="sm" variant="secondary">
+              Testmail naar mij
+            </SubmitButton>
+          </StatefulForm>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              Herinneringen voor {formatDayShort(preview.date)}{' '}
+              <span className="font-normal text-slate-500">(gaan {formatDayShort(preview.sendDate)} om 16:00 weg)</span>
+            </h3>
+            {reminders.length === 0 ? (
+              <p className="mt-1 text-sm text-slate-600">Niemand wijkt die dag af van het vaste rooster.</p>
+            ) : (
+              <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-200">
+                {reminders.map((reminder) => (
+                  <li key={reminder.employeeId} className="px-3 py-2">
+                    <details>
+                      <summary className="cursor-pointer text-sm text-slate-800">
+                        <span className="font-medium">{reminder.name}</span>
+                        <span className="text-slate-500"> · {reminder.content.subject}</span>
+                      </summary>
+                      <pre className="mt-2 font-sans text-sm whitespace-pre-wrap text-slate-700">{reminder.content.text}</pre>
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Card>
+
         <Card className="p-4">
           <SectionTitle className="mb-3">Diensten en dagdelen</SectionTitle>
           <StatefulForm action={saveSettings} className="space-y-4">

@@ -8,6 +8,7 @@ import {
   teamSnapshot,
 } from '../engine/__fixtures__/team';
 import { reviewNotices } from '../db/review';
+import { MAIL_KIND_LABELS, mailStatusLabel, previewReminderDate } from './labels';
 import { composeMail, escapeHtml, formatDateList, personalDaysFor } from './messages';
 import { cancelledSubstitutionNotices, mergeNotices } from './notices';
 import { isMailOutcome, mailOutcome, NO_MAILS } from './outcome';
@@ -305,5 +306,23 @@ describe('mails: vervallen invallen na de controle', () => {
   it('mailt niet als hij afwezig is in een dagdeel van de inval', () => {
     const snapshot = teamSnapshot({ substitutions: [sub], absences: [absence('a1', 'danique', WED, WED, { dayPart: 'afternoon' })] });
     expect(reviewNotices(snapshot, [{ ...change, status: 'reschedule' }])).toEqual([]);
+  });
+});
+
+describe('mails: woorden in het beheer', () => {
+  it('noemt soort en status in gewone taal', () => {
+    expect(MAIL_KIND_LABELS.substitution_cancelled).toBe('Inval gaat niet door');
+    expect(mailStatusLabel('sent', null, 1)).toBe('verstuurd');
+    expect(mailStatusLabel('failed', 'versturen mislukt', 1)).toBe('mislukt');
+    expect(mailStatusLabel('failed', 'versturen mislukt', 3)).toBe('mislukt (3× geprobeerd)');
+    expect(mailStatusLabel('skipped', 'mails uit', 0)).toBe('niet verstuurd: mails uit');
+    expect(mailStatusLabel('skipped', 'geen werkmail', 0)).toBe('niet verstuurd: geen werkmail');
+  });
+
+  it('toont het voorbeeld voor de eerstvolgende werkdag', () => {
+    expect(previewReminderDate('2026-10-14')).toEqual({ date: '2026-10-15', sendDate: '2026-10-14' });
+    // Op zaterdag: de herinneringen voor maandag gaan zondag weg.
+    expect(previewReminderDate('2026-10-17')).toEqual({ date: '2026-10-19', sendDate: '2026-10-18' });
+    expect(previewReminderDate('2026-10-16')).toEqual({ date: '2026-10-17', sendDate: '2026-10-16' });
   });
 });
