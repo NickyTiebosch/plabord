@@ -84,6 +84,8 @@ Open in Supabase **Authentication**.
 
    Kun of wil je niets aan je DNS veranderen? Gebruik dan de mailserver van een mailbox die je al hebt, bijvoorbeeld bij je hostingbedrijf. Je DNS blijft dan zoals hij is.
    - Bij TransIP: host `smtp.transip.email`, poort `465`, gebruikersnaam en afzender = het mailadres, wachtwoord = het wachtwoord van die mailbox.
+   - Bij Google Workspace: host `smtp.gmail.com`, poort `465`, gebruikersnaam en afzender = het mailadres, wachtwoord = een *app-wachtwoord*. Zet daarvoor in het Google-account eerst *Verificatie in twee stappen* aan en maak dan een app-wachtwoord op [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+   - Weet je niet waar de mailbox staat? Kijk waar je de mail leest: in Gmail is het Google Workspace, in de webmail van je hostingbedrijf is het dat bedrijf. Waar je domeinnaam staat, zegt daar niets over.
    - Gebruik bij voorkeur een aparte mailbox, zoals `planbord@jouwdomein.nl`. Verander je het wachtwoord van die mailbox, pas het dan ook in Supabase aan.
    - Microsoft 365 en Outlook.com zijn niet geschikt: die staan mailen met alleen een wachtwoord niet meer of niet lang meer toe.
 
@@ -131,7 +133,9 @@ Heeft je project alleen de oude sleutels (`anon` en `service_role`)? Dat werkt o
    - Netlify zet de `NEXT_PUBLIC_`-waarden bij het bouwen in de app. Pas je ze aan, start dan een nieuwe deploy.
    - De secret key gebruikt de app alleen op de server: voor accountbeheer (aanmaken, e-mailadres wijzigen, blokkeren bij inactief) en om agendafeeds te serveren.
 3. **Deploy Previews:** controleer onder **Build & deploy → Deploy Previews** dat er een preview komt voor elke pull request. Netlify zet dan een link in de pull request.
-4. Wil je een eigen domein? Stel het in onder **Domain management** en pas daarna de **Site URL** in Supabase en `SITE_URL` in Netlify aan.
+   - Bestond de pull request al vóór je Netlify koppelde? Dan komt de preview bij de volgende wijziging in die pull request.
+4. **Private of public:** een nieuw Netlify-project is eerst *Private*. Je ziet dan onderaan de site een balk met **Make public**, en alleen jij en je Netlify-team kunnen de site openen. Klik op **Make public** zodra collega's erin moeten. Planbord blijft dan nog steeds afgeschermd: zonder inlogcode zie je niets, en zoekmachines mogen niets indexeren.
+5. Wil je een eigen domein? Stel het in onder **Domain management** en pas daarna de **Site URL** in Supabase en `SITE_URL` in Netlify aan.
 
 > Previews en productie gebruiken dezelfde Supabase-database, tenzij je per context andere waarden instelt. Vóór de livegang is dat prima. Daarna kun je voor de previews een tweede Supabase-project maken en die sleutels alleen in de context **Deploy Previews** zetten.
 
@@ -153,7 +157,15 @@ Heeft je project alleen de oude sleutels (`anon` en `service_role`)? Dat werkt o
    insert into public.employee_accounts (employee_id, email)
    select id, lower('jij@bedrijf.nl') from nieuw;
    ```
-3. Open de app en log in met je werkmail. Bij de eerste keer koppelt Planbord je account automatisch aan deze medewerker.
+3. Controleer het resultaat. Je ziet je eigen naam, twee keer `true` en je werkmail:
+   ```sql
+   select e.name, e.is_admin, e.is_active, a.email
+   from public.employees e
+   join public.employee_accounts a on a.employee_id = e.id;
+   ```
+   Staat er nog `Jouw naam` of `jij@bedrijf.nl`? Pas het dan aan met `update public.employees set name = '…' where name = 'Jouw naam';` en `update public.employee_accounts set email = '…' where email = 'jij@bedrijf.nl';`.
+4. Open de app en log in met precies dat mailadres. Bij de eerste keer koppelt Planbord je account automatisch aan deze medewerker.
+   - Zie je **Geen toegang**? Dan hoort het adres waarmee je inlogt nog niet bij een medewerker. Pas het adres aan zoals bij stap 3 en herlaad de pagina.
 
 ### Stap 6. Collega's toevoegen
 
