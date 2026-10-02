@@ -6,7 +6,7 @@
  * - die dag de hele dag ingeroosterd (ochtend én middag), en zijn groep is open;
  * - die dag niet afwezig, ook niet half (aangevraagd telt ook);
  * - die dag nog niet ingeleend;
- * - zijn rol die dag is niet poets;
+ * - zijn rol die dag is niet hiker/buitendienst (`cleaning`);
  * - zijn groep die dag is een andere dan de vestiging van het gat (besluit V9);
  * - komt hij uit een andere vestiging waar hij aan de balie telt, dan zit die vestiging
  *   zonder hem nog op de norm in alle dagdelen van de inval.
@@ -112,7 +112,7 @@ export function evaluateCandidates(
       continue;
     }
     if (regular.role === 'cleaning') {
-      exclude('heeft die dag de rol poets');
+      exclude(`heeft die dag de rol ${ROLE_LABELS.cleaning}`);
       continue;
     }
     if (regular.groupId === groupId) {

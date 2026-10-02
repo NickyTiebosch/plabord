@@ -148,7 +148,7 @@ Heeft je project alleen de oude sleutels (`anon` en `service_role`)? Dat werkt o
 2. Supabase → **SQL Editor**. Vervang naam en e-mailadres en klik op **Run**:
    ```sql
    -- Groep: den_bosch, eindhoven, breda, logistics, backoffice of other.
-   -- Rol:   counter (balie), backoffice, transport, cleaning (poets) of none.
+   -- Rol:   counter (balie), backoffice, transport, cleaning (hiker/buitendienst) of none.
    with nieuw as (
      insert into public.employees (name, group_id, default_role, is_admin)
      values ('Jouw naam', 'other', 'none', true)

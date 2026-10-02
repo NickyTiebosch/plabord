@@ -20,8 +20,8 @@ function counts(snapshot: PlanningSnapshot, date: string, groupId: string) {
 }
 
 describe('bezetting tegen de norm', () => {
-  it('telt alleen de rol balie: de poetser telt niet mee', () => {
-    // Den Bosch op maandag: Sanne, Joris en Bram aan de balie; Ingrid poetst.
+  it('telt alleen de rol balie: hiker/buitendienst telt niet mee', () => {
+    // Den Bosch op maandag: Sanne, Joris en Bram aan de balie; Ingrid is hiker/buitendienst.
     expect(counts(teamSnapshot(), MON, 'den_bosch')).toEqual([
       ['morning', 3, 2, 0],
       ['afternoon', 3, 2, 0],

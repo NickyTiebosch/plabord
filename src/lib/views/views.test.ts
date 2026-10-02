@@ -72,7 +72,7 @@ describe('Vestigingsrooster', () => {
       expect.objectContaining({ name: 'Joris', note: 'aangevraagd', requested: true }),
     ]);
     const monday = week[0]?.sections[0];
-    expect(monday?.working.find((line) => line.name === 'Ingrid')).toMatchObject({ role: 'poets', times: '07:30–11:30' });
+    expect(monday?.working.find((line) => line.name === 'Ingrid')).toMatchObject({ role: 'hiker/buitendienst', times: '07:30–11:30' });
   });
 
   it('toont een gesloten vestiging', () => {

@@ -52,8 +52,8 @@ describe('kandidaten voor een inval', () => {
     expect(evaluate(shuffled, MON, 'eindhoven').candidates).toEqual(expected);
   });
 
-  it('stelt rol poets nooit voor', () => {
-    // Ingrid mag in deze test in Eindhoven invallen en poetst maandag de hele dag.
+  it('stelt rol hiker/buitendienst nooit voor', () => {
+    // Ingrid mag in deze test in Eindhoven invallen en is maandag de hele dag hiker/buitendienst.
     const snapshot = teamSnapshot({
       absences: lotteAway,
       employees: employees.map((employee) => (employee.id === 'ingrid' ? { ...employee, counterGroupIds: ['eindhoven'] } : employee)),
@@ -61,7 +61,7 @@ describe('kandidaten voor een inval', () => {
     });
     const result = evaluate(snapshot, MON, 'eindhoven');
     expect(result.candidates.map((candidate) => candidate.employeeId)).not.toContain('ingrid');
-    expect(result.excluded.find((item) => item.employeeId === 'ingrid')?.reason).toBe('heeft die dag de rol poets');
+    expect(result.excluded.find((item) => item.employeeId === 'ingrid')?.reason).toBe('heeft die dag de rol hiker/buitendienst');
   });
 
   it('laat iemand die niet inzetbaar is in die vestiging helemaal buiten beschouwing', () => {

@@ -15,6 +15,13 @@ Alle voorstellen uit §1 zijn aangenomen:
 
 De keuzes in §2 gelden zoals ze er staan.
 
+### Aanpassingen na de eerste test (2 oktober 2026)
+- **V11. De rol "poets" heet voortaan "hiker/buitendienst".**
+  - Alleen de naam verandert. Intern blijft de rol `cleaning`, dus er is geen migratie en geen SQL nodig.
+  - De regels blijven gelijk: deze rol telt niet mee aan de balie en wordt nooit voorgesteld als invaller.
+  - Waar `docs/SPEC.md` of dit plan "poets" zegt, lees "hiker/buitendienst".
+  - De Excel-import kent de nieuwe naam (ook los: "hiker" of "buitendienst"). "poets" en "schoonmaak" werken nog, zodat eerdere importbestanden blijven passen.
+
 ---
 
 Fase 2 levert drie dingen:

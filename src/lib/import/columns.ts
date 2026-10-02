@@ -28,7 +28,7 @@ export const EMPLOYEE_COLUMNS = [
     required: true,
     hint: 'Den Bosch, Eindhoven, Breda, Logistiek, Backoffice of Overig.',
   },
-  { key: 'role', header: 'Rol', required: false, hint: 'balie, backoffice, transport, poets of leeg (geen rol).' },
+  { key: 'role', header: 'Rol', required: false, hint: 'balie, backoffice, transport, hiker/buitendienst of leeg (geen rol).' },
   {
     key: 'counterGroups',
     header: 'Inzetbaar aan de balie in',

@@ -2,8 +2,8 @@
  * Fictief team met dezelfde opbouw als het echte team (zie docs/SPEC.md, "Tests").
  * Alle namen zijn verzonnen.
  *
- * - Den Bosch: 4 balie + 1 poets; Eindhoven: 3 balie + 1 poets + Zoë (alleen zaterdag);
- *   Breda: 3 balie + 1 poets.
+ * - Den Bosch: 4 balie + 1 hiker/buitendienst; Eindhoven: 3 balie + 1 hiker/buitendienst +
+ *   Zoë (alleen zaterdag); Breda: 3 balie + 1 hiker/buitendienst.
  * - Logistiek: Ruben (transport), Anouk (di/do balie Den Bosch, wo/vr transport) en
  *   Gert (zonder vaste diensten).
  * - Backoffice: Danique. Overig: Petra, Hans, Iris en Wouter.
