@@ -158,6 +158,8 @@ describe('database zonder automatische rechten', () => {
       'apply_import',
       'apply_substitution_review',
       'claim_account',
+      'delete_employee',
+      'log_export',
       'move_shift',
       'set_shift_override',
     ]);
