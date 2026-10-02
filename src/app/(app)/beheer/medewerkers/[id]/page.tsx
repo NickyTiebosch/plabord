@@ -188,7 +188,7 @@ export default async function EmployeeDetailPage({
                         </span>
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-400">Geen dienst</p>
+                      <p className="text-sm text-slate-400">Vrij (geen vaste dienst)</p>
                     )}
                     {day.upcoming.map((shift) => (
                       <div key={shift.id} className="mt-1 flex flex-wrap items-center justify-between gap-1 rounded-lg bg-amber-50 px-2 py-1">
@@ -221,7 +221,7 @@ export default async function EmployeeDetailPage({
           </Card>
 
           <Card className="p-4">
-            <SectionTitle className="mb-3">Vaste dienst wijzigen of toevoegen</SectionTitle>
+            <SectionTitle className="mb-3">Vaste diensten wijzigen of toevoegen</SectionTitle>
             <ShiftFromForm
               employeeId={employee.id}
               groups={groupOptions}
@@ -232,7 +232,7 @@ export default async function EmployeeDetailPage({
           </Card>
 
           <Card className="p-4">
-            <SectionTitle className="mb-3">Vaste dienst laten stoppen</SectionTitle>
+            <SectionTitle className="mb-3">Vaste diensten laten stoppen</SectionTitle>
             <ShiftEndForm employeeId={employee.id} today={today} />
           </Card>
 

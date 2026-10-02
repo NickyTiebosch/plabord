@@ -160,12 +160,28 @@ export function Field({
   );
 }
 
-export function Fieldset({ legend, children, hint }: { legend: string; children: ReactNode; hint?: ReactNode }) {
+export function Fieldset({
+  legend,
+  children,
+  hint,
+  error,
+}: {
+  legend: string;
+  children: ReactNode;
+  hint?: ReactNode;
+  error?: string;
+}) {
   return (
     <fieldset className="space-y-2">
       <legend className="text-sm font-medium text-slate-800">{legend}</legend>
       {children}
-      {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
+      {error ? (
+        <p className="text-sm text-rose-700" role="alert">
+          {error}
+        </p>
+      ) : hint ? (
+        <p className="text-xs text-slate-500">{hint}</p>
+      ) : null}
     </fieldset>
   );
 }

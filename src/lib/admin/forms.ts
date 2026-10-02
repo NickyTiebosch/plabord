@@ -2,7 +2,7 @@
  * Formulieren van de beheerschermen: lezen uit FormData en controleren. Puur en los te testen.
  */
 import { z } from 'zod';
-import { ABSENCE_PARTS, ABSENCE_STATUSES, ROLES } from '../engine/types';
+import { ABSENCE_PARTS, ABSENCE_STATUSES, ROLES, type ShiftWeekday } from '../engine/types';
 import { parseTime } from '../engine/time';
 import { isValidEmail, normalizeEmail } from '../import/cells';
 
@@ -23,6 +23,11 @@ export type Parsed<T> = { ok: true; data: T } | { ok: false; state: ActionState 
 function text(form: FormData, key: string): string {
   const value = form.get(key);
   return typeof value === 'string' ? value.trim() : '';
+}
+
+/** Alle waarden van een veld dat vaker voorkomt, zoals aangevinkte vakjes met dezelfde naam. */
+function texts(form: FormData, key: string): string[] {
+  return form.getAll(key).flatMap((value) => (typeof value === 'string' ? [value.trim()] : []));
 }
 
 function fieldErrors(error: z.ZodError): Record<string, string> {
@@ -133,9 +138,27 @@ export function parseEmployeeForm(form: FormData): Parsed<EmployeeInput> {
 
 // Vaste dienst -----------------------------------------------------------------
 
+/** Aangevinkte weekdagen (ma t/m za), op volgorde en elke dag één keer. */
+const weekdayChoices = z.array(z.string()).transform((values, context) => {
+  const days = new Set<ShiftWeekday>();
+  for (const value of values) {
+    const day = Number(value);
+    if (!Number.isInteger(day) || day < 1 || day > 6) {
+      context.addIssue({ code: 'custom', message: 'Kies dagen van maandag t/m zaterdag.' });
+      return z.NEVER;
+    }
+    days.add(day as ShiftWeekday);
+  }
+  if (days.size === 0) {
+    context.addIssue({ code: 'custom', message: 'Kies minstens één dag.' });
+    return z.NEVER;
+  }
+  return [...days].sort((a, b) => a - b);
+});
+
 const shiftSchema = z
   .object({
-    weekday: z.coerce.number().int().min(1, { error: 'Kies een dag.' }).max(6, { error: 'Kies een dag van ma t/m za.' }),
+    weekdays: weekdayChoices,
     groupId: z.string().min(1, { error: 'Kies een groep.' }),
     role: z.enum(ROLES, { error: 'Kies een rol.' }),
     startTime: optionalTime('begintijd'),
@@ -148,17 +171,27 @@ const shiftSchema = z
     }
   });
 
-export type ShiftInput = z.infer<typeof shiftSchema> & { weekday: 1 | 2 | 3 | 4 | 5 | 6 };
+export type ShiftInput = z.infer<typeof shiftSchema>;
 
+/** Dezelfde vaste dienst op een of meer weekdagen (vakjes met de naam `weekday`). */
 export function parseShiftForm(form: FormData): Parsed<ShiftInput> {
   return parse(shiftSchema, {
-    weekday: text(form, 'weekday'),
+    weekdays: texts(form, 'weekday'),
     groupId: text(form, 'groupId'),
     role: text(form, 'role'),
     startTime: text(form, 'startTime'),
     endTime: text(form, 'endTime'),
     validFrom: text(form, 'validFrom'),
-  }) as Parsed<ShiftInput>;
+  });
+}
+
+const shiftEndSchema = z.object({ weekdays: weekdayChoices, lastDay: isoDate('laatste werkdag') });
+
+export type ShiftEndInput = z.infer<typeof shiftEndSchema>;
+
+/** "Dienst laten stoppen": de weekdagen en de laatste werkdag. */
+export function parseShiftEndForm(form: FormData): Parsed<ShiftEndInput> {
+  return parse(shiftEndSchema, { weekdays: texts(form, 'weekday'), lastDay: text(form, 'lastDay') });
 }
 
 // Roosterwijziging voor één dag (fase 2) -----------------------------------------

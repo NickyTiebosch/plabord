@@ -11,9 +11,10 @@ import {
   parseEmployeeForm,
   parseNumberFields,
   parseSettingsForm,
+  parseShiftEndForm,
   parseShiftForm,
 } from './forms';
-import { planShiftEnd, planShiftFrom, shiftsByWeekday } from './shifts';
+import { batchShiftOps, planShiftEnd, planShiftFrom, planShiftsEnd, planShiftsFrom, shiftsByWeekday, weekdayList } from './shifts';
 
 function form(values: Record<string, string | string[]>): FormData {
   const data = new FormData();
@@ -115,13 +116,42 @@ describe('formulier vaste dienst en instellingen', () => {
       parseShiftForm(form({ weekday: '2', groupId: 'breda', role: 'counter', startTime: '9:00', endTime: '', validFrom: '2026-11-02' })),
     ).toEqual({
       ok: true,
-      data: { weekday: 2, groupId: 'breda', role: 'counter', startTime: '09:00', endTime: null, validFrom: '2026-11-02' },
+      data: { weekdays: [2], groupId: 'breda', role: 'counter', startTime: '09:00', endTime: null, validFrom: '2026-11-02' },
     });
     expect(
       parseShiftForm(form({ weekday: '2', groupId: 'breda', role: 'counter', startTime: '18:00', endTime: '07:30', validFrom: '2026-11-02' })),
     ).toMatchObject({ ok: false, state: { fieldErrors: { endTime: 'De eindtijd moet na de begintijd liggen.' } } });
-    expect(parseShiftForm(form({ weekday: '7', groupId: 'breda', role: 'counter', validFrom: '2026-11-02' }))).toMatchObject({
+  });
+
+  it('leest meerdere dagen tegelijk, op volgorde en elke dag één keer', () => {
+    // Werkt ma, di, wo en vr: donderdag is de vaste vrije dag en wordt dus niet aangevinkt.
+    const result = parseShiftForm(
+      form({ weekday: ['5', '1', '3', '2', '1'], groupId: 'den_bosch', role: 'counter', validFrom: '2026-01-01' }),
+    );
+    expect(result).toMatchObject({ ok: true, data: { weekdays: [1, 2, 3, 5] } });
+  });
+
+  it('wil minstens één dag van ma t/m za', () => {
+    expect(parseShiftForm(form({ groupId: 'breda', role: 'counter', validFrom: '2026-11-02' }))).toMatchObject({
       ok: false,
+      state: { fieldErrors: { weekdays: 'Kies minstens één dag.' } },
+    });
+    expect(parseShiftForm(form({ weekday: ['1', '7'], groupId: 'breda', role: 'counter', validFrom: '2026-11-02' }))).toMatchObject({
+      ok: false,
+      state: { fieldErrors: { weekdays: 'Kies dagen van maandag t/m zaterdag.' } },
+    });
+  });
+
+  it('leest bij "dienst laten stoppen" de dagen en de laatste werkdag', () => {
+    expect(parseShiftEndForm(form({ weekday: ['4', '2'], lastDay: '2026-12-31' }))).toEqual({
+      ok: true,
+      data: { weekdays: [2, 4], lastDay: '2026-12-31' },
+    });
+    expect(parseShiftEndForm(form({ lastDay: '31-12-2026' }))).toMatchObject({
+      ok: false,
+      state: {
+        fieldErrors: { weekdays: 'Kies minstens één dag.', lastDay: 'Vul een geldige datum in bij laatste werkdag.' },
+      },
     });
   });
 
@@ -214,11 +244,71 @@ describe('vaste diensten wijzigen', () => {
       ok: true,
       ops: [{ type: 'close', id: 'sanne-1-2025-01-01', validTo: '2026-12-31' }],
     });
-    expect(planShiftEnd(current, 2, '2026-03-31')).toMatchObject({ ok: false });
+    expect(planShiftEnd(current, 2, '2026-03-31')).toEqual({
+      ok: false,
+      error: 'Op dinsdag staat al een latere vaste dienst. Verwijder of wijzig die eerst.',
+    });
     expect(planShiftEnd(current, 3, '2026-03-31')).toEqual({
       ok: false,
-      error: 'Op die datum is er geen vaste dienst op deze dag.',
+      error: 'Op woensdag is er op die datum geen vaste dienst.',
     });
+    expect(planShiftEnd(current, 1, '2024-12-31')).toEqual({
+      ok: false,
+      error: 'Op maandag is er op die datum geen vaste dienst.',
+    });
+  });
+
+  it('zet dezelfde dienst op meerdere dagen en laat de andere dagen met rust', () => {
+    // Maandag en dinsdag lopen al (dinsdag wisselt in juli van vestiging), woensdag is nog leeg.
+    expect(planShiftsFrom(current, { ...input, weekdays: [1, 2, 3], validFrom: '2026-03-02' })).toEqual({
+      ok: true,
+      ops: [
+        { type: 'close', id: 'sanne-1-2025-01-01', validTo: '2026-03-01' },
+        { type: 'insert', values: { ...input, weekday: 1, validFrom: '2026-03-02', validTo: null } },
+        { type: 'close', id: 'sanne-2-2025-01-01', validTo: '2026-03-01' },
+        { type: 'insert', values: { ...input, weekday: 2, validFrom: '2026-03-02', validTo: '2026-06-30' } },
+        { type: 'insert', values: { ...input, weekday: 3, validFrom: '2026-03-02', validTo: null } },
+      ],
+    });
+  });
+
+  it('laat meerdere diensten stoppen, of geen enkele als één dag niet kan', () => {
+    const withWednesday = [...current, shift('sanne', 3, 'den_bosch', 'counter', { validFrom: '2025-01-01' })];
+    expect(planShiftsEnd(withWednesday, [1, 3], '2026-12-31')).toEqual({
+      ok: true,
+      ops: [
+        { type: 'close', id: 'sanne-1-2025-01-01', validTo: '2026-12-31' },
+        { type: 'close', id: 'sanne-3-2025-01-01', validTo: '2026-12-31' },
+      ],
+    });
+    expect(planShiftsEnd(current, [1, 3], '2026-12-31')).toEqual({
+      ok: false,
+      error: 'Op woensdag is er op die datum geen vaste dienst. Er is niets gewijzigd.',
+    });
+  });
+
+  it('voert de stappen uit in zo weinig mogelijk databasebewerkingen, eerst stoppen en dan toevoegen', () => {
+    const plan = planShiftsFrom(
+      [...current, shift('sanne', 4, 'den_bosch', 'counter', { validFrom: '2026-03-02' })],
+      { ...input, weekdays: [1, 2, 4], validFrom: '2026-03-02' },
+    );
+    expect(plan.ok && batchShiftOps(plan.ops)).toEqual([
+      { type: 'close', ids: ['sanne-1-2025-01-01', 'sanne-2-2025-01-01'], validTo: '2026-03-01' },
+      { type: 'update', ids: ['sanne-4-2026-03-02'], values: { groupId: 'breda', role: 'counter', startTime: null, endTime: null } },
+      {
+        type: 'insert',
+        rows: [
+          { ...input, weekday: 1, validFrom: '2026-03-02', validTo: null },
+          { ...input, weekday: 2, validFrom: '2026-03-02', validTo: '2026-06-30' },
+        ],
+      },
+    ]);
+  });
+
+  it('noemt de dagen voluit, zoals in "maandag, woensdag en vrijdag"', () => {
+    expect(weekdayList([2])).toBe('dinsdag');
+    expect(weekdayList([1, 2])).toBe('maandag en dinsdag');
+    expect(weekdayList([1, 3, 5])).toBe('maandag, woensdag en vrijdag');
   });
 
   it('toont per weekdag wat nu geldt, wat komt en wat voorbij is', () => {

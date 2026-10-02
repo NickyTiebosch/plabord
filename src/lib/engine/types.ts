@@ -9,6 +9,7 @@ export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 /** Weekdagen waarop een vaste dienst kan vallen: maandag t/m zaterdag. */
 export type ShiftWeekday = 1 | 2 | 3 | 4 | 5 | 6;
+export const SHIFT_WEEKDAYS: readonly ShiftWeekday[] = [1, 2, 3, 4, 5, 6];
 
 export const ROLES = ['counter', 'backoffice', 'transport', 'cleaning', 'none'] as const;
 export type Role = (typeof ROLES)[number];

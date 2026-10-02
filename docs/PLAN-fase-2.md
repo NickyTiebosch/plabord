@@ -21,6 +21,10 @@ De keuzes in §2 gelden zoals ze er staan.
   - De regels blijven gelijk: deze rol telt niet mee aan de balie en wordt nooit voorgesteld als invaller.
   - Waar `docs/SPEC.md` of dit plan "poets" zegt, lees "hiker/buitendienst".
   - De Excel-import kent de nieuwe naam (ook los: "hiker" of "buitendienst"). "poets" en "schoonmaak" werken nog, zodat eerdere importbestanden blijven passen.
+- **Vaste diensten voor meerdere dagen tegelijk.** In "Vaste diensten wijzigen of toevoegen" vink je de dagen aan (ma t/m za) in plaats van één dag te kiezen.
+  - De gekozen dagen krijgen dezelfde dienst vanaf de datum bij "Geldig vanaf". Dagen zonder vinkje blijven zoals ze zijn. Een vaste vrije dag is dus een dag die je niet aanvinkt.
+  - "Vaste diensten laten stoppen" werkt ook voor meerdere dagen. Kan het op één van die dagen niet, dan verandert er niets en zegt de melding welke dag het probleem is.
+  - De wijzigingen gaan in hoogstens drie bewerkingen naar de database: eerst stoppen, dan aanpassen, dan toevoegen. Mislukt een latere bewerking, dan zegt de melding dat een deel wel is opgeslagen. Het logboek laat precies zien wat er is veranderd.
 
 ---
 
