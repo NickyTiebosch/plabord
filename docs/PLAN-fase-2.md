@@ -26,6 +26,11 @@ De keuzes in §2 gelden zoals ze er staan.
   - "Vaste diensten laten stoppen" werkt ook voor meerdere dagen. Kan het op één van die dagen niet, dan verandert er niets en zegt de melding welke dag het probleem is.
   - De wijzigingen gaan in hoogstens drie bewerkingen naar de database: eerst stoppen, dan aanpassen, dan toevoegen. Mislukt een latere bewerking, dan zegt de melding dat een deel wel is opgeslagen. Het logboek laat precies zien wat er is veranderd.
   - Bij de vaste diensten van een medewerker staat bij een dag zonder dienst "Vrij (geen vaste dienst)", of "Nu nog geen vaste dienst" als er een dienst aankomt. Een komende dienst toont ook zijn einddatum.
+- **Weekrooster per rol.** In een vestiging staan per dag eerst de baliemedewerkers, daarna de andere rollen. Elke rol heeft een eigen blok met een kopje en een gekleurde streep.
+  - Kleuren: teal voor de balie, paars voor hiker/buitendienst, grijs voor backoffice, transport en geen rol. Amber en rood houden hun betekenis: "let op" en "afwezig of tekort".
+  - Wie is ingeleend, staat in het blok van de balie, onder de eigen mensen.
+  - Bij "Afwezig" staat de rol achter de naam als die geen balie is, in dezelfde kleur.
+  - Het tabblad Ondersteunend blijft één lijst per groep, met de rol achter de naam.
 
 ---
 

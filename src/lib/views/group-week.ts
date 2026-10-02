@@ -1,6 +1,7 @@
 /**
  * Vestigingsrooster: per dag wie er werkt, wie is ingeleend en wie afwezig is.
  * Vanaf fase 2 ook de bezetting per dagdeel tegen de norm, en wie door een roosterwijziging vrij is.
+ * In een vestiging staan de mensen per rol bij elkaar, met de balie bovenaan.
  */
 import { addDays, eachDay } from '../engine/dates';
 import { formatDayShort } from '../engine/format';
@@ -9,14 +10,16 @@ import { computeSchedule, createScheduleContext, groupDay, type ShiftEntry } fro
 import { compareGroups } from '../engine/sort';
 import { createNormLookup, staffingOf } from '../engine/staffing';
 import { formatTimeRange } from '../engine/time';
-import type { DayPart, IsoDate, PlanningSnapshot } from '../engine/types';
+import { ROLES, type DayPart, type IsoDate, type PlanningSnapshot, type Role } from '../engine/types';
 import { isRequested, partialAbsenceNote } from './labels';
 
 export interface PersonLine {
   employeeId: string;
   name: string;
-  /** Rol als die afwijkt van wat je in deze groep verwacht, anders null. */
-  role: string | null;
+  /** De rol van deze dienst. */
+  role: Role;
+  /** De rol als tekst achter de naam, als het kopje of de groep die nog niet zegt; anders null. */
+  roleLabel: string | null;
   times: string;
   note: string | null;
   borrowed: boolean;
@@ -34,11 +37,24 @@ export interface StaffingPill {
   short: boolean;
 }
 
+/** Mensen die werken, bij elkaar per rol. */
+export interface WorkingBlock {
+  /** De rol van dit blok in een vestiging; null in een ondersteunende groep (daar is het één lijst). */
+  role: Role | null;
+  /** Kopje, zoals "Balie" of "Hiker/buitendienst"; null zonder kopje. */
+  label: string | null;
+  people: PersonLine[];
+}
+
 export interface GroupSection {
   groupId: string;
   groupName: string;
   closure: string | null;
-  working: PersonLine[];
+  /**
+   * Wie er werkt. In een vestiging een blok per rol, in de volgorde van de rollen, dus de balie
+   * bovenaan. In een ondersteunende groep één blok zonder kopje. Leeg als niemand werkt.
+   */
+  working: WorkingBlock[];
   absent: PersonLine[];
   elsewhere: PersonLine[];
   /** Alleen bij een vestiging op een open dag met een norm. */
@@ -61,6 +77,10 @@ function roleNote(entry: ShiftEntry, hasCounter: boolean): string | null {
   return entry.role === 'none' ? null : ROLE_LABELS[entry.role];
 }
 
+function capitalize(text: string): string {
+  return text.charAt(0).toLocaleUpperCase('nl') + text.slice(1);
+}
+
 function personLine(entry: ShiftEntry, hasCounter: boolean): PersonLine {
   const times = entry.working
     ? formatTimeRange(entry.working.start, entry.working.end)
@@ -72,13 +92,25 @@ function personLine(entry: ShiftEntry, hasCounter: boolean): PersonLine {
   return {
     employeeId: entry.employeeId,
     name: entry.employeeName,
-    role: roleNote(entry, hasCounter),
+    role: entry.role,
+    roleLabel: roleNote(entry, hasCounter),
     times,
     note: notes.length > 0 ? notes.join(' · ') : null,
     borrowed: entry.kind === 'substitution',
     requested: isRequested(entry.absences),
     changed: entry.changed,
   };
+}
+
+/** In een vestiging een blok per rol (het kopje noemt de rol); anders één lijst met de rol achter de naam. */
+function workingBlocks(entries: readonly ShiftEntry[], hasCounter: boolean): WorkingBlock[] {
+  const lines = entries.map((entry) => personLine(entry, hasCounter));
+  if (lines.length === 0) return [];
+  if (!hasCounter) return [{ role: null, label: null, people: lines }];
+  return ROLES.flatMap((role) => {
+    const people = lines.filter((line) => line.role === role).map((line) => ({ ...line, roleLabel: null }));
+    return people.length > 0 ? [{ role, label: capitalize(ROLE_LABELS[role]), people }] : [];
+  });
 }
 
 /** Een week (ma–za) voor één of meer groepen. */
@@ -116,7 +148,7 @@ export function buildGroupWeek(
           groupId: group.id,
           groupName: group.name,
           closure: view.closure ? (view.closure.name ?? 'Gesloten') : null,
-          working: view.working.map((entry) => personLine(entry, group.hasCounter)),
+          working: workingBlocks(view.working, group.hasCounter),
           absent: view.absent.map((entry) => ({
             ...personLine(entry, group.hasCounter),
             // Het kopje zegt al "Afwezig"; we melden alleen of het nog is aangevraagd.

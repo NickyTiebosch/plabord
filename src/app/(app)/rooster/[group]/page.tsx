@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { LinkTabs, PeriodNav, PersonLineView, StaffingPills } from '@/components/schedule';
+import { LinkTabs, PeriodNav, PersonLineView, StaffingPills, WorkingBlockView } from '@/components/schedule';
 import { Badge, Card, buttonClass } from '@/components/ui';
 import { requireViewer } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
@@ -105,15 +105,19 @@ export default async function GroupRosterPage({
                         </div>
                       ) : null}
                       {section.working.length > 0 ? (
-                        <ul className="divide-y divide-slate-100">
-                          {section.working.map((line) => (
-                            <PersonLineView
-                              key={`${line.employeeId}-${line.borrowed}`}
-                              line={line}
-                              href={line.borrowed ? undefined : changeHref(line.employeeId, day.date)}
-                            />
+                        <div className="space-y-2 py-1">
+                          {section.working.map((block) => (
+                            <WorkingBlockView key={block.role ?? 'iedereen'} block={block}>
+                              {block.people.map((line) => (
+                                <PersonLineView
+                                  key={`${line.employeeId}-${line.borrowed}`}
+                                  line={line}
+                                  href={line.borrowed ? undefined : changeHref(line.employeeId, day.date)}
+                                />
+                              ))}
+                            </WorkingBlockView>
                           ))}
-                        </ul>
+                        </div>
                       ) : null}
                       {section.elsewhere.length > 0 ? (
                         <ul className="divide-y divide-slate-100">

@@ -67,12 +67,65 @@ describe('Vestigingsrooster', () => {
     const week = buildGroupWeek(snapshot, ['den_bosch'], '2026-10-12', '2026-10-13');
     expect(week).toHaveLength(6);
     const tuesday = week[1]?.sections[0];
-    expect(tuesday?.working.map((line) => line.name)).toEqual(['Anouk', 'Bram', 'Sanne']);
+    expect(tuesday?.working.flatMap((block) => block.people).map((line) => line.name)).toEqual(['Anouk', 'Bram', 'Sanne']);
     expect(tuesday?.absent).toEqual([
       expect.objectContaining({ name: 'Joris', note: 'aangevraagd', requested: true }),
     ]);
-    const monday = week[0]?.sections[0];
-    expect(monday?.working.find((line) => line.name === 'Ingrid')).toMatchObject({ role: 'hiker/buitendienst', times: '07:30–11:30' });
+  });
+
+  it('zet in een vestiging de balie bovenaan en de andere rollen eronder, elk met een kopje', () => {
+    const substitution: Substitution = {
+      id: 's1',
+      employeeId: 'danique',
+      date: '2026-10-12',
+      groupId: 'den_bosch',
+      dayParts: ['afternoon'],
+      status: 'active',
+      handledAt: null,
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const snapshot = teamSnapshot({ substitutions: [substitution] });
+    const monday = buildGroupWeek(snapshot, ['den_bosch'], '2026-10-12', '2026-10-12')[0]?.sections[0];
+    expect(monday?.working.map((block) => [block.role, block.label, block.people.map((line) => line.name)])).toEqual([
+      // Wie is ingeleend, staat onder de eigen mensen.
+      ['counter', 'Balie', ['Bram', 'Joris', 'Sanne', 'Danique']],
+      ['cleaning', 'Hiker/buitendienst', ['Ingrid']],
+    ]);
+    // Het kopje noemt de rol al, dus niet nog eens achter elke naam.
+    expect(monday?.working[1]?.people[0]).toMatchObject({ role: 'cleaning', roleLabel: null, times: '07:30–11:30' });
+    expect(monday?.working[0]?.people[3]).toMatchObject({ name: 'Danique', note: 'ingeleend', borrowed: true });
+  });
+
+  it('noemt de rol van wie afwezig is als die afwijkt van de balie', () => {
+    const snapshot = teamSnapshot({ absences: [absence('a1', 'ingrid', '2026-10-12'), absence('a2', 'joris', '2026-10-12')] });
+    const monday = buildGroupWeek(snapshot, ['den_bosch'], '2026-10-12', '2026-10-12')[0]?.sections[0];
+    expect(monday?.working.map((block) => block.label)).toEqual(['Balie']);
+    expect(monday?.absent.map((line) => [line.name, line.role, line.roleLabel])).toEqual([
+      ['Ingrid', 'cleaning', 'hiker/buitendienst'],
+      ['Joris', 'counter', null],
+    ]);
+  });
+
+  it('houdt een ondersteunende groep als één lijst, met de rol achter de naam', () => {
+    const wednesday = buildGroupWeek(teamSnapshot(), ['logistics', 'backoffice', 'other'], '2026-10-14', '2026-10-14')[0];
+    const [logistics, , other] = wednesday?.sections ?? [];
+    expect(logistics?.working).toEqual([
+      {
+        role: null,
+        label: null,
+        people: [
+          expect.objectContaining({ name: 'Anouk', role: 'transport', roleLabel: 'transport' }),
+          expect.objectContaining({ name: 'Ruben', role: 'transport', roleLabel: 'transport' }),
+        ],
+      },
+    ]);
+    expect(other?.working[0]?.people.map((line) => [line.name, line.roleLabel])).toEqual([
+      ['Hans', null],
+      ['Iris', null],
+      ['Petra', null],
+      ['Wouter', null],
+    ]);
   });
 
   it('toont een gesloten vestiging', () => {
