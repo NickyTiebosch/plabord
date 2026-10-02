@@ -18,6 +18,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
 - **De publieke sleutel heet `VAPID_PUBLIC_KEY`**, zonder `NEXT_PUBLIC_`. De server geeft hem door aan de pagina, dus hij hoeft niet in de build te zitten.
+- **De service worker wordt geregistreerd zodra de knop Meldingen aanzetten zichtbaar is**, en niet pas bij de tik. Een iPhone vraagt alleen om toestemming als dat direct op een tik volgt, en dan moet de service worker al klaarstaan. Hij doet verder niets.
 
 Fase 4 levert één ding: **pushmeldingen** op de telefoon of computer van een medewerker, op dezelfde momenten als de mails van fase 3. Er komt geen app in de App Store of de Play Store. Het werkt via Planbord op het beginscherm, met *web push*: een open standaard die iPhone (vanaf iOS 16.4), Android en de gewone browsers ondersteunen.
 

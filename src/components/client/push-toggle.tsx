@@ -87,7 +87,6 @@ export function PushToggle({ publicKey }: { publicKey: string | null }) {
         return;
       }
       setState('aan');
-      setMessage('Meldingen staan aan op dit toestel.');
     } catch {
       if (Notification.permission === 'denied') setState('geweigerd');
       else setMessage('Meldingen aanzetten lukte niet. Probeer het opnieuw.');
