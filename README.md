@@ -82,6 +82,11 @@ Open in Supabase **Authentication**.
    - vul in Supabase in: host `smtp.resend.com`, poort `465`, gebruikersnaam `resend`, wachtwoord = de API-sleutel;
    - afzender bijvoorbeeld `planbord@jouwdomein.nl`, naam `Planbord`.
 
+   Kun of wil je niets aan je DNS veranderen? Gebruik dan de mailserver van een mailbox die je al hebt, bijvoorbeeld bij je hostingbedrijf. Je DNS blijft dan zoals hij is.
+   - Bij TransIP: host `smtp.transip.email`, poort `465`, gebruikersnaam en afzender = het mailadres, wachtwoord = het wachtwoord van die mailbox.
+   - Gebruik bij voorkeur een aparte mailbox, zoals `planbord@jouwdomein.nl`. Verander je het wachtwoord van die mailbox, pas het dan ook in Supabase aan.
+   - Microsoft 365 en Outlook.com zijn niet geschikt: die staan mailen met alleen een wachtwoord niet meer of niet lang meer toe.
+
    Elke andere SMTP-dienst werkt ook. Kies bij voorkeur een dienst die in de EU verwerkt. De mail bevat alleen de code en het e-mailadres.
 3. **Emails → Templates → Magic Link.** Supabase gebruikt dit sjabloon ook voor de inlogcode. Vervang het door een mail met alleen de code, zonder link:
    - **Subject:** `Je inlogcode voor Planbord`
