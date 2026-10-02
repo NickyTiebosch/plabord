@@ -48,6 +48,9 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - om 16:00 de dag ervoor een herinnering als je rooster die dag afwijkt van je vaste rooster. Voor maandag komt die op zondag;
   - geen mail bij afwezigheid, vaste diensten of sluitingsdagen.
 - Een mail gaat alleen over je eigen rooster: geen namen van collega's en geen reden van afwezigheid. Geen plaatjes en geen trackers.
+- **Rooster als Excel:** onderaan het Rooster-scherm download je het rooster voor een periode naar keuze.
+  - Per vestiging een tabblad, en de weken onder elkaar. Handig om te printen.
+  - Er staat niets in wat je niet ook op het scherm ziet: geen e-mailadressen en geen redenen.
 
 **Voor beheerders**
 - **Instellingen → Mails:**
@@ -59,9 +62,10 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - Mislukt een mail, dan probeert Planbord het elk uur opnieuw, hooguit drie keer.
 - **Mails:** de mails van de laatste 30 dagen, met hun status: verstuurd, mislukt of niet verstuurd. Met namen, zonder e-mailadressen en zonder inhoud.
 - **Export:**
+  - het rooster als Excel, net als iedereen (zie hierboven);
   - de hele planning als Excel, in het formaat van de import, plus de invallen en roosterwijzigingen;
   - bij een medewerker **Gegevens downloaden**: alles wat Planbord over die persoon bewaart, bijvoorbeeld voor een inzageverzoek;
-  - elke export komt in het logboek.
+  - de export van de planning en de gegevens van een medewerker komen in het logboek. Het rooster niet: daarin staat niets wat niet op het scherm staat.
 - **Volledig verwijderen:**
   - alleen bij een inactieve medewerker, met eerst een overzicht van wat er verdwijnt. Je typt de naam over om te bevestigen;
   - ook het inlogaccount verdwijnt;
