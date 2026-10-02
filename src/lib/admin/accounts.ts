@@ -3,7 +3,8 @@ import { createAdminClient, type AdminClient } from '../db/admin';
 
 /**
  * Accountbeheer via de admin-API van Supabase (secret key). Alleen voor: accounts aanmaken,
- * e-mailadres wijzigen en inloggen blokkeren bij inactief (besluit V4).
+ * e-mailadres wijzigen, inloggen blokkeren bij inactief (besluit V4) en, in fase 3, het account
+ * verwijderen bij volledig verwijderen van een medewerker (V21).
  */
 
 const BLOCK_DURATION = '876000h'; // 100 jaar
@@ -74,6 +75,17 @@ export async function setAccountBlocked(userId: string, blocked: boolean): Promi
   if (error) {
     console.error('Account blokkeren mislukt', error.status, error.message);
     return { ok: false, error: 'Inloggen kon niet worden geblokkeerd of vrijgegeven.' };
+  }
+  return { ok: true };
+}
+
+/** Verwijdert het inlogaccount bij volledig verwijderen (fase 3, V21). Bestaat het al niet meer, dan is dat goed. */
+export async function deleteAccount(userId: string): Promise<AccountResult> {
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error && error.status !== 404) {
+    console.error('Account verwijderen mislukt', error.status, error.message);
+    return { ok: false, error: 'Het inlogaccount kon niet worden verwijderd. Er is niets verwijderd; probeer het opnieuw.' };
   }
   return { ok: true };
 }

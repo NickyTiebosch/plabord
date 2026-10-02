@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, Field, Notice, PageHeader, SectionTitle, buttonClass, inputClass } from '@/components/ui';
+import { deletionBlocker, deletionSummary } from '@/lib/admin/deletion';
 import { isUuid } from '@/lib/admin/forms';
 import { shiftsByWeekday } from '@/lib/admin/shifts';
 import { requireAdmin } from '@/lib/auth/session';
@@ -17,6 +18,7 @@ import type { RecurringShift, Settings } from '@/lib/engine/types';
 import { revokeFeedLink } from '../../../agenda/actions';
 import { Flash } from '../../admin-shared';
 import { deleteShift, retryAccount } from '../actions';
+import { DeleteEmployeeForm } from '../delete-form';
 import { EmployeeForm } from '../employee-form';
 import { ShiftEndForm, ShiftFromForm } from '../shift-forms';
 
@@ -37,6 +39,38 @@ function ShiftText({ shift, settings, groupName }: { shift: RecurringShift; sett
       </span>
     </span>
   );
+}
+
+async function loadDeletionCounts(
+  supabase: Awaited<ReturnType<typeof requireAdmin>>['supabase'],
+  employeeId: string,
+  today: string,
+  account: boolean,
+) {
+  const count = async (table: 'recurring_shifts' | 'absences' | 'substitutions' | 'shift_overrides' | 'calendar_feeds') =>
+    (await supabase.from(table).select('id', { count: 'exact', head: true }).eq('employee_id', employeeId)).count ?? 0;
+  const [recurringShifts, absences, substitutions, shiftOverrides, calendarFeeds, upcoming] = await Promise.all([
+    count('recurring_shifts'),
+    count('absences'),
+    count('substitutions'),
+    count('shift_overrides'),
+    count('calendar_feeds'),
+    supabase
+      .from('substitutions')
+      .select('id', { count: 'exact', head: true })
+      .eq('employee_id', employeeId)
+      .eq('status', 'active')
+      .gte('date', today),
+  ]);
+  return deletionSummary({
+    recurringShifts,
+    absences,
+    substitutions,
+    upcomingSubstitutions: upcoming.count ?? 0,
+    shiftOverrides,
+    calendarFeeds,
+    account,
+  });
 }
 
 function DeleteShiftButton({ shift }: { shift: RecurringShift }) {
@@ -64,7 +98,7 @@ export default async function EmployeeDetailPage({
 }) {
   const [{ id }, { melding, mail }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const { supabase } = await requireAdmin();
+  const { supabase, employeeId: viewerId } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
 
   const [groups, settings, employeeRow, account, eligibility, shifts, feeds] = await Promise.all([
@@ -82,6 +116,9 @@ export default async function EmployeeDetailPage({
   const groupOptions = groups.map((group) => ({ id: group.id, name: group.name, hasCounter: group.hasCounter }));
   const weekdays = shiftsByWeekday(must(shifts, 'de vaste diensten').map(mapRecurringShift), today);
   const hasHistory = weekdays.some((day) => day.past.length > 0);
+  // Volledig verwijderen (fase 3, V21): wat er verdwijnt, en of het nu mag.
+  const blocker = deletionBlocker({ id: employee.id, isActive: employee.isActive }, viewerId);
+  const counts = blocker ? null : await loadDeletionCounts(supabase, employee.id, today, Boolean(account.data));
 
   return (
     <>
@@ -138,6 +175,25 @@ export default async function EmployeeDetailPage({
                   <SubmitButton variant="secondary">Inlogaccount aanmaken</SubmitButton>
                 </form>
               </>
+            )}
+          </Card>
+
+          <Card className="space-y-3 p-4">
+            <SectionTitle>Gegevens downloaden en verwijderen</SectionTitle>
+            <p className="text-sm text-slate-700">
+              Alles wat Planbord over {employee.name} bewaart, als Excel-bestand. Bijvoorbeeld voor een inzageverzoek. Komt in
+              het logboek.
+            </p>
+            {/* Een gewone link, zodat de browser hem niet vooraf ophaalt: elke klik is één export in het logboek. */}
+            <a href={`/beheer/medewerkers/${employee.id}/gegevens`} download className={buttonClass('secondary', 'sm')}>
+              Gegevens downloaden
+            </a>
+            {counts ? (
+              <DeleteEmployeeForm id={employee.id} name={employee.name} summary={counts} />
+            ) : (
+              <p className="text-sm text-slate-600">
+                <strong className="font-medium text-slate-800">Volledig verwijderen:</strong> {blocker}
+              </p>
             )}
           </Card>
 

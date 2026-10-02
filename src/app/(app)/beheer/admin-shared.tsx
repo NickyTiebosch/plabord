@@ -7,6 +7,10 @@ import type { EmployeeOption } from './afwezigheid/absence-form';
 const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: string }> = {
   opgeslagen: { tone: 'success', text: 'Opgeslagen.' },
   verwijderd: { tone: 'success', text: 'Verwijderd.' },
+  'volledig-verwijderd': {
+    tone: 'success',
+    text: 'De medewerker is volledig verwijderd, met het inlogaccount. In het logboek staat wie dat deed en wanneer.',
+  },
   aangemaakt: { tone: 'success', text: 'Medewerker aangemaakt.' },
   'account-aangemaakt': { tone: 'success', text: 'Inlogaccount aangemaakt.' },
   'account-mislukt': {

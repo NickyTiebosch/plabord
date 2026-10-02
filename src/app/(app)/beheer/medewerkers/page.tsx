@@ -6,6 +6,7 @@ import { loadEmployeesWithAccounts, type EmployeeWithAccount } from '@/lib/db/ad
 import { loadGroups } from '@/lib/db/queries';
 import { ROLE_LABELS } from '@/lib/engine/labels';
 import { compareByNameThenId, compareGroups } from '@/lib/engine/sort';
+import { Flash } from '../admin-shared';
 
 export const metadata: Metadata = { title: 'Medewerkers' };
 
@@ -32,7 +33,7 @@ function EmployeeRow({ employee }: { employee: EmployeeWithAccount }) {
   );
 }
 
-export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ inactief?: string }> }) {
+export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ inactief?: string; melding?: string }> }) {
   const params = await searchParams;
   const { supabase } = await requireAdmin();
   const [groups, employees] = await Promise.all([loadGroups(supabase), loadEmployeesWithAccounts(supabase)]);
@@ -51,6 +52,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
           </LinkButton>
         }
       />
+      <Flash code={params.melding} />
       {employees.length === 0 ? (
         <EmptyState title="Nog geen medewerkers">
           Voeg ze één voor één toe of gebruik de <Link href="/beheer/import" className="underline">Excel-import</Link>.

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { shift } from '../engine/__fixtures__/team';
 import { describeAudit, type AuditRow } from './audit';
 import { closureScope, holidayOverrides, holidaySummary } from './closures';
+import { confirmsName, deletionBlocker, deletionSummary } from './deletion';
 import { dbErrorMessage } from './errors';
 import {
   isUuid,
@@ -544,5 +545,47 @@ describe('formulier roosterwijziging voor één dag', () => {
   it('controleert medewerker en datum voor "geen dienst"', () => {
     expect(parseDayRef(form({ employeeId: EMPLOYEE_ID, date: '2026-10-17' }))).toMatchObject({ ok: true });
     expect(parseDayRef(form({ employeeId: 'onzin', date: '2026-10-17' }))).toMatchObject({ ok: false });
+  });
+});
+
+describe('volledig verwijderen (fase 3, V21)', () => {
+  const none = {
+    recurringShifts: 0,
+    absences: 0,
+    substitutions: 0,
+    upcomingSubstitutions: 0,
+    shiftOverrides: 0,
+    calendarFeeds: 0,
+    account: false,
+  };
+
+  it('zegt vooraf wat er verdwijnt, ook dat gaten terugkomen', () => {
+    expect(
+      deletionSummary({ recurringShifts: 5, absences: 1, substitutions: 3, upcomingSubstitutions: 1, shiftOverrides: 2, calendarFeeds: 1, account: true }),
+    ).toEqual([
+      '5 vaste diensten',
+      '1 afwezigheid',
+      '3 invallen, waarvan 1 nog komt: dat gat komt terug in Nog te regelen',
+      '2 roosterwijzigingen',
+      '1 agendalink',
+      'het inlogaccount en de werkmail',
+    ]);
+    expect(deletionSummary({ ...none, substitutions: 2, upcomingSubstitutions: 2 })).toEqual([
+      '2 invallen, waarvan 2 nog komen: die gaten komen terug in Nog te regelen',
+    ]);
+    expect(deletionSummary(none)).toEqual([]);
+  });
+
+  it('kan alleen bij een inactieve medewerker, en niet bij jezelf', () => {
+    expect(deletionBlocker({ id: 'e1', isActive: false }, 'e0')).toBeNull();
+    expect(deletionBlocker({ id: 'e1', isActive: true }, 'e0')).toBe('Zet de medewerker eerst op inactief. Pas dan kan volledig verwijderen.');
+    expect(deletionBlocker({ id: 'e0', isActive: false }, 'e0')).toBe('Je kunt jezelf niet verwijderen.');
+  });
+
+  it('vraagt de naam over te typen, zonder op hoofdletters of spaties te letten', () => {
+    expect(confirmsName(' bram VAN dijk ', 'Bram van Dijk')).toBe(true);
+    expect(confirmsName('Bram', 'Bram van Dijk')).toBe(false);
+    expect(confirmsName('', '')).toBe(false);
+    expect(confirmsName(null, 'Bram')).toBe(false);
   });
 });
