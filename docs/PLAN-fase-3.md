@@ -16,6 +16,7 @@ V13 was al besloten. Alle voorstellen uit §1 (V14–V21) zijn aangenomen:
 | V19 | Is de mail aan de invaller verstuurd, dan is een vervallen inval vanzelf afgehandeld. |
 | V20 | Twee exports in Excel: de planning (importformaat plus invallen en roosterwijzigingen) en de gegevens van één medewerker. Elke export in het logboek. |
 | V21 | Volledig verwijderen alleen bij een inactieve medewerker, met een overzicht vooraf en de naam overtypen. Niet jezelf. Het logboek houdt alleen id's. |
+| V22 | Aanvulling na de oplevering: het rooster zelf exporteren naar Excel, als raster per vestiging, over een periode naar keuze, voor iedereen die kan inloggen. Zie §10. |
 
 De keuzes in §2 gelden zoals ze er staan.
 
@@ -265,3 +266,32 @@ RLS staat aan op elke nieuwe tabel. Eerst `revoke all` voor `anon` en `authentic
 - **Google kan het versturen blokkeren**, bijvoorbeeld als het app-wachtwoord is ingetrokken. Dan mislukken de mails: Beheer → Mails laat dat zien, en een vervallen inval blijft in Let op staan.
 - **Spam.** Mails van een eigen Google Workspace-adres komen meestal goed aan. Belandt er toch een in de spam, vraag collega's dan het adres aan hun contacten toe te voegen.
 - **Volledig verwijderen kan niet ongedaan worden gemaakt.** Daarom kan het alleen bij een inactieve medewerker, met een overzicht vooraf en de naam overtypen. Download eventueel eerst de gegevens.
+
+---
+
+## 10. Aanvulling: het rooster exporteren (V22)
+Na het testen van fase 3 vroeg je of ook het rooster zelf naar Excel kan. De export van V20 bevat de brongegevens (vaste diensten, afwezigheid, invallen en wijzigingen); dit is het berekende rooster, zoals op het Rooster-scherm. Op 2 oktober 2026 koos je:
+- **Opmaak:** een raster per vestiging. De rijen zijn medewerkers, de kolommen de dagen.
+- **Periode:** vrij te kiezen, met standaard deze week en de drie weken erna.
+- **Wie:** iedereen die kan inloggen, met een knop op het Rooster-scherm. Beheerders vinden hem ook onder Beheer → Export.
+- **Volgorde:** eerst fase 3 live, daarna deze aanvulling in een eigen pull request.
+
+**Hoe het bestand eruitziet**
+- Een tabblad per tab van het Rooster-scherm: Den Bosch, Eindhoven, Breda en Ondersteunend.
+- Per week een blok, onder elkaar: een kop zoals "Week 42 · 12–17 okt", een rij met de dagen (ma–za), en daaronder de mensen.
+- **In een vestiging** staan de mensen per rol bij elkaar, met de balie bovenaan, net als op het scherm. In Ondersteunend staan ze per groep.
+- **De cellen** zeggen wat het scherm zegt:
+  - de tijden, bijvoorbeeld "07:30–18:00";
+  - met een toevoeging als dat nodig is: "ingeleend", "gewijzigd" of "ochtend afwezig";
+  - "Afwezig", of "Afwezig (aangevraagd)". Nooit een reden;
+  - "Valt elders in" en "Geen dienst (gewijzigd)".
+- Een rij "Gesloten" bij een sluitingsdag, en een rode rij "Te weinig aan de balie" als de bezetting onder de norm zit.
+- Liggend afgedrukt, met de namen in de eerste kolom.
+
+**Keuzes die ik maak**
+- **Hele weken.** De periode loopt van de maandag van de eerste week tot en met de zaterdag van de laatste week, net als op het scherm.
+- **Hooguit 13 weken** (een kwartaal). Kies je meer, dan wordt de periode ingekort tot 13 weken; het formulier zegt dat erbij.
+- **Niet in het logboek.** In dit bestand staat niets wat je niet al op het Rooster-scherm ziet: geen e-mailadressen en geen redenen. We houden ook niet bij wat collega's bekijken. De twee exports van V20 bevatten wel werkmails en komen daarom wel in het logboek.
+- **Geen database-wijziging.** De export leest met de eigen sessie, dus met dezelfde rechten als het scherm. Er is geen SQL-stap nodig.
+- **Puur en getest.** De opbouw zit in `src/lib/export/roster.ts` en gebruikt hetzelfde weekrooster als het scherm (`buildGroupWeek`), met tests ernaast.
+
