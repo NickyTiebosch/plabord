@@ -155,7 +155,7 @@ Heeft je project alleen de oude sleutels (`anon` en `service_role`)? Dat werkt o
    | `NEXT_PUBLIC_SUPABASE_URL` | de Project URL | |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | de Publishable key | |
    | `SUPABASE_SECRET_KEY` | de Secret key | vink **Contains secret values** aan |
-   | `SITE_URL` | optioneel, bijvoorbeeld `https://planbord.netlify.app` | alleen voor de context **Production**; leeg = het adres waarop de app draait |
+   | `SITE_URL` | optioneel: het adres van de gewone app, bijvoorbeeld `https://planbord.netlify.app` | mag voor alle contexten: dan gaan agendalinks en de link in mails ook vanuit een preview naar de gewone app. Leeg = het adres waarop de app draait |
 
    - Netlify zet de `NEXT_PUBLIC_`-waarden bij het bouwen in de app. Pas je ze aan, start dan een nieuwe deploy.
    - De secret key gebruikt de app alleen op de server:
@@ -237,6 +237,7 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
    | `MAIL_FROM` | `Planbord <adres van de mailbox>` | de afzender die collega's zien |
    | `CRON_SECRET` | het geheim uit stap 2 | vink **Contains secret values** aan |
 
+   - De namen moeten precies zo heten: de app leest alleen deze namen. Bewaar je de waarden ook in een wachtwoordkluis of een secret manager, dan mogen ze daar anders heten.
    - De link in de mail gaat naar `SITE_URL` (stap 4). Zonder `SITE_URL` gaat hij naar het adres waarop de app draait.
    - Start daarna een nieuwe deploy (**Deploys → Trigger deploy**), zodat de app de nieuwe waarden gebruikt.
 4. **Eerst testen**, in Planbord onder **Beheer → Instellingen**:
