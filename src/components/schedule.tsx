@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { Role } from '@/lib/engine/types';
 import type { LineTone, ScheduleLine } from '@/lib/views/my-schedule';
-import type { PersonLine, StaffingPill, WorkingBlock } from '@/lib/views/group-week';
+import type { PersonLine, WorkingBlock } from '@/lib/views/group-week';
 import { IconChevronLeft, IconChevronRight } from './icons';
 import { Badge, buttonClass, cx } from './ui';
 
@@ -145,23 +145,9 @@ export function LinkTabs({ tabs, active }: { tabs: { href: string; label: string
   );
 }
 
-/** Bezetting per dagdeel tegen de norm: groen als het genoeg is, rood bij een tekort. */
-export function StaffingPills({ pills }: { pills: readonly StaffingPill[] }) {
-  if (pills.length === 0) return null;
+/** Rode melding bij te weinig mensen aan de balie. Is de bezetting in orde, dan staat er niets (besluit V12). */
+export function ShortageNotice({ text }: { text: string }) {
   return (
-    <p className="flex flex-wrap gap-1.5" aria-label="Bezetting aan de balie">
-      {pills.map((pill) => (
-        <span
-          key={pill.dayPart}
-          className={cx(
-            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset',
-            pill.short ? 'bg-rose-600 text-white ring-rose-600' : 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-          )}
-        >
-          {pill.label}
-          {pill.short ? <span className="sr-only"> (onder de norm)</span> : null}
-        </span>
-      ))}
-    </p>
+    <p className="inline-flex items-center rounded-full bg-rose-600 px-2.5 py-0.5 text-xs font-semibold text-white">{text}</p>
   );
 }

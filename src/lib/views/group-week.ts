@@ -1,6 +1,7 @@
 /**
  * Vestigingsrooster: per dag wie er werkt, wie is ingeleend en wie afwezig is.
- * Vanaf fase 2 ook de bezetting per dagdeel tegen de norm, en wie door een roosterwijziging vrij is.
+ * Vanaf fase 2 ook een melding als er te weinig mensen aan de balie staan (besluit V12: geen
+ * bezetting per dagdeel als het genoeg is), en wie door een roosterwijziging vrij is.
  * In een vestiging staan de mensen per rol bij elkaar, met de balie bovenaan.
  */
 import { addDays, eachDay } from '../engine/dates';
@@ -28,15 +29,6 @@ export interface PersonLine {
   changed: boolean;
 }
 
-/** Bezetting van één dagdeel tegen de norm, bijvoorbeeld "ochtend 1/2". */
-export interface StaffingPill {
-  dayPart: DayPart;
-  label: string;
-  count: number;
-  norm: number;
-  short: boolean;
-}
-
 /** Mensen die werken, bij elkaar per rol. */
 export interface WorkingBlock {
   /** De rol van dit blok in een vestiging; null in een ondersteunende groep (daar is het één lijst). */
@@ -57,10 +49,11 @@ export interface GroupSection {
   working: WorkingBlock[];
   absent: PersonLine[];
   elsewhere: PersonLine[];
-  /** Alleen bij een vestiging op een open dag met een norm. */
-  staffing: StaffingPill[];
-  /** Een of meer dagdelen onder de norm. */
-  short: boolean;
+  /**
+   * Alleen als de vestiging in een of meer dagdelen onder de norm zit, bijvoorbeeld
+   * "1 te weinig aan de balie (middag)". Anders null: dan is de bezetting in orde.
+   */
+  shortage: string | null;
   /** Wie hier volgens de vaste dienst zou werken, maar door een roosterwijziging vrij is. */
   daysOff: { employeeId: string; name: string }[];
 }
@@ -113,6 +106,22 @@ function workingBlocks(entries: readonly ShiftEntry[], hasCounter: boolean): Wor
   });
 }
 
+/**
+ * Het tekort aan de balie in gewone taal. Het dagdeel staat er alleen bij als niet de hele dag
+ * hetzelfde tekort heeft. `null` als elk dagdeel op de norm zit.
+ */
+export function shortageText(parts: readonly { dayPart: DayPart; norm: number; shortage: number }[]): string | null {
+  const counted = parts.filter((part) => part.norm > 0);
+  const short = counted.filter((part) => part.shortage > 0);
+  const [first] = short;
+  if (!first) return null;
+  if (short.every((part) => part.shortage === first.shortage)) {
+    const which = short.length === counted.length ? '' : ` (${short.map((part) => DAY_PART_LABELS[part.dayPart]).join(' en ')})`;
+    return `${first.shortage} te weinig aan de balie${which}`;
+  }
+  return `Te weinig aan de balie: ${short.map((part) => `${DAY_PART_LABELS[part.dayPart]} ${part.shortage}`).join(', ')}`;
+}
+
 /** Een week (ma–za) voor één of meer groepen. */
 export function buildGroupWeek(
   snapshot: PlanningSnapshot,
@@ -132,18 +141,10 @@ export function buildGroupWeek(
       isToday: day.date === today,
       sections: groups.map((group) => {
         const view = groupDay(context, day, group.id);
-        const staffing =
+        const shortage =
           group.hasCounter && !view.closure
-            ? staffingOf(context, normOf, day.date, group.id, day.entries)
-                .parts.filter((part) => part.norm > 0)
-                .map((part) => ({
-                  dayPart: part.dayPart,
-                  label: `${DAY_PART_LABELS[part.dayPart]} ${part.count}/${part.norm}`,
-                  count: part.count,
-                  norm: part.norm,
-                  short: part.shortage > 0,
-                }))
-            : [];
+            ? shortageText(staffingOf(context, normOf, day.date, group.id, day.entries).parts)
+            : null;
         return {
           groupId: group.id,
           groupName: group.name,
@@ -155,8 +156,7 @@ export function buildGroupWeek(
             note: isRequested(entry.absences) ? 'aangevraagd' : null,
           })),
           elsewhere: view.elsewhere.map((entry) => ({ ...personLine(entry, group.hasCounter), note: 'valt elders in' })),
-          staffing,
-          short: staffing.some((pill) => pill.short),
+          shortage,
           daysOff: view.closure
             ? []
             : daysOff

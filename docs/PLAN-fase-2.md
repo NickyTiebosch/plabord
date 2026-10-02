@@ -31,6 +31,12 @@ De keuzes in §2 gelden zoals ze er staan.
   - Wie is ingeleend, staat in het blok van de balie, onder de eigen mensen.
   - Bij "Afwezig" staat de rol achter de naam als die geen balie is, in dezelfde kleur.
   - Het tabblad Ondersteunend blijft één lijst per groep, met de rol achter de naam.
+- **V12. Geen bezetting per dagdeel in het weekrooster.** De eigenaar wil geen labels als "ochtend 2/2" en "middag 2/2". Dat wijkt af van `docs/SPEC.md`, waar het vestigingsrooster "de bezetting per dagdeel tegen de norm" toont.
+  - Is de bezetting in orde, dan staat er niets.
+  - Bij een tekort staat er één rode regel, bijvoorbeeld "1 te weinig aan de balie". Beheerders zien ernaast de knop **Regelen**.
+  - Het dagdeel staat er alleen bij als niet de hele dag hetzelfde tekort heeft, bijvoorbeeld "1 te weinig aan de balie (middag)".
+  - Onderbezetting blijft dus rood in het vestigingsrooster, zoals de spec vraagt.
+  - De berekening per dagdeel blijft, want gaten en invallen gaan per dagdeel. Op de pagina van een gat (**Regelen**) staan de dagdelen nog wel: daar kies je voor welk dagdeel iemand invalt.
 
 ---
 
@@ -237,7 +243,7 @@ Drie nieuwe tabellen. RLS staat aan op elke tabel. Eerst `revoke all` voor `anon
 
 **Voor iedereen**
 - **Vestigingsrooster** (`/rooster/[vestiging]`):
-  - per dag per dagdeel de bezetting, bijvoorbeeld "ochtend 2/2" en "middag 1/2", met onderbezetting in rood;
+  - per dag per dagdeel de bezetting, bijvoorbeeld "ochtend 2/2" en "middag 1/2", met onderbezetting in rood (vervangen door V12: alleen een rode melding bij een tekort);
   - invallers met "ingeleend" en roosterwijzigingen met "gewijzigd";
   - voor beheerders: tik op een naam voor een roosterwijziging, en bij een gat de knop "Regelen".
 - **Mijn rooster:** "Invallen in Eindhoven" en "gewijzigd" vallen op (het eerste kon al).

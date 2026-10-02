@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { absence, groups, teamSnapshot } from '../engine/__fixtures__/team';
 import { computePersonalSchedule } from '../engine/schedule';
-import type { Substitution } from '../engine/types';
+import type { Absence, Substitution } from '../engine/types';
 import { buildGroupWeek } from './group-week';
 import { leaveRange, monthSpans, spanOf, weekSpans } from './leave';
 import { buildMySchedule } from './my-schedule';
@@ -128,9 +128,32 @@ describe('Vestigingsrooster', () => {
     ]);
   });
 
+  it('toont geen bezetting per dagdeel, alleen een melding bij een tekort aan de balie', () => {
+    const mondayOf = (absences: Absence[]) =>
+      buildGroupWeek(teamSnapshot({ absences }), ['den_bosch'], '2026-10-12', '2026-10-12')[0]?.sections[0];
+    // Maandag in Den Bosch: Sanne, Joris en Bram aan de balie, de norm is 2.
+    expect(mondayOf([])?.shortage).toBeNull();
+    expect(mondayOf([absence('a1', 'sanne', '2026-10-12'), absence('a2', 'joris', '2026-10-12')])?.shortage).toBe(
+      '1 te weinig aan de balie',
+    );
+    expect(
+      mondayOf([
+        absence('a1', 'sanne', '2026-10-12', '2026-10-12', { dayPart: 'afternoon' }),
+        absence('a2', 'joris', '2026-10-12', '2026-10-12', { dayPart: 'afternoon' }),
+      ])?.shortage,
+    ).toBe('1 te weinig aan de balie (middag)');
+    expect(
+      mondayOf([
+        absence('a1', 'sanne', '2026-10-12'),
+        absence('a2', 'joris', '2026-10-12'),
+        absence('a3', 'bram', '2026-10-12', '2026-10-12', { dayPart: 'afternoon' }),
+      ])?.shortage,
+    ).toBe('Te weinig aan de balie: ochtend 1, middag 2');
+  });
+
   it('toont een gesloten vestiging', () => {
     const week = buildGroupWeek(teamSnapshot(), ['breda'], '2026-04-27', '2026-04-27');
-    expect(week[0]?.sections[0]).toMatchObject({ closure: 'Koningsdag', working: [], absent: [] });
+    expect(week[0]?.sections[0]).toMatchObject({ closure: 'Koningsdag', working: [], absent: [], shortage: null });
   });
 });
 

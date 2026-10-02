@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { LinkTabs, PeriodNav, PersonLineView, StaffingPills, WorkingBlockView } from '@/components/schedule';
+import { LinkTabs, PeriodNav, PersonLineView, ShortageNotice, WorkingBlockView } from '@/components/schedule';
 import { Badge, Card, buttonClass } from '@/components/ui';
 import { requireViewer } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
@@ -80,7 +80,7 @@ export default async function GroupRosterPage({
                     !section.closure &&
                     section.working.length + section.absent.length + section.elsewhere.length === 0 &&
                     section.daysOff.length === 0;
-                  if (empty && section.staffing.length === 0 && (day.sections.length > 1 || nobody)) return null;
+                  if (empty && !section.shortage && (day.sections.length > 1 || nobody)) return null;
                   return (
                     <div key={section.groupId}>
                       {day.sections.length > 1 ? (
@@ -91,10 +91,10 @@ export default async function GroupRosterPage({
                           <Badge tone="closed">Gesloten: {section.closure}</Badge>
                         </p>
                       ) : null}
-                      {section.staffing.length > 0 ? (
+                      {section.shortage ? (
                         <div className="flex flex-wrap items-center justify-between gap-2 py-1.5">
-                          <StaffingPills pills={section.staffing} />
-                          {section.short && viewer.isAdmin ? (
+                          <ShortageNotice text={section.shortage} />
+                          {viewer.isAdmin ? (
                             <Link
                               href={`/beheer/regelen/${groupSlug(section.groupId)}/${day.date}`}
                               className={buttonClass('primary', 'sm')}

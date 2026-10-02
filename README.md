@@ -27,7 +27,7 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 ### Fase 2: het brein
 
 **Voor iedereen**
-- **Rooster:** per vestiging en dagdeel de bezetting aan de balie, bijvoorbeeld *ochtend 1/2*. Rood betekent onder de norm. Invallers staan erbij als *ingeleend*. Een roosterwijziging voor één dag heet *gewijzigd*.
+- **Rooster:** per vestiging eerst de balie, daaronder hiker/buitendienst, elk in een eigen kleur. Staan er te weinig mensen aan de balie, dan zie je een rode melding, bijvoorbeeld *1 te weinig aan de balie*. Invallers staan erbij als *ingeleend*. Een roosterwijziging voor één dag heet *gewijzigd*.
 - **Mijn rooster:** je ziet waar je invalt en wanneer je rooster voor één dag anders is.
 
 **Voor beheerders**
