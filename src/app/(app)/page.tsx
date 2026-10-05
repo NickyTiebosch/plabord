@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PushToggle } from '@/components/client/push-toggle';
 import { AbsenceBadge, ScheduleLineView } from '@/components/schedule';
 import { Badge, Card, Notice, PageHeader, SectionTitle } from '@/components/ui';
-import { requireViewer } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
 import { addDays, startOfIsoWeek, todayInAmsterdam } from '@/lib/engine/dates';
 import { computePersonalSchedule } from '@/lib/engine/schedule';
@@ -14,11 +14,10 @@ export const metadata: Metadata = { title: 'Mijn rooster' };
 const DAYS_AHEAD = 6 * 7;
 
 export default async function MySchedulePage() {
-  const viewer = await requireViewer();
   const today = todayInAmsterdam(new Date());
   // 6 weken vooruit, afgerond op hele weken (t/m de zaterdag).
   const to = addDays(startOfIsoWeek(addDays(today, DAYS_AHEAD - 1)), 5);
-  const snapshot = await loadPlanningSnapshot(viewer.supabase, { from: today, to });
+  const [viewer, snapshot] = await requireViewerWith((supabase) => loadPlanningSnapshot(supabase, { from: today, to }));
   const weeks = buildMySchedule(computePersonalSchedule(snapshot, viewer.employeeId, today, to), snapshot.groups, today);
   const hasShifts = snapshot.recurringShifts.some((shift) => shift.employeeId === viewer.employeeId);
 

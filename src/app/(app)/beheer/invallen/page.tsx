@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, PageHeader, SectionTitle } from '@/components/ui';
 import { substitutionItems, type SubstitutionItem } from '@/lib/admin/planning';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { mapSubstitution } from '@/lib/db/mappers';
 import { loadGroups, must } from '@/lib/db/queries';
@@ -50,18 +50,19 @@ function ItemRow({ item }: { item: SubstitutionItem }) {
 
 export default async function SubstitutionsPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
   const { melding, mail } = await searchParams;
-  const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
-  const [names, groups, rows] = await Promise.all([
-    loadEmployeeNames(supabase),
-    loadGroups(supabase),
-    supabase
-      .from('substitutions')
-      .select('*')
-      .gte('date', addDays(today, -PAST_DAYS))
-      .order('date')
-      .then((result) => must(result, 'de invallen').map(mapSubstitution)),
-  ]);
+  const [, [names, groups, rows]] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadEmployeeNames(supabase),
+      loadGroups(supabase),
+      supabase
+        .from('substitutions')
+        .select('*')
+        .gte('date', addDays(today, -PAST_DAYS))
+        .order('date')
+        .then((result) => must(result, 'de invallen').map(mapSubstitution)),
+    ]),
+  );
   const items = substitutionItems(rows, names, new Map(groups.map((group) => [group.id, group.name])), today);
   const upcoming = items.filter((item) => item.date >= today);
   const past = items.filter((item) => item.date < today).reverse();

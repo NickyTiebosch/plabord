@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeesWithAccounts, loadPlanningOverview } from '@/lib/db/admin-queries';
 import { mapAbsence } from '@/lib/db/mappers';
 import { must } from '@/lib/db/queries';
@@ -22,27 +22,28 @@ const GAPS_ON_OVERVIEW = 5;
 
 export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
   const { melding, mail } = await searchParams;
-  const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
   const monday = startOfIsoWeek(today);
   const saturday = addDays(monday, 5);
 
-  const [planning, employees, requested, thisWeek] = await Promise.all([
-    loadPlanningOverview(supabase, today),
-    loadEmployeesWithAccounts(supabase),
-    supabase
-      .from('absences')
-      .select('*')
-      .eq('status', 'requested')
-      .order('start_date')
-      .then((result) => must(result, 'de aanvragen').map(mapAbsence)),
-    supabase
-      .from('absences')
-      .select('*')
-      .lte('start_date', saturday)
-      .gte('end_date', monday)
-      .then((result) => must(result, 'de afwezigheid').map(mapAbsence)),
-  ]);
+  const [, [planning, employees, requested, thisWeek]] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadPlanningOverview(supabase, today),
+      loadEmployeesWithAccounts(supabase),
+      supabase
+        .from('absences')
+        .select('*')
+        .eq('status', 'requested')
+        .order('start_date')
+        .then((result) => must(result, 'de aanvragen').map(mapAbsence)),
+      supabase
+        .from('absences')
+        .select('*')
+        .lte('start_date', saturday)
+        .gte('end_date', monday)
+        .then((result) => must(result, 'de afwezigheid').map(mapAbsence)),
+    ]),
+  );
   const names = new Map(employees.map((employee) => [employee.id, employee.name]));
   const absentThisWeek = listAbsencesInRange(employees, thisWeek, monday, saturday);
   const withoutEmail = employees.filter((employee) => employee.isActive && !employee.email).length;

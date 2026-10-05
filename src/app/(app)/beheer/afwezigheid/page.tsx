@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, PageHeader, SectionTitle, buttonClass } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { mapAbsence, mapEmployee } from '@/lib/db/mappers';
 import { loadGroups, must } from '@/lib/db/queries';
@@ -55,19 +55,20 @@ export default async function AbsenceAdminPage({
   searchParams: Promise<{ medewerker?: string; melding?: string; mail?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase } = await requireAdmin();
   const today = todayInAmsterdam(new Date());
   const since = addDays(today, -60);
-
-  let query = supabase.from('absences').select('*').gte('end_date', since).order('start_date').order('end_date');
   const employeeFilter = isUuid(params.medewerker) ? params.medewerker : '';
-  if (employeeFilter) query = query.eq('employee_id', employeeFilter);
-  const [groups, employees, names, absences] = await Promise.all([
-    loadGroups(supabase),
-    supabase.from('employees').select('*').then((result) => must(result, 'de medewerkers').map((row) => mapEmployee(row))),
-    loadEmployeeNames(supabase),
-    query.then((result) => must(result, 'de afwezigheid').map(mapAbsence)),
-  ]);
+
+  const [, [groups, employees, names, absences]] = await requireAdminWith((supabase) => {
+    let query = supabase.from('absences').select('*').gte('end_date', since).order('start_date').order('end_date');
+    if (employeeFilter) query = query.eq('employee_id', employeeFilter);
+    return Promise.all([
+      loadGroups(supabase),
+      supabase.from('employees').select('*').then((result) => must(result, 'de medewerkers').map((row) => mapEmployee(row))),
+      loadEmployeeNames(supabase),
+      query.then((result) => must(result, 'de afwezigheid').map(mapAbsence)),
+    ]);
+  });
   const options = employeeOptions(employees, groups);
   const current = absences.filter((absence) => absence.endDate >= today);
   const recent = absences.filter((absence) => absence.endDate < today).reverse();

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { LeaveLegend, LeaveTimeline } from '@/components/leave-timeline';
 import { LinkTabs, PeriodNav } from '@/components/schedule';
 import { PageHeader } from '@/components/ui';
-import { requireViewer } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { computeLeaveOverview } from '@/lib/engine/leave-overview';
@@ -26,11 +26,12 @@ export default async function LeaveOverviewPage({
   searchParams: Promise<{ weergave?: string; datum?: string }>;
 }) {
   const params = await searchParams;
-  const viewer = await requireViewer();
   const today = todayInAmsterdam(new Date());
   const view = parseLeaveView(params.weergave);
   const range = leaveRange(view, parseAnchor(params.datum, today));
-  const snapshot = await loadPlanningSnapshot(viewer.supabase, { from: range.from, to: range.to });
+  const [viewer, snapshot] = await requireViewerWith((supabase) =>
+    loadPlanningSnapshot(supabase, { from: range.from, to: range.to }),
+  );
   const overview = computeLeaveOverview(snapshot, range.from, range.to);
 
   return (

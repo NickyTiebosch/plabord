@@ -2,6 +2,7 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { createClient, type ServerClient } from '../db/server';
+import { loadWhileChecking } from './parallel';
 
 export interface Viewer {
   userId: string;
@@ -71,3 +72,24 @@ export async function requireAdmin(): Promise<Viewer> {
   return viewer;
 }
 
+/**
+ * Als requireViewer(), maar de gegevens van de pagina laden al terwijl de controle loopt, in plaats
+ * van erna. Dat scheelt een rondgang naar de database. De pagina krijgt de gegevens pas als de
+ * controle slaagt, en RLS schermt ze hoe dan ook af.
+ */
+export function requireViewerWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
+  return checkWhileLoading(requireViewer, load);
+}
+
+/** Als requireAdmin(), met de gegevens tegelijk geladen (zie requireViewerWith). */
+export function requireAdminWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
+  return checkWhileLoading(requireAdmin, load);
+}
+
+async function checkWhileLoading<T>(
+  check: () => Promise<Viewer>,
+  load: (supabase: ServerClient) => Promise<T>,
+): Promise<[Viewer, T]> {
+  const supabase = await getClient();
+  return loadWhileChecking(check, () => load(supabase));
+}

@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, PageHeader } from '@/components/ui';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadGroups } from '@/lib/db/queries';
 import { EmployeeForm } from '../employee-form';
 
 export const metadata: Metadata = { title: 'Medewerker toevoegen' };
 
 export default async function NewEmployeePage() {
-  const { supabase } = await requireAdmin();
-  const groups = await loadGroups(supabase);
+  const [, groups] = await requireAdminWith(loadGroups);
   return (
     <>
       <PageHeader

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EmptyState, PageHeader } from '@/components/ui';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadPlanningOverview } from '@/lib/db/admin-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDateRange } from '@/lib/engine/format';
@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: 'Nog te regelen' };
 
 export default async function GapsPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
   const { melding, mail } = await searchParams;
-  const { supabase } = await requireAdmin();
-  const planning = await loadPlanningOverview(supabase, todayInAmsterdam(new Date()));
+  const today = todayInAmsterdam(new Date());
+  const [, planning] = await requireAdminWith((supabase) => loadPlanningOverview(supabase, today));
 
   return (
     <>

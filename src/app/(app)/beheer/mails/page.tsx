@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Badge, Card, EmptyState, PageHeader } from '@/components/ui';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { amsterdamDateTime } from '@/lib/engine/dates';
 import { formatDayShort } from '@/lib/engine/format';
@@ -18,19 +18,20 @@ const DAYS = 30;
  * Namen, geen e-mailadressen en geen inhoud.
  */
 export default async function MailsPage() {
-  const { supabase } = await requireAdmin();
   const now = new Date();
   const since = new Date(now.getTime() - DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const [names, result, setting] = await Promise.all([
-    loadEmployeeNames(supabase),
-    supabase
-      .from('mail_queue')
-      .select('id, employee_id, kind, dates, status, attempts, last_error, created_at, push_devices')
-      .gte('created_at', since)
-      .order('created_at', { ascending: false })
-      .limit(300),
-    supabase.from('settings').select('mail_enabled').maybeSingle(),
-  ]);
+  const [, [names, result, setting]] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadEmployeeNames(supabase),
+      supabase
+        .from('mail_queue')
+        .select('id, employee_id, kind, dates, status, attempts, last_error, created_at, push_devices')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(300),
+      supabase.from('settings').select('mail_enabled').maybeSingle(),
+    ]),
+  );
   if (result.error) throw new Error('De mails konden niet worden geladen.');
   const rows = (result.data ?? []).flatMap((row) => {
     const kind = MAIL_KINDS.find((item) => item === row.kind);
