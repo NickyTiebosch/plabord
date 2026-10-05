@@ -14,6 +14,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V27 | De schakelaar heet Meldingen versturen en geldt voor mail én push. Plus een knop Testmelding naar mij. |
 | V28 | Een push-abonnement per toestel: alleen zichtbaar voor de medewerker zelf (beheerders zien aantallen), weg bij uitzetten, verlopen of volledig verwijderen. |
 | V29 | Een VAPID-sleutelpaar, dat de eigenaar één keer maakt en in Netlify zet. De herinneringen via push vallen onder V17. |
+| V30 | Aanvulling na de oplevering: een uitleg voor collega's met korte video's, op een pagina `/uitleg` zonder inloggen, plus een PDF. Zie §10. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -231,3 +232,32 @@ RLS staat aan op elke nieuwe tabel. Eerst `revoke all` voor `anon` en `authentic
 - **"Niet toestaan".** Wie dat kiest, kan het alleen in de instellingen van de telefoon terugdraaien. Het blok legt uit hoe.
 - **Pushdiensten buiten de EU.** De pushdiensten van Apple en Google staan buiten de EU. Ze kunnen niet lezen wat er in een melding staat, wel dat er een melding is. Noem dat in de uitleg aan het team.
 - **Een vastzittende service worker.** Een fout in de service worker kan op toestellen blijven hangen. Daarom doet hij bijna niets, en vervangt een nieuwe versie hem vanzelf.
+
+---
+
+## 10. Aanvulling: uitleg met video's (V30)
+De eigenaar wil een duidelijke uitleg meesturen naar collega's: korte video's die laten zien waar je op tikt, plus een pagina in Planbord en een PDF.
+
+**Wat er komt**
+- **Negen korte video's** (20 tot 40 seconden, samen zo'n 4 minuten), elk over één onderwerp:
+  - welkom;
+  - op je beginscherm (iPhone en Android);
+  - inloggen met je code;
+  - je rooster lezen;
+  - meldingen aanzetten (iPhone en Android);
+  - je rooster in je agenda;
+  - vakantie of afwezig.
+- **De pagina `/uitleg`**, met per onderwerp de video('s), de stappen en eventuele tips. Er is een link naar op de inlogpagina ("Nieuw hier? Bekijk de uitleg") en in de kop van de app ("Uitleg").
+- **Een PDF van vijf pagina's** met dezelfde stappen, stilstaande beelden uit de video's en een QR-code naar `/uitleg`.
+
+**Keuzes**
+- **Voor collega's.** Een serie voor beheerders kan later.
+- **Staand formaat, zonder geluid.** Grote ondertitels, zodat je ze ook op het werk kunt kijken.
+- **De echte schermen van Planbord, met een verzonnen team.** De schermen zijn vastgelegd met de fictieve teamfixture; nooit met echte collega's. De telefoononderdelen (beginscherm, Safari, Chrome, dialogen) zijn eenvoudige eigen nabootsingen.
+- **Zelf gebouwd, geen AI-video.** Animaties in HTML, beeld voor beeld gerenderd naar MP4 (H.264). De bron staat in `tools/uitleg-video/`, zodat een video opnieuw te maken is als een scherm verandert. Die map hoort niet bij de app en de build.
+- **Te openen zonder inloggen.** Zo kun je de link sturen voordat iemand een account heeft. De pagina bevat geen gegevens uit de database. Net als de rest wordt ze niet geïndexeerd (noindex, `X-Robots-Tag` en `robots.txt`).
+- **Niet op YouTube of Vimeo.** Die brengen trackers mee. De video's staan in `public/uitleg` en laden pas als je op afspelen tikt.
+- **Op de pagina lichtere versies** (720 × 1280), zodat ze snel laden. De eigenaar krijgt de video's ook los in 1080 × 1920, om bijvoorbeeld in de groepsapp te zetten.
+- **Afwezigheid doorgeven:** de video zegt "Geef het door aan de beheerder, zoals je gewend bent. Zelf invullen kan niet." De eigenaar heeft geen andere zin opgegeven; aanpassen is één regel.
+- **De teksten staan op één plek** (`src/lib/guide/topics.ts`). De pagina en de PDF gebruiken ze allebei. Een test controleert dat elke video en de PDF bestaan, en dat er geen e-mailadressen in de teksten staan.
+

@@ -88,6 +88,21 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Mails:** bij elke mail staat naar hoeveel toestellen de push ging.
 - **Medewerker:** hoeveel toestellen meldingen aan hebben. Volledig verwijderen neemt die mee, en de gegevensexport noemt ze, zonder het adres van het toestel.
 
+### Uitleg voor collega's
+
+- **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan negen korte video's op, met de stappen eronder:
+  - welkom;
+  - op je beginscherm (iPhone en Android);
+  - inloggen met je code;
+  - je rooster lezen;
+  - meldingen aanzetten (iPhone en Android);
+  - je rooster in je agenda;
+  - vakantie of afwezig.
+- **Een PDF** met dezelfde stappen, plaatjes en een QR-code naar de video's. Je downloadt hem bovenaan de pagina.
+- **Waar de link staat:** op de inlogpagina ("Nieuw hier? Bekijk de uitleg") en in de kop van de app ("Uitleg").
+- De video's tonen een verzonnen team en hebben geen geluid. Ze staan bij de app zelf, niet op YouTube, dus er komen geen trackers mee.
+- Zie besluit V30 in het plan van fase 4. De bron van de video's staat in [`tools/uitleg-video/`](tools/uitleg-video/README.md).
+
 ---
 
 ## Eenmalig: de app in de lucht zetten
@@ -311,6 +326,12 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 
 ---
 
+## De uitleg doorsturen
+
+- **Stuur de link** naar het adres van Planbord met `/uitleg` erachter, bijvoorbeeld `https://planbord-udenhout.netlify.app/uitleg`. Daar staan alle video's en de PDF.
+- **Liever losse bestanden?** De PDF download je bovenaan die pagina.
+- **De video's in hoge kwaliteit** (1080 × 1920), bijvoorbeeld voor de groepsapp, staan niet in de repo. Je krijgt ze los bij de oplevering. Opnieuw maken kan met [`tools/uitleg-video/`](tools/uitleg-video/README.md) (`node render.mjs`).
+
 ## Meldingen op je telefoon (uitleg voor collega's)
 
 1. **Zet Planbord op je beginscherm.**
@@ -385,6 +406,7 @@ npm run dev                  # http://localhost:3000
   3. draai `npm run db:bundle`. Een test controleert of de bundel actueel is.
 - Alle rooster-, verlof-, sluitingsdag- en vervangingslogica staat in pure functies in `src/lib/engine/`, met tests ernaast. Geen AI of taalmodel: dezelfde invoer geeft altijd dezelfde voorstellen.
 - **Mails lokaal:** zonder de `SMTP_`-waarden mislukt het versturen (*mailserver niet ingesteld*); de rest van de app werkt gewoon. Tests versturen nooit een echte mail.
+- **De uitlegvideo's en de PDF** maak je opnieuw met de scripts in [`tools/uitleg-video/`](tools/uitleg-video/README.md). Die map hoort niet bij de build. Gebruik alleen het verzonnen team.
 
 ### Bekende punten
 
