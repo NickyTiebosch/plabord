@@ -13,20 +13,23 @@ export interface Viewer {
   supabase: ServerClient;
 }
 
+/** De Supabase-client van dit verzoek, met de sessie uit de cookies. */
+const getClient = cache(createClient);
+
 async function findEmployee(supabase: ServerClient, userId: string) {
-  const account = await supabase.from('employee_accounts').select('employee_id').eq('user_id', userId).maybeSingle();
-  if (!account.data) return null;
-  const employee = await supabase
-    .from('employees')
-    .select('id, name, group_id, is_admin, is_active')
-    .eq('id', account.data.employee_id)
+  // Eén vraag aan de database: het account met de medewerker erbij. RLS geldt voor allebei.
+  const account = await supabase
+    .from('employee_accounts')
+    .select('employee:employees(id, name, group_id, is_admin, is_active)')
+    .eq('user_id', userId)
     .maybeSingle();
-  return employee.data?.is_active ? employee.data : null;
+  const employee = account.data?.employee;
+  return employee?.is_active ? employee : null;
 }
 
 /** De sessie van dit verzoek (één keer per verzoek opgehaald). */
 export const getSession = cache(async () => {
-  const supabase = await createClient();
+  const supabase = await getClient();
   const { data, error } = await supabase.auth.getClaims();
   const claims = error ? null : data?.claims;
   if (!claims?.sub) return { supabase, userId: null, email: null, employee: null } as const;
@@ -67,3 +70,4 @@ export async function requireAdmin(): Promise<Viewer> {
   if (!viewer.isAdmin) redirect('/');
   return viewer;
 }
+
