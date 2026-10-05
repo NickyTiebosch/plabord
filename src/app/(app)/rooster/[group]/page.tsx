@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { RosterExportForm } from '@/components/roster-export-form';
 import { LinkTabs, PeriodNav, PersonLineView, ShortageNotice, WorkingBlockView } from '@/components/schedule';
 import { Badge, Card, buttonClass } from '@/components/ui';
 import { requireViewer } from '@/lib/auth/session';
@@ -164,6 +165,13 @@ export default async function GroupRosterPage({
           );
         })}
       </div>
+      <details className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <summary className="cursor-pointer text-sm font-medium text-slate-800">Rooster downloaden als Excel</summary>
+        <p className="mt-2 text-sm text-slate-600">Alle vestigingen, per week onder elkaar. Handig om te printen.</p>
+        <div className="mt-3">
+          <RosterExportForm from={monday} />
+        </div>
+      </details>
     </>
   );
 }
