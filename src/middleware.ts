@@ -2,8 +2,8 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { sessionCookieOptions } from './lib/env';
 
-/** Pagina's die je zonder inloggen mag zien. */
-const PUBLIC_PATHS = ['/inloggen'];
+/** Pagina's die je zonder inloggen mag zien. De uitleg (V30) is voor wie nog geen account heeft. */
+const PUBLIC_PATHS = ['/inloggen', '/uitleg'];
 
 function isPublic(path: string): boolean {
   return PUBLIC_PATHS.some((publicPath) => path === publicPath || path.startsWith(`${publicPath}/`));
@@ -55,8 +55,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Niet voor statische bestanden, iconen, het manifest, de service worker voor meldingen, de
-  // agendafeeds (die hebben een eigen token) en de geplande taak (die heeft CRON_SECRET).
+  // agendafeeds (die hebben een eigen token), de geplande taak (die heeft CRON_SECRET) en de video's
+  // en de PDF van de uitleg (public/uitleg). De pagina /uitleg zelf gaat wel door de middleware.
   matcher: [
-    '/((?!_next/static|_next/image|feed/|taken/|icons/|favicon.ico|icon|apple-icon|manifest.webmanifest|robots.txt|sw.js).*)',
+    '/((?!_next/static|_next/image|feed/|taken/|icons/|uitleg/|favicon.ico|icon|apple-icon|manifest.webmanifest|robots.txt|sw.js).*)',
   ],
 };
