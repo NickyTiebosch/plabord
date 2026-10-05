@@ -5,5 +5,6 @@ import nextTypescript from 'eslint-config-next/typescript';
 export default defineConfig([
   ...nextVitals,
   ...nextTypescript,
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'coverage/**', 'next-env.d.ts', 'supabase/setup/**']),
+  // tools/: losse hulpmiddelen buiten de app, zoals de uitlegvideo's (V30).
+  globalIgnores(['.next/**', 'out/**', 'build/**', 'coverage/**', 'next-env.d.ts', 'supabase/setup/**', 'tools/**']),
 ]);

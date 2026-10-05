@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Welkom bij Planbord</title>
+<link rel="stylesheet" href="../lib/stage.css">
+</head>
+<body>
+<script type="module">
+import { tl, buildStage, tap, highlight, caption, camera, intro, outro, loadBoxes, ready, el, css, mid, appFrame, switchPage } from '../lib/ui.js';
+import { iosBanner } from '../lib/ios.js';
+
+const boxes = await loadBoxes();
+const s = buildStage({ title: 'Welkom bij Planbord' });
+const cam = camera(s);
+const frame = appFrame(s.screen, ['mijn', 'rooster', 'verlof'], boxes);
+const { mijn, rooster, verlof } = frame.pages;
+const banner = iosBanner(s.screen, { title: 'Planbord', body: 'Je rooster voor vr 9 okt is gewijzigd: geen dienst' });
+el('div', 'island', s.screen);
+const fx = css(el('div', 'layer', s.screen), { zIndex: 85, overflow: 'visible' });
+await ready();
+
+const TOP = frame.top;
+const nav = (label) => { const b = boxes.mijn[`nav:${label}`]; return { x: b.x, y: TOP + b.y, w: b.width, h: b.height }; };
+
+intro(s);
+
+// 1. Je eigen rooster
+caption(s.captions, 1, 'Je <b>eigen rooster</b>, altijd bij de hand', 'Je diensten voor de komende 6 weken.', 1.2, 5.6);
+tl.prop(mijn.content, 'scroll', 0).to(2.4, 3.6, 360, 'inOut').to(4.2, 5.2, 0, 'inOut');
+
+// 2. Wie werkt er
+caption(s.captions, 2, 'Zie <b>wie er werkt</b> op je vestiging', 'Per dag: balie en hiker/buitendienst.', 5.6, 10.0);
+tap(fx, 6.4, mid(nav('Rooster')).x, mid(nav('Rooster')).y, { from: { x: 250, y: 600 } });
+switchPage(mijn, rooster, 6.55);
+tl.prop(rooster.content, 'scroll', 0).to(7.6, 8.8, 300, 'inOut');
+
+// 3. Wie is er vrij
+caption(s.captions, 3, 'En zie <b>wie er vrij is</b>', 'Iedereen ziet alleen ‘Afwezig’. Nooit de reden.', 10.0, 14.4);
+tap(fx, 10.8, mid(nav('Verlof')).x, mid(nav('Verlof')).y);
+switchPage(rooster, verlof, 10.95);
+cam.zoom(11.6, 12.5, { x: 195, y: 470 }, 1.2, { x: 270, y: 450 });
+cam.reset(13.6, 14.4);
+
+// 4. Meldingen
+caption(s.captions, 4, 'Krijg een <b>melding</b> als je rooster verandert', 'En zet je rooster in de agenda van je telefoon.', 14.4, 18.8);
+tap(fx, 15.0, mid(nav('Mijn rooster')).x, mid(nav('Mijn rooster')).y);
+switchPage(verlof, mijn, 15.15);
+tl.prop(banner, 'y', -170).to(15.9, 16.45, 0, 'outBack').to(18.2, 18.6, -170, 'in');
+tl.prop(banner, 'opacity', 0).to(15.9, 16.1, 1, 'out').to(18.4, 18.6, 0, 'in');
+
+// 5. Alleen kijken
+caption(s.captions, 'ok', 'Je kijkt alleen. De <b>beheerder</b> maakt de planning.', 'Klopt er iets niet? Vraag het de beheerder.', 18.8, 22.8);
+highlight(fx, { x: 17, y: TOP + boxes.mijn['ma 5 okt'].y, w: 356, h: boxes.mijn['ma 5 okt'].h }, 19.3, 22.4, { pad: 2, radius: 6 });
+
+outro(s, 22.8, 'Welkom!', 'In de andere video\'s zie je hoe je installeert, inlogt, meldingen aanzet en je agenda koppelt.');
+tl.end(26.0);
+window.poster = 2.0;
+tl.seek(0);
+window.ready = true;
+</script>
+</body>
+</html>

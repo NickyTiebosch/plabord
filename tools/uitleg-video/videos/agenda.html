@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Je rooster in je agenda</title>
+<link rel="stylesheet" href="../lib/stage.css">
+</head>
+<body>
+<script type="module">
+import { tl, buildStage, localBox, tap, highlight, caption, camera, intro, outro, loadBoxes, ready, el, css, mid, appFrame, switchPage } from '../lib/ui.js';
+import { iosAlert, subscribeSheet, calendarList } from '../lib/ios.js';
+
+const boxes = await loadBoxes();
+const s = buildStage({ title: 'Je rooster in je agenda', chip: 'iPhone' });
+const cam = camera(s);
+const frame = appFrame(s.screen, ['mijn', 'agenda', 'agenda-link'], boxes);
+const { mijn, agenda } = frame.pages;
+const withLink = frame.pages['agenda-link'];
+const alert = iosAlert(s.screen, {
+  title: 'Abonneer op agenda?',
+  message: 'webcal://planbord-udenhout.netlify.app/feed/…',
+  cancel: 'Annuleer',
+  confirm: 'Abonneer',
+});
+const sheet = subscribeSheet(s.screen, { name: 'Planbord – Mijn rooster', url: 'webcal://planbord-udenhout.netlify.app/feed/…' });
+const calendar = calendarList(s.screen, [
+  { day: 'Vandaag · maandag 5 oktober', today: true, title: 'Dienst Den Bosch 07:30–18:00', sub: '07:30 – 18:00' },
+  { day: 'dinsdag 6 oktober', title: 'Dienst Den Bosch 07:30–18:00', sub: '07:30 – 18:00' },
+  { day: 'woensdag 7 oktober', title: 'Dienst Eindhoven 07:30–18:00', sub: '07:30 – 18:00' },
+  { day: 'donderdag 8 oktober', title: 'Dienst Den Bosch 07:30–18:00', sub: '07:30 – 18:00' },
+  { day: 'zaterdag 10 oktober', title: 'Invallen Breda 07:30–13:00', sub: '07:30 – 13:00' },
+  { day: 'woensdag 14 oktober', title: 'Afwezig', sub: 'hele dag', color: '#e11d48' },
+]);
+el('div', 'island', s.screen);
+const fx = css(el('div', 'layer', s.screen), { zIndex: 85, overflow: 'visible' });
+
+await ready();
+const alertBox = localBox(alert.alert, s.screen);
+css(alert.alert, { top: `${(844 - alertBox.h) / 2}px` });
+const confirm = localBox(alert.confirm, s.screen);
+const addBtn = localBox(sheet.add, s.screen);
+const TOP = frame.top;
+const on = (b) => ({ x: b.x, y: TOP + b.y, w: b.w, h: b.h });
+const navAgenda = (() => { const b = boxes.mijn['nav:Agenda']; return { x: b.x, y: TOP + b.y, w: b.width, h: b.height }; })();
+const makeLink = on(boxes.agenda.makeLink);
+const addToCalendar = on(boxes['agenda-link'].add);
+
+intro(s);
+tl.prop(calendar.layer, 'opacity', 0).to(17.4, 17.8, 1, 'out');
+
+// 1. Naar Agenda
+caption(s.captions, 1, 'Tik onderin op <b>Agenda</b>', null, 1.2, 4.6);
+highlight(fx, navAgenda, 1.9, 3.3, { pad: 0, radius: 12 });
+tap(fx, 3.45, mid(navAgenda).x, mid(navAgenda).y, { from: { x: 250, y: 600 } });
+switchPage(mijn, agenda, 3.6);
+
+// 2. Link maken
+caption(s.captions, 2, 'Tik bij <b>Mijn rooster</b> op <b>Link maken</b>', 'Je eigen diensten en afwezigheid.', 4.6, 8.4);
+cam.zoom(4.7, 5.5, mid(makeLink), 1.45, { x: 270, y: 420 });
+highlight(fx, makeLink, 5.6, 7.45, { pad: 4, radius: 12 });
+tap(fx, 7.6, mid(makeLink).x, mid(makeLink).y);
+switchPage(agenda, withLink, 7.75);
+
+// 3. Toevoegen aan agenda
+caption(s.captions, 3, 'Tik op <b>Toevoegen aan agenda</b>', 'Bewaar de link: je ziet hem maar één keer.', 8.4, 12.2);
+cam.zoom(8.5, 9.3, mid(addToCalendar), 1.45, { x: 270, y: 430 });
+highlight(fx, addToCalendar, 9.4, 11.45, { pad: 4, radius: 12 });
+tap(fx, 11.6, mid(addToCalendar).x, mid(addToCalendar).y);
+tl.prop(alert.dim, 'opacity', 0).to(11.8, 12.05, 1, 'out').to(14.4, 14.65, 0, 'in');
+tl.prop(alert.alert, 'opacity', 0).to(11.8, 12.05, 1, 'out').to(14.4, 14.6, 0, 'in');
+tl.prop(alert.alert, 'scale', 1.12).to(11.8, 12.15, 1, 'out');
+cam.zoom(12.0, 12.8, mid(confirm), 1.3, { x: 270, y: 430 });
+
+// 4. Abonneer en Voeg toe
+caption(s.captions, 4, 'Kies <b>Abonneer</b> en daarna <b>Voeg toe</b>', null, 12.2, 17.4);
+highlight(fx, confirm, 12.9, 14.05, { pad: 2, radius: 10 });
+tap(fx, 14.2, mid(confirm).x, mid(confirm).y);
+tl.prop(sheet.sheet, 'y', 820).to(14.6, 15.05, 0, 'outQuint').to(17.2, 17.6, 820, 'in');
+cam.zoom(14.9, 15.6, mid(addBtn), 1.35, { x: 320, y: 380 });
+highlight(fx, addBtn, 15.7, 16.85, { pad: 7, radius: 10 });
+tap(fx, 17.0, mid(addBtn).x, mid(addBtn).y);
+cam.reset(17.2, 18.0);
+
+// 5. In de agenda
+caption(s.captions, 'ok', 'Je diensten staan in je <b>agenda</b>', 'Wijzigingen komen er vanzelf in. Een iPhone haalt ze meestal binnen een uur op.', 17.4, 22.6);
+cam.zoom(18.6, 19.6, { x: 195, y: 330 }, 1.25, { x: 270, y: 420 });
+cam.reset(21.8, 22.6);
+
+outro(s, 22.6, 'Klaar!', 'Google Agenda of Outlook? Op de uitlegpagina staat hoe dat gaat.');
+tl.end(25.6);
+window.poster = 10.5;
+tl.seek(0);
+window.ready = true;
+</script>
+</body>
+</html>

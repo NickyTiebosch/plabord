@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Vakantie of afwezig</title>
+<link rel="stylesheet" href="../lib/stage.css">
+</head>
+<body>
+<script type="module">
+import { tl, buildStage, highlight, caption, camera, intro, outro, loadBoxes, ready, el, css, mid, appFrame } from '../lib/ui.js';
+
+const boxes = await loadBoxes();
+const s = buildStage({ title: 'Vakantie of afwezig?' });
+const cam = camera(s);
+const frame = appFrame(s.screen, ['mijn'], boxes);
+const { mijn } = frame.pages;
+el('div', 'island', s.screen);
+const fx = css(el('div', 'layer', s.screen), { zIndex: 85, overflow: 'visible' });
+await ready();
+
+const TOP = frame.top;
+const SCROLL = 700;
+const on = (label) => { const b = boxes.mijn[label]; return { x: b.x, y: TOP + b.y - SCROLL, w: b.w, h: b.h }; };
+
+intro(s);
+tl.prop(mijn.content, 'scroll', 0).to(1.8, 3.0, SCROLL, 'inOut');
+
+// 1. Doorgeven
+caption(s.captions, 1, 'Vakantie of vrij nodig? Geef het door aan de <b>beheerder</b>', 'Zoals je gewend bent. Zelf invullen in Planbord kan niet.', 1.2, 6.0);
+
+// 2. Aangevraagd
+caption(s.captions, 2, 'Eerst staat er <b>Afwezig · aangevraagd</b>', 'De beheerder heeft het genoteerd, maar nog niet goedgekeurd.', 6.0, 10.6);
+cam.zoom(6.1, 6.9, mid(on('ma 19 okt')), 1.5, { x: 270, y: 430 });
+highlight(fx, on('ma 19 okt'), 7.0, 10.2, { pad: 2, radius: 6 });
+
+// 3. Goedgekeurd
+caption(s.captions, 3, 'Na goedkeuring: <b>Afwezig</b>', 'Je dienst is doorgestreept: je bent die dag vrij.', 10.6, 15.0);
+cam.zoom(10.7, 11.6, mid(on('wo 14 okt')), 1.5, { x: 270, y: 430 });
+highlight(fx, on('wo 14 okt'), 11.7, 14.6, { pad: 2, radius: 6 });
+cam.reset(14.7, 15.5);
+
+// 4. Privacy
+caption(s.captions, 'ok', 'Collega\'s zien alleen <b>Afwezig</b>', 'Nooit de reden. Vakantie, training en ziekte heten allemaal zo.', 15.0, 19.4);
+
+outro(s, 19.4, 'Zo werkt het', 'Vragen over je rooster of je vrije dagen? Stel ze aan de <b>beheerder</b>.');
+tl.end(22.4);
+window.poster = 8.5;
+tl.seek(0);
+window.ready = true;
+</script>
+</body>
+</html>

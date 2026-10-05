@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Je rooster lezen</title>
+<link rel="stylesheet" href="../lib/stage.css">
+</head>
+<body>
+<script type="module">
+import { tl, buildStage, tap, highlight, caption, camera, intro, outro, loadBoxes, ready, el, css, mid, appFrame, switchPage } from '../lib/ui.js';
+
+const boxes = await loadBoxes();
+const s = buildStage({ title: 'Je rooster lezen' });
+const cam = camera(s);
+const frame = appFrame(s.screen, ['mijn', 'rooster', 'rooster-eindhoven', 'verlof'], boxes);
+const { mijn, rooster } = frame.pages;
+const eindhoven = frame.pages['rooster-eindhoven'];
+const verlof = frame.pages.verlof;
+el('div', 'island', s.screen);
+const fx = css(el('div', 'layer', s.screen), { zIndex: 85, overflow: 'visible' });
+await ready();
+
+const TOP = frame.top;
+const on = (b, scroll = 0) => ({ x: b.x, y: TOP + b.y - scroll, w: b.w, h: b.h });
+const nav = (label) => { const b = boxes.mijn[`nav:${label}`]; return { x: b.x, y: TOP + b.y, w: b.width, h: b.height }; };
+const day = (label) => boxes.mijn[label];
+const SCROLL = 700;
+
+intro(s);
+
+// 1. Mijn rooster
+caption(s.captions, 1, '<b>Mijn rooster</b>: je diensten voor 6 weken', 'Vandaag is groen gemarkeerd.', 1.2, 6.0);
+highlight(fx, on(day('ma 5 okt')), 2.2, 5.6, { pad: 2, radius: 6 });
+
+// 2. Gewijzigd
+caption(s.captions, 2, '<b>gewijzigd</b>: de beheerder paste het aan', 'Hier werk je die dag in Eindhoven.', 6.0, 10.6);
+cam.zoom(6.1, 6.9, mid(on(day('wo 7 okt'))), 1.45, { x: 270, y: 420 });
+highlight(fx, on(day('wo 7 okt')), 7.0, 10.2, { pad: 2, radius: 6 });
+
+// 3. Geen dienst en invallen
+const twoDays = { x: 17, y: TOP + day('vr 9 okt').y, w: 356, h: day('za 10 okt').y + day('za 10 okt').h - day('vr 9 okt').y };
+caption(s.captions, 3, '<b>Geen dienst</b> of <b>Invallen</b>', 'Een vrije dag, of je werkt die dag op een andere vestiging.', 10.6, 14.8);
+cam.zoom(10.7, 11.5, mid(twoDays), 1.4, { x: 270, y: 430 });
+highlight(fx, twoDays, 11.6, 14.4, { pad: 2, radius: 6 });
+cam.reset(14.4, 15.2);
+
+// 4. Afwezig
+mijn.content && tl.prop(mijn.content, 'scroll', 0).to(14.9, 16.0, SCROLL, 'inOut');
+caption(s.captions, 4, '<b>Afwezig</b>: je bent vrij', 'Staat er <i>aangevraagd</i> bij, dan is het nog niet goedgekeurd.', 14.8, 20.0);
+highlight(fx, on(day('wo 14 okt'), SCROLL), 16.3, 17.9, { pad: 2, radius: 6 });
+highlight(fx, on(day('ma 19 okt'), SCROLL), 18.1, 19.7, { pad: 2, radius: 6 });
+
+// 5. Rooster per vestiging
+caption(s.captions, 5, '<b>Rooster</b>: wie er werkt op je vestiging', 'Balie en hiker/buitendienst apart. Wie afwezig is, staat eronder.', 20.0, 25.6);
+highlight(fx, nav('Rooster'), 20.2, 21.0, { pad: 0, radius: 12 });
+tap(fx, 21.15, mid(nav('Rooster')).x, mid(nav('Rooster')).y);
+switchPage(mijn, rooster, 21.3);
+highlight(fx, on(boxes.rooster.today), 22.2, 25.2, { pad: 2, radius: 18 });
+
+// 6. Andere vestiging
+caption(s.captions, 6, 'Kies een <b>andere vestiging</b> met de tabs', null, 25.6, 29.4);
+cam.zoom(25.7, 26.5, mid(on(boxes.rooster.tabEindhoven)), 1.4, { x: 270, y: 360 });
+highlight(fx, on(boxes.rooster.tabEindhoven), 26.6, 27.5, { pad: 2, radius: 12 });
+tap(fx, 27.65, mid(on(boxes.rooster.tabEindhoven)).x, mid(on(boxes.rooster.tabEindhoven)).y);
+switchPage(rooster, eindhoven, 27.8);
+cam.reset(28.4, 29.2);
+
+// 7. Verlof
+caption(s.captions, 7, '<b>Verlof</b>: wie er wanneer afwezig is', 'Per maand, kwartaal of jaar.', 29.4, 34.0);
+highlight(fx, nav('Verlof'), 29.6, 30.4, { pad: 0, radius: 12 });
+tap(fx, 30.55, mid(nav('Verlof')).x, mid(nav('Verlof')).y);
+switchPage(eindhoven, verlof, 30.7);
+cam.zoom(31.2, 32.0, { x: 195, y: 420 }, 1.2, { x: 270, y: 450 });
+cam.reset(33.4, 34.0);
+
+outro(s, 34.0, 'Klaar!', 'Klopt er iets niet in je rooster? Vraag het de <b>beheerder</b>.');
+tl.end(37.0);
+window.poster = 8.0;
+tl.seek(0);
+window.ready = true;
+</script>
+</body>
+</html>

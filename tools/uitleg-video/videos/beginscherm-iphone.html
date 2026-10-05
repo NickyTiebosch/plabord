@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Op je beginscherm – iPhone</title>
+<link rel="stylesheet" href="../lib/stage.css">
+</head>
+<body>
+<script type="module">
+import { tl, buildStage, localBox, tap, highlight, caption, camera, intro, outro, ready, el, css } from '../lib/ui.js';
+import { iosHome, safari, shareSheet, addToHomeSheet } from '../lib/ios.js';
+
+const URL = 'planbord-udenhout.netlify.app';
+const s = buildStage({ title: 'Op je beginscherm', chip: 'iPhone' });
+const cam = camera(s);
+
+const home = iosHome(s.screen, { planbord: 10 });
+el('div', 'homebar light', home.layer);
+const web = safari(s.screen, { url: URL, page: '../assets/screens/login.png' });
+const dim = css(el('div', 'dim', s.screen), { zIndex: 61, background: 'rgba(0,0,0,.25)' });
+const share = shareSheet(s.screen, { title: 'Inloggen – Planbord', url: URL });
+const add = addToHomeSheet(s.screen, { name: 'Planbord', url: URL });
+el('div', 'island', s.screen);
+const fx = css(el('div', 'layer', s.screen), { zIndex: 85, overflow: 'visible' });
+
+await ready();
+const center = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
+const safariIcon = localBox(home.safariIcon, s.screen);
+const shareBtn = localBox(web.shareBtn, s.screen);
+const planbordIcon = localBox(home.planbordIcon.querySelector('.ic'), s.screen);
+// Het deelmenu en het scherm "Zet op beginscherm" schuiven later in beeld; meet ze op hun eindplek.
+const targetRow = localBox(share.target, s.screen);
+const addBtn = localBox(add.add, s.screen);
+
+intro(s);
+
+// 1. Safari openen en naar het adres gaan
+caption(s.captions, 1, 'Open <b>Safari</b> en ga naar het adres van Planbord', URL, 1.2, 5.8);
+highlight(fx, safariIcon, 1.6, 2.45, { pad: 5, radius: 18 });
+tap(fx, 2.6, center(safariIcon).x, center(safariIcon).y, { from: { x: 300, y: 560 } });
+css(web.layer, { transformOrigin: `${center(safariIcon).x}px ${center(safariIcon).y}px` });
+tl.prop(web.layer, 'opacity', 0).to(2.72, 3.0, 1, 'out').to(15.95, 16.35, 0, 'in');
+tl.prop(web.layer, 'scale', 0.16).to(2.72, 3.2, 1, 'outQuint').to(15.95, 16.4, 0.9, 'in');
+tl.prop(web.urlText, 'chars', 0).to(3.4, 4.7, URL.length, 'linear');
+tl.prop(web.pageImg, 'opacity', 0).to(4.85, 5.2, 1, 'out');
+
+// 2. De deelknop
+caption(s.captions, 2, 'Tik op de <b>deelknop</b>', 'Het vierkantje met het pijltje. Op nieuwere iPhones zit hij achter •••.', 5.8, 9.4);
+cam.zoom(6.0, 6.8, center(shareBtn), 1.6, { x: 270, y: 520 });
+highlight(fx, shareBtn, 6.9, 8.3, { pad: 8, radius: 12 });
+tap(fx, 8.45, center(shareBtn).x, center(shareBtn).y);
+tl.prop(dim, 'opacity', 0).to(8.6, 8.95, 1, 'out').to(15.95, 16.3, 0, 'in');
+tl.prop(share.sheet, 'y', 620).to(8.6, 9.05, 0, 'outQuint');
+cam.reset(8.6, 9.4);
+
+// 3. Zet op beginscherm
+caption(s.captions, 3, 'Kies <b>Zet op beginscherm</b>', 'Zie je het niet? Scrol in het lijstje naar beneden.', 9.4, 13.0);
+highlight(fx, targetRow, 9.9, 11.85, { pad: 2, radius: 10 });
+tap(fx, 12.0, center(targetRow).x, center(targetRow).y);
+tl.prop(add.sheet, 'y', 820).to(12.2, 12.65, 0, 'outQuint');
+tl.prop(share.sheet, 'opacity', 1).to(12.5, 12.7, 0, 'in');
+
+// 4. Voeg toe
+caption(s.captions, 4, 'Tik op <b>Voeg toe</b>', 'Laat <i>Open als webapp</i> aan staan.', 13.0, 16.6);
+cam.zoom(13.1, 13.9, center(addBtn), 1.35, { x: 320, y: 380 });
+highlight(fx, addBtn, 14.0, 15.6, { pad: 7, radius: 10 });
+tap(fx, 15.75, center(addBtn).x, center(addBtn).y);
+tl.prop(add.sheet, 'opacity', 1).to(15.95, 16.3, 0, 'in');
+cam.reset(15.9, 16.7);
+
+// 5. Het icoon staat op het beginscherm
+const iconEl = home.planbordIcon;
+css(iconEl, { transformOrigin: 'center 32px' });
+tl.prop(iconEl, 'opacity', 0).to(16.8, 17.0, 1, 'out');
+tl.prop(iconEl, 'scale', 0.2).to(16.8, 17.35, 1, 'outBack');
+caption(s.captions, 'ok', 'Planbord staat op je <b>beginscherm</b>', 'Open het voortaan via dit icoon. Daar werken ook de meldingen.', 16.6, 21.0);
+cam.zoom(17.2, 18.0, center(planbordIcon), 1.3, { x: 270, y: 430 });
+highlight(fx, planbordIcon, 17.9, 20.4, { pad: 5, radius: 18 });
+cam.reset(20.3, 21.0);
+
+outro(s, 21.0, 'Klaar!', 'Log nu één keer in via het icoon. Dat zie je in de video <b>Inloggen</b>.');
+tl.end(24.0);
+window.poster = 11.0;
+tl.seek(0);
+window.ready = true;
+</script>
+</body>
+</html>

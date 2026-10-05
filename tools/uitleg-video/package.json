@@ -1,0 +1,18 @@
+{
+  "name": "planbord-uitleg-video",
+  "private": true,
+  "description": "Maakt de uitlegvideo's en de PDF voor /uitleg. Hoort niet bij de app en niet bij de build.",
+  "type": "module",
+  "scripts": {
+    "mock": "node mock/server.mjs",
+    "demo": "node demo-data.mjs",
+    "capture": "node capture.mjs",
+    "render": "node render.mjs",
+    "pdf": "node pdf.mjs",
+    "publish": "node publish.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1",
+    "qrcode": "1.5.4"
+  }
+}

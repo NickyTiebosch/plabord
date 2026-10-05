@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Op je startscherm – Android</title>
+<link rel="stylesheet" href="../lib/stage.css">
+</head>
+<body>
+<script type="module">
+import { tl, buildStage, localBox, tap, highlight, caption, camera, intro, outro, ready, el, css, mid } from '../lib/ui.js';
+import { androidHome, chrome, chromeMenu, installDialog } from '../lib/android.js';
+
+const URL = 'planbord-udenhout.netlify.app';
+const s = buildStage({ title: 'Op je startscherm', chip: 'Android' });
+const cam = camera(s);
+
+const home = androidHome(s.screen, { planbord: 4 });
+const web = chrome(s.screen, { url: URL, page: '../assets/screens/login.png' });
+const menu = chromeMenu(s.screen);
+const dialog = installDialog(s.screen, { name: 'Planbord', url: URL });
+el('div', 'punch', s.screen);
+const fx = css(el('div', 'layer', s.screen), { zIndex: 85, overflow: 'visible' });
+
+await ready();
+const browserIcon = localBox(home.browserIcon, s.screen);
+const menuBtn = localBox(web.menu, s.screen);
+const installRow = localBox(menu.target, s.screen);
+const installBtn = localBox(dialog.target, s.screen);
+const planbordIcon = localBox(home.planbordIcon.querySelector('.ic'), s.screen);
+
+intro(s);
+
+// 1. Chrome openen en naar het adres gaan
+caption(s.captions, 1, 'Open <b>Chrome</b> en ga naar het adres van Planbord', URL, 1.2, 5.6);
+highlight(fx, browserIcon, 1.6, 2.45, { pad: 5, radius: 40 });
+tap(fx, 2.6, mid(browserIcon).x, mid(browserIcon).y, { from: { x: 300, y: 560 } });
+css(web.layer, { transformOrigin: `${mid(browserIcon).x}px ${mid(browserIcon).y}px` });
+tl.prop(web.layer, 'opacity', 0).to(2.72, 3.0, 1, 'out').to(15.6, 16.0, 0, 'in');
+tl.prop(web.layer, 'scale', 0.16).to(2.72, 3.2, 1, 'outQuint').to(15.6, 16.05, 0.9, 'in');
+tl.prop(web.urlText, 'chars', 0).to(3.4, 4.6, URL.length, 'linear');
+tl.prop(web.pageImg, 'opacity', 0).to(4.75, 5.1, 1, 'out');
+
+// 2. Het menu met de drie puntjes
+caption(s.captions, 2, 'Tik op <b>⋮</b> rechtsboven', 'De drie puntjes naast de adresbalk.', 5.6, 8.8);
+cam.zoom(5.8, 6.6, mid(menuBtn), 1.5, { x: 360, y: 300 });
+highlight(fx, menuBtn, 6.7, 7.85, { pad: 6, radius: 20 });
+tap(fx, 8.0, mid(menuBtn).x, mid(menuBtn).y);
+tl.prop(menu.menu, 'opacity', 0).to(8.15, 8.35, 1, 'out').to(12.1, 12.3, 0, 'in');
+tl.prop(menu.menu, 'scale', 0.85).to(8.15, 8.45, 1, 'out');
+cam.zoom(8.3, 9.1, mid(installRow), 1.3, { x: 330, y: 470 });
+
+// 3. App installeren
+caption(s.captions, 3, 'Kies <b>App installeren</b>', 'Staat er <i>Toevoegen aan startscherm</i>? Kies dan dat.', 8.8, 12.6);
+highlight(fx, installRow, 9.4, 11.75, { pad: 2, radius: 8 });
+tap(fx, 11.9, mid(installRow).x, mid(installRow).y);
+tl.prop(dialog.dim, 'opacity', 0).to(12.1, 12.35, 1, 'out').to(15.4, 15.7, 0, 'in');
+tl.prop(dialog.box, 'opacity', 0).to(12.1, 12.35, 1, 'out').to(15.4, 15.6, 0, 'in');
+tl.prop(dialog.box, 'scale', 1.08).to(12.1, 12.45, 1, 'out');
+cam.zoom(12.2, 13.0, mid(installBtn), 1.3, { x: 310, y: 470 });
+
+// 4. Installeren
+caption(s.captions, 4, 'Tik op <b>Installeren</b>', null, 12.6, 16.0);
+highlight(fx, installBtn, 13.2, 15.05, { pad: 7, radius: 12 });
+tap(fx, 15.2, mid(installBtn).x, mid(installBtn).y);
+cam.reset(15.5, 16.3);
+
+// 5. Het icoon staat op het startscherm
+const iconEl = home.planbordIcon;
+css(iconEl, { transformOrigin: 'center 32px' });
+tl.prop(iconEl, 'opacity', 0).to(16.4, 16.6, 1, 'out');
+tl.prop(iconEl, 'scale', 0.2).to(16.4, 16.95, 1, 'outBack');
+caption(s.captions, 'ok', 'Planbord staat op je <b>startscherm</b>', 'Open het voortaan via dit icoon. Daar werken ook de meldingen.', 16.0, 20.4);
+cam.zoom(16.8, 17.6, mid(planbordIcon), 1.3, { x: 270, y: 430 });
+highlight(fx, planbordIcon, 17.5, 19.8, { pad: 5, radius: 40 });
+cam.reset(19.7, 20.4);
+
+outro(s, 20.4, 'Klaar!', 'Log nu één keer in via het icoon. Dat zie je in de video <b>Inloggen</b>.');
+tl.end(23.4);
+window.poster = 10.5;
+tl.seek(0);
+window.ready = true;
+</script>
+</body>
+</html>
