@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Card, Notice } from '@/components/ui';
 import { safeNextPath } from '@/lib/auth/redirect';
@@ -33,6 +34,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </Notice>
         )}
       </Card>
+      <p className="mt-6 text-center text-sm text-slate-600">
+        Nieuw hier?{' '}
+        <Link href="/uitleg" className="font-medium text-brand-700 underline underline-offset-2">
+          Bekijk de uitleg
+        </Link>
+      </p>
     </main>
   );
 }

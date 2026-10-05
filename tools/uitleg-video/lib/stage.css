@@ -1,0 +1,106 @@
+/* Opmaak van de uitlegvideo's: een canvas van 540 x 960 punten (gerenderd op 1080 x 1920). */
+@font-face { font-family: 'Inter'; font-weight: 400; src: url(../assets/fonts/inter-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 500; src: url(../assets/fonts/inter-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 600; src: url(../assets/fonts/inter-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 700; src: url(../assets/fonts/inter-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 800; src: url(../assets/fonts/inter-latin-800-normal.woff2) format('woff2'); }
+
+:root {
+  --brand-50: #f0fdfa;
+  --brand-100: #ccfbf1;
+  --brand-200: #99f6e4;
+  --brand-500: #14b8a6;
+  --brand-600: #0d9488;
+  --brand-700: #0f766e;
+  --brand-800: #115e59;
+  --brand-900: #134e4a;
+  --ink: #0f172a;
+  --muted: #475569;
+  --accent: #f59e0b;
+  --ios-blue: #0a7aff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 540px; height: 960px; overflow: hidden; }
+body { font-family: 'Inter', sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+img { display: block; }
+
+#stage { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(170deg, #f3fbf9 0%, #def4ef 48%, #c9ece5 100%); }
+.blob { position: absolute; border-radius: 50%; filter: blur(40px); }
+.abs { position: absolute; }
+
+/* Kop: merk en titel */
+#brand { position: absolute; left: 0; right: 0; top: 18px; display: flex; justify-content: center; align-items: center; gap: 7px; font-size: 11px; letter-spacing: 0.2em; font-weight: 800; color: var(--brand-700); }
+#brand img { width: 18px; height: 18px; border-radius: 5px; }
+#title { position: absolute; left: 20px; right: 20px; top: 38px; text-align: center; font-size: 25px; line-height: 1.15; font-weight: 800; letter-spacing: -0.015em; color: var(--ink); }
+#title .chip { display: inline-block; margin-left: 8px; padding: 3px 11px 4px; border-radius: 999px; background: var(--brand-700); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 0; vertical-align: 4px; }
+
+/* Camera en telefoon */
+#cam { position: absolute; left: 0; top: 0; width: 540px; height: 960px; transform-origin: 0 0; }
+.phone { position: absolute; border-radius: 56px; background: #0b1220; box-shadow: 0 40px 70px -25px rgba(15, 23, 42, 0.5), 0 0 0 1.5px #334155 inset, 0 0 0 4px #1e293b inset; }
+.screen { position: absolute; width: 390px; height: 844px; transform-origin: 0 0; border-radius: 55px; overflow: hidden; background: #f8fafc; isolation: isolate; }
+/* Elke laag is een eigen stapel: zo valt de statusbalk van een laag eronder niet over de laag erboven. */
+.layer { position: absolute; left: 0; top: 0; width: 390px; height: 844px; overflow: hidden; z-index: 0; }
+.island { position: absolute; left: 132px; top: 11px; width: 126px; height: 37px; border-radius: 20px; background: #000; z-index: 50; }
+.punch { position: absolute; left: 186px; top: 12px; width: 18px; height: 18px; border-radius: 50%; background: #000; z-index: 50; }
+.homebar { position: absolute; left: 128px; bottom: 8px; width: 134px; height: 5px; border-radius: 3px; background: rgba(15, 23, 42, 0.85); z-index: 49; }
+.homebar.light { background: rgba(255, 255, 255, 0.9); }
+
+/* Statusbalk */
+.sb { position: absolute; left: 0; top: 0; width: 390px; height: 47px; z-index: 40; font-weight: 600; font-size: 17px; color: #0f172a; }
+.sb.light { color: #fff; }
+.sb .time { position: absolute; left: 0; width: 132px; top: 15px; text-align: center; letter-spacing: -0.01em; }
+.sb .icons { position: absolute; right: 30px; top: 17px; display: flex; gap: 6px; align-items: center; }
+.sb.android { height: 32px; font-size: 14px; font-weight: 500; }
+.sb.android .time { left: 18px; width: auto; top: 8px; text-align: left; }
+.sb.android .icons { right: 18px; top: 9px; }
+
+/* App-scherm: kop, inhoud en tabbalk */
+.app { position: absolute; left: 0; width: 390px; overflow: hidden; background: #f8fafc; }
+.app .viewport { position: absolute; left: 0; top: 0; width: 390px; overflow: hidden; }
+.app .content { position: absolute; left: 0; top: 0; width: 390px; }
+.app .content img, .app .header img, .app .nav img { width: 390px; }
+.app .header { position: absolute; left: 0; top: 0; width: 390px; z-index: 5; }
+.app .nav { position: absolute; left: 0; width: 390px; z-index: 5; }
+
+/* Tik, veeg en markering (in schermpunten) */
+.tap { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); border: 3px solid rgba(15, 118, 110, 0.95); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.35); z-index: 90; }
+.ripple { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; border: 3px solid rgba(13, 148, 136, 0.9); z-index: 89; }
+.hl { position: absolute; border-radius: 14px; box-shadow: 0 0 0 3.5px var(--accent), 0 0 0 10px rgba(245, 158, 11, 0.22); z-index: 80; pointer-events: none; }
+
+/* Ondertitel onderin */
+#captions { position: absolute; left: 18px; right: 18px; bottom: 16px; height: 116px; }
+.cap { position: absolute; inset: 0; display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: #fff; border-radius: 24px; box-shadow: 0 16px 34px -14px rgba(15, 23, 42, 0.38); }
+.cap .num { flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--brand-700); color: #fff; font-weight: 800; font-size: 20px; display: grid; place-items: center; }
+.cap .num.check { background: #16a34a; }
+.cap .txt { font-size: 21px; line-height: 1.22; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.cap .txt b { color: var(--brand-700); font-weight: 800; }
+.cap .sub { margin-top: 4px; font-size: 14.5px; line-height: 1.3; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+
+/* Slotkaart */
+.done { position: absolute; left: 50%; top: 50%; width: 300px; margin-left: -150px; margin-top: -120px; padding: 28px 24px 26px; border-radius: 28px; background: #fff; text-align: center; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.45); z-index: 200; }
+.done .ok { width: 74px; height: 74px; margin: 0 auto 14px; border-radius: 50%; background: #16a34a; display: grid; place-items: center; }
+.done h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+.done p { margin-top: 8px; font-size: 15.5px; line-height: 1.4; color: var(--muted); font-weight: 500; }
+
+/* iOS: beginscherm */
+.wall { position: absolute; inset: 0; background: radial-gradient(130% 90% at 20% 10%, #5eead4 0%, #0d9488 35%, #134e4a 70%, #0b2f2c 100%); }
+.grid { position: absolute; left: 0; top: 80px; width: 390px; display: grid; grid-template-columns: repeat(4, 64px); justify-content: space-between; padding: 0 27px; row-gap: 26px; }
+.app-icon { width: 64px; text-align: center; }
+.app-icon .ic { width: 64px; height: 64px; border-radius: 15px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18); display: grid; place-items: center; overflow: hidden; }
+.app-icon .ic img { width: 64px; height: 64px; }
+.app-icon .lb { margin-top: 6px; font-size: 12px; font-weight: 500; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); white-space: nowrap; }
+.dock { position: absolute; left: 12px; right: 12px; bottom: 14px; height: 96px; border-radius: 34px; background: rgba(255, 255, 255, 0.28); backdrop-filter: blur(20px); display: flex; justify-content: space-around; align-items: center; padding: 0 14px; }
+
+/* iOS: dialoog en melding */
+.dim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.32); z-index: 60; }
+.ios-alert { position: absolute; left: 60px; width: 270px; border-radius: 16px; background: #efeff3; text-align: center; z-index: 61; overflow: hidden; }
+.ios-alert .t { padding: 20px 16px 4px; font-size: 17px; font-weight: 600; line-height: 1.3; }
+.ios-alert .m { padding: 0 16px 18px; font-size: 13px; line-height: 1.38; color: #111; }
+.ios-alert .btns { display: grid; grid-template-columns: 1fr 1fr; border-top: 0.5px solid rgba(60, 60, 67, 0.36); }
+.ios-alert .btns div { padding: 12px 0; font-size: 17px; color: var(--ios-blue); }
+.ios-alert .btns div + div { border-left: 0.5px solid rgba(60, 60, 67, 0.36); font-weight: 600; }
+.banner { position: absolute; left: 10px; right: 10px; top: 52px; border-radius: 24px; padding: 14px 16px; background: #f6f6f8; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.28); display: flex; gap: 12px; z-index: 70; }
+.banner img { width: 38px; height: 38px; border-radius: 9px; flex: none; }
+.banner .bt { display: flex; justify-content: space-between; font-size: 15px; font-weight: 600; }
+.banner .bt span { font-weight: 400; color: #6b7280; font-size: 13px; }
+.banner .bb { font-size: 15px; line-height: 1.3; margin-top: 2px; }

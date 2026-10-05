@@ -55,6 +55,9 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Geen AI of taalmodel in de roosterlogica.
 - Geen trackers, analytics, externe fonts of scripts van derden.
 - Laat geen enkele pagina indexeren: noindex in de metadata, een `X-Robots-Tag`-header en een `robots.txt` die alles blokkeert.
+- De uitleg voor collega's (`/uitleg`, besluit V30) is de enige pagina zonder inloggen naast `/inloggen`. Ze toont geen gegevens uit de database.
+  - De teksten staan in `src/lib/guide/topics.ts`, de video's en de PDF in `public/uitleg`.
+  - De bron van de video's staat in `tools/uitleg-video/`: buiten de app en de build.
 
 ## Database
 - Schrijf elke wijziging als migratie in `supabase/migrations/`, met als naam `YYYYMMDDHHMMSS_naam.sql`. Pas een migratie die al is uitgeleverd nooit meer aan; maak een nieuwe.
@@ -98,6 +101,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Een push-abonnement zien alleen de medewerker zelf en beheerders (om te versturen). Elders alleen aantallen, nooit het adres of de sleutels.
   - Alleen naar https-adressen van de bekende pushdiensten: Apple, Google, Mozilla en Microsoft.
 - Nooit echte medewerkergegevens, secrets of `.env`-bestanden in de repo. Testdata en fixtures zijn fictief.
+  - Dat geldt ook voor schermafbeeldingen, video's en de PDF van de uitleg (besluit V30): alleen het verzonnen team.
 
 ## Teststrategie
 - Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/` en `src/lib/push/`. Een test staat naast de code als `*.test.ts`.

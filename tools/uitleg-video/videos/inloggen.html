@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Inloggen met je code</title>
+<link rel="stylesheet" href="../lib/stage.css">
+</head>
+<body>
+<script type="module">
+import { tl, buildStage, statusBar, appScreen, tap, highlight, caption, camera, intro, outro, loadBoxes, ready, el, css, mid, typeText } from '../lib/ui.js';
+
+const boxes = await loadBoxes();
+const s = buildStage({ title: 'Inloggen met je code' });
+const cam = camera(s);
+const TOP = 47;
+
+// Planbord, geopend via het icoon: eerst het inlogscherm, dan het scherm voor de code, dan Mijn rooster.
+const app = css(el('div', 'layer', s.screen), { background: '#f8fafc' });
+statusBar(app);
+const loginLayer = el('div', 'layer', app);
+css(el('div', '', loginLayer, '<img src="../assets/screens/login.png" style="width:390px">'), { position: 'absolute', left: 0, top: TOP });
+const codeLayer = el('div', 'layer', app);
+css(el('div', '', codeLayer, '<img src="../assets/screens/login-code.png" style="width:390px">'), { position: 'absolute', left: 0, top: TOP });
+const mijnLayer = el('div', 'layer', app);
+appScreen(mijnLayer, 'mijn', boxes);
+el('div', 'homebar', app);
+
+const email = boxes.login.email;
+const send = boxes.login.send;
+const code = boxes['login-code'].code;
+const submit = boxes['login-code'].submit;
+const at = (b) => ({ x: b.x, y: b.y + TOP, w: b.w, h: b.h });
+
+// Het mailadres typen: eerst de lege invoer bedekken (de grijze voorbeeldtekst), dan letter voor letter.
+const emailCover = css(el('div', '', loginLayer), { position: 'absolute', left: email.x + 1.5, top: email.y + TOP + 1.5, width: email.w - 3, height: email.h - 3, borderRadius: '7px', background: '#fff', boxShadow: '0 0 0 2px #0d9488' });
+const typedEmail = typeText(loginLayer, 'sanne@voorbeeld.nl', 2.7, 4.5, { left: `${email.x + 13}px`, top: `${email.y + TOP}px`, height: `${email.h}px`, fontSize: '16px', color: '#0f172a' }, { caretFrom: 2.35, caretUntil: 5.4 });
+const codeCover = css(el('div', '', codeLayer), { position: 'absolute', left: code.x + 1.5, top: code.y + TOP + 1.5, width: code.w - 3, height: code.h - 3, borderRadius: '7px', background: '#fff', boxShadow: '0 0 0 2px #0d9488' });
+const typedCode = typeText(codeLayer, '123456', 14.3, 15.4, { left: `${code.x}px`, width: `${code.w}px`, justifyContent: 'center', top: `${code.y + TOP}px`, height: `${code.h}px`, fontSize: '22px', letterSpacing: '0.35em', color: '#0f172a', fontWeight: '600' }, { caretFrom: 13.95, caretUntil: 16.2 });
+
+// De mail met de code, als melding bovenin.
+const mailIcon = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>';
+const mail = el('div', 'banner', s.screen, `<div style="width:38px;height:38px;border-radius:9px;flex:none;display:grid;place-items:center;background:linear-gradient(#60a5fa,#2563eb)">${mailIcon}</div><div style="flex:1;min-width:0"><div class="bt">Planbord<span>nu</span></div><div class="bb"><b>Je inlogcode voor Planbord</b><br>Vul deze code in op het inlogscherm: <b data-code style="letter-spacing:.08em">123456</b></div></div>`);
+el('div', 'island', s.screen);
+const fx = css(el('div', 'layer', s.screen), { zIndex: 85, overflow: 'visible' });
+
+await ready();
+const mailBox = { x: 10, y: 52, w: 370, h: mail.getBoundingClientRect().height / 0.85 };
+
+intro(s);
+tl.prop(emailCover, 'opacity', 0).set(2.3, 1);
+tl.prop(codeLayer, 'opacity', 0).to(8.1, 8.45, 1, 'out');
+tl.prop(codeCover, 'opacity', 0).set(13.9, 1);
+tl.prop(mijnLayer, 'opacity', 0).to(17.15, 17.5, 1, 'out');
+tl.prop(mijnLayer, 'x', 60).to(17.15, 17.6, 0, 'out');
+
+// 1. Werkmail invullen
+caption(s.captions, 1, 'Vul je <b>werkmail</b> in', 'Het adres waarop je je werkmail krijgt.', 1.2, 5.6);
+tap(fx, 2.25, mid(at(email)).x, mid(at(email)).y, { from: { x: 300, y: 650 } });
+cam.zoom(2.0, 2.8, mid(at(email)), 1.35, { x: 270, y: 430 });
+
+// 2. Code laten sturen
+caption(s.captions, 2, 'Tik op <b>Stuur mij een inlogcode</b>', null, 5.6, 8.6);
+highlight(fx, at(send), 6.2, 7.75, { pad: 5, radius: 12 });
+tap(fx, 7.9, mid(at(send)).x, mid(at(send)).y);
+cam.reset(8.0, 8.8);
+
+// 3. De mail met 6 cijfers
+caption(s.captions, 3, 'Je krijgt een <b>mail met 6 cijfers</b>', 'Van Planbord. Zie je niets? Kijk ook bij ongewenste mail.', 8.6, 13.2);
+tl.prop(mail, 'y', -180).to(9.0, 9.55, 0, 'outBack').to(12.7, 13.1, -180, 'in');
+tl.prop(mail, 'opacity', 0).to(9.0, 9.2, 1, 'out').to(12.9, 13.1, 0, 'in');
+cam.zoom(9.6, 10.4, mid(mailBox), 1.35, { x: 270, y: 330 });
+highlight(fx, mailBox, 10.5, 12.4, { pad: 3, radius: 26 });
+cam.reset(12.5, 13.3);
+
+// 4. Code invullen en inloggen
+caption(s.captions, 4, 'Vul de <b>code</b> in en tik op <b>Inloggen</b>', null, 13.2, 17.6);
+tap(fx, 13.9, mid(at(code)).x, mid(at(code)).y, { from: { x: 300, y: 650 } });
+cam.zoom(13.6, 14.3, { x: 195, y: (at(code).y + at(submit).y + submit.h) / 2 }, 1.3, { x: 270, y: 460 });
+highlight(fx, at(submit), 15.5, 16.6, { pad: 5, radius: 12 });
+tap(fx, 16.8, mid(at(submit)).x, mid(at(submit)).y);
+cam.reset(16.9, 17.7);
+
+// 5. Ingelogd
+caption(s.captions, 'ok', 'Je bent <b>ingelogd</b>', 'Je blijft ingelogd op deze telefoon. Een wachtwoord is niet nodig.', 17.6, 21.4);
+
+outro(s, 21.4, 'Klaar!', 'Lukt het niet? Vraag de beheerder of je werkmail in Planbord staat.');
+tl.end(24.4);
+window.poster = 11.2;
+tl.seek(0);
+window.ready = true;
+</script>
+</body>
+</html>

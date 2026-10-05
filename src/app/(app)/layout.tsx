@@ -13,7 +13,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             Planbord
           </Link>
           <NavBar isAdmin={viewer.isAdmin} variant="top" />
-          <span className="max-w-[40%] truncate text-sm text-slate-600 sm:max-w-none">{viewer.name}</span>
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/uitleg" className="text-sm font-medium text-brand-700 hover:underline">
+              Uitleg
+            </Link>
+            <span className="max-w-[9rem] truncate text-sm text-slate-600 sm:max-w-none">{viewer.name}</span>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-5">{children}</main>
