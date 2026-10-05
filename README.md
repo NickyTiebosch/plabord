@@ -103,6 +103,13 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - De video's tonen een verzonnen team en hebben geen geluid. Ze staan bij de app zelf, niet op YouTube, dus er komen geen trackers mee.
 - Zie besluit V30 in het plan van fase 4. De bron van de video's staat in [`tools/uitleg-video/`](tools/uitleg-video/README.md).
 
+### Snelheid
+
+- **Een laadscherm.** Na een tik zie je meteen een opzet van de pagina, terwijl de gegevens nog onderweg zijn.
+- **Minder wachten.** Een pagina haalt haar gegevens op terwijl Planbord nog controleert wie er kijkt, in plaats van erna.
+- **Warm houden.** Van 's ochtends vroeg tot 's avonds laat houdt een geplande taak de server wakker. Zo duurt de eerste pagina na een rustige periode geen paar seconden meer.
+- Nog sneller kan met twee instellingen; zie stap 9. Zie ook besluit V31 in het plan van fase 4.
+
 ---
 
 ## Eenmalig: de app in de lucht zetten
@@ -311,6 +318,22 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
    2. Ga naar Mijn rooster → onderaan **Meldingen aanzetten** → sta meldingen toe.
    3. Ga naar Beheer → Instellingen → **Testmelding naar mij**.
 5. **Meldingen versturen** staat aan of uit voor mail én push. Een testmelding gaat ook als de schakelaar uit staat.
+
+### Stap 9. Sneller (optioneel)
+
+Het warm houden (V31) werkt vanzelf. Je hoeft er niets voor te doen, zolang de site op **public** staat, net als bij de herinneringen in stap 7. Met twee instellingen wordt Planbord nog sneller.
+
+1. **Nieuwe inlogsleutels in Supabase.** Dit is gratis en mijn aanrader.
+   - Ga in Supabase naar **Project Settings → JWT Keys**.
+   - Staat bij de huidige sleutel **Legacy JWT secret**? Klik dan op **Migrate JWT secret** en daarna op **Rotate keys**.
+   - Staat er al een sleutel van het type ECC of RSA? Dan hoef je niets te doen.
+   - Niemand wordt uitgelogd. In Netlify verandert niets: de publishable key en de secret key blijven hetzelfde.
+   - Daarna controleert Planbord de inlog zelf. Nu vraagt het dat bij elke pagina aan Supabase.
+2. **De server naar Frankfurt.** Hiervoor heb je een betaald abonnement bij Netlify nodig.
+   - Netlify zet de server van de app standaard in de VS; de database staat in Frankfurt. Elke vraag aan de database gaat dus over de oceaan.
+   - Met een betaald abonnement kies je de regio zelf: **Project configuration → Build & deploy → Functions region** → **EU (Frankfurt), eu-central-1**. Zie je die plek niet, zoek dan op "Functions region".
+   - Start daarna een nieuwe deploy.
+   - Lokaal nagebootst gaat een pagina dan van zo'n 0,35 naar 0,05 tot 0,1 seconde.
 
 ---
 

@@ -15,6 +15,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V28 | Een push-abonnement per toestel: alleen zichtbaar voor de medewerker zelf (beheerders zien aantallen), weg bij uitzetten, verlopen of volledig verwijderen. |
 | V29 | Een VAPID-sleutelpaar, dat de eigenaar één keer maakt en in Netlify zet. De herinneringen via push vallen onder V17. |
 | V30 | Aanvulling na de oplevering: een uitleg voor collega's met korte video's, op een pagina `/uitleg` zonder inloggen, plus een PDF. Zie §10. |
+| V31 | Aanvulling: Planbord sneller. Een laadscherm, minder wachten op de database en de server overdag warm houden. Een snellere serverregio is een keuze voor de eigenaar. Zie §11. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -261,3 +262,43 @@ De eigenaar wil een duidelijke uitleg meesturen naar collega's: korte video's di
 - **Afwezigheid doorgeven:** de video zegt "Geef het door aan de beheerder, zoals je gewend bent. Zelf invullen kan niet." De eigenaar heeft geen andere zin opgegeven; aanpassen is één regel.
 - **De teksten staan op één plek** (`src/lib/guide/topics.ts`). De pagina en de PDF gebruiken ze allebei. Een test controleert dat elke video en de PDF bestaan, en dat er geen e-mailadressen in de teksten staan.
 
+---
+
+## 11. Aanvulling: snelheid (V31)
+De eigenaar merkte dat Planbord traag aanvoelt. Op het voorstel kwam akkoord: "ga door met snelheid".
+
+**Waar de tijd zat**
+- **Ver weg.** De server van de app draait bij Netlify standaard in de VS (Ohio), de database in Frankfurt. Elke vraag aan de database gaat over de oceaan en terug: zo'n 0,1 seconde.
+- **Na elkaar.** Per pagina gingen vier vragen na elkaar: de inlog controleren, het account opzoeken, de medewerker opzoeken, en dan pas de gegevens van de pagina.
+- **In slaap.** Na een rustige periode legt Netlify de server stil. De eerste pagina daarna duurt een paar seconden, omdat de server eerst moet opstarten.
+- **Geen reactie.** Na een tik op de tabbalk gebeurde er niets zichtbaars tot de hele pagina klaar was.
+
+**Wat er is gebouwd**
+- **Een laadscherm** (`src/app/(app)/loading.tsx`). Na een tik zie je meteen een grijze opzet van de pagina. De kop en de tabbalk blijven staan.
+- **Minder wachten op de database:**
+  - het account en de medewerker in één vraag in plaats van twee;
+  - de gegevens van een pagina laden tegelijk met de controle wie er kijkt, niet erna (`requireViewerWith` en `requireAdminWith`). De pagina krijgt ze pas als die controle slaagt, en RLS schermt ze hoe dan ook af. Alleen *Agenda* wacht nog: die heeft eerst de kijker nodig.
+- **Warm houden** (`netlify/functions/wakker-houden.mts`). Van 's ochtends vroeg tot 's avonds laat (5:00 tot 23:00, in de zomer 6:00 tot 24:00) vraagt een geplande taak elke 5 minuten de lege route `/taken/wakker` op. Die doet niets, geeft niets terug en raakt de database niet. Daarom is er geen geheim nodig. Dit draait alleen op de gepubliceerde site.
+
+**Gemeten.** Lokaal nagebootst, met 0,1 seconde per databasevraag zoals nu tussen de VS en Frankfurt. Het opstarten na een rustige periode zit hier niet in; dat lost het warm houden op.
+
+| Pagina | Voor | Na |
+|---|---|---|
+| Mijn rooster | 0,59 s | 0,35 s |
+| Rooster (Den Bosch) | 0,58 s | 0,34 s |
+| Verlofoverzicht | 0,57 s | 0,35 s |
+| Agenda | 0,55 s | 0,44 s |
+| Beheer | 0,70 s | 0,38 s |
+| Beheer → Medewerkers | 0,56 s | 0,34 s |
+| Beheer → Regelen | 0,69 s | 0,37 s |
+
+Met de database vlakbij (zo'n 3 ms per vraag, zoals bij een server in Frankfurt) duurt dezelfde pagina 0,04 tot 0,10 seconde.
+
+**Keuzes voor de eigenaar** (geen code nodig)
+- **De server naar Frankfurt.** Dit heeft het grootste effect, maar Netlify laat de regio alleen kiezen met een betaald abonnement. Dan staan de app en de database naast elkaar.
+- **Nieuwe inlogsleutels in Supabase.** Werkt het project nog met het oude "Legacy JWT secret", dan vraagt Planbord bij elke pagina Supabase of de inlog klopt. Met de nieuwe sleutels controleert Planbord dat zelf. Het is gratis en niemand wordt uitgelogd. De stappen staan in de README (stap 9).
+
+**Gevolgen**
+- **Een collega op een beheerpagina** ziet heel even het laadscherm en komt dan op Mijn rooster. Door het laadscherm is de pagina al onderweg; de omleiding gebeurt daarom in de browser in plaats van op de server. Er gaan geen beheergegevens mee. Dat is getest: geen namen, geen e-mailadressen.
+- **Warm houden** gebeurt 216 keer per dag, zo'n 6.500 keer per maand. Elke keer zijn dat twee korte aanroepen bij Netlify (de taak en de app), van een paar milliseconden.
+- **De nagebootste Supabase** (`tools/uitleg-video/mock`) kan nu ook een gekoppelde rij meesturen, zoals "het account met de medewerker erbij". Met `MOCK_DELAY_MS` en `MOCK_LOG` meet je zelf hoeveel vragen een pagina doet en hoe lang dat duurt.

@@ -23,6 +23,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Niet `xlsx` van npm: die versie is verouderd.
 - Mail (fase 3): `nodemailer` via SMTP, met de Google Workspace-mailbox van de eigenaar (besluit V16). Niet Resend: dat vraagt DNS-records.
 - Geplande taak (fase 3): een Netlify scheduled function in `netlify/functions/`. Die roept elk uur een beveiligde route in de app aan, met `CRON_SECRET`. Zo'n taak draait alleen op de gepubliceerde site, niet op een preview.
+  - Sinds besluit V31 ook `wakker-houden.mts`: overdag elke 5 minuten een verzoek aan `/taken/wakker`, zodat de server niet in slaap valt. Die route doet niets en raakt de database niet, dus geen geheim.
 - Pushmeldingen (fase 4): web push volgens RFC 8030, 8291 en 8292, zelf gebouwd met `node:crypto`. Niet het pakket `web-push`: sinds januari 2024 geen release meer.
   - Sleutels: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (geheim) en `VAPID_SUBJECT`.
   - De service worker `public/sw.js` toont alleen meldingen (besluit V23).
@@ -51,6 +52,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - De ICS-opbouw (`src/lib/ics/`), de Excel-import (`src/lib/import/`), de export (`src/lib/export/`), de mails (`src/lib/mail/`) en de pushmeldingen (`src/lib/push/`) zijn ook puur en los te testen, behalve het versturen zelf.
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
+- Een pagina laadt haar gegevens met `requireViewerWith` of `requireAdminWith` (besluit V31): tegelijk met de controle wie er kijkt, niet erna. Hebben de gegevens de kijker nodig, dan eerst `requireViewer()`.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
 - Geen AI of taalmodel in de roosterlogica.
 - Geen trackers, analytics, externe fonts of scripts van derden.
