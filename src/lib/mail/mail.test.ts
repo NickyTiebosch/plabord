@@ -8,7 +8,7 @@ import {
   teamSnapshot,
 } from '../engine/__fixtures__/team';
 import { reviewNotices } from '../db/review';
-import { MAIL_KIND_LABELS, mailStatusLabel, previewReminderDate } from './labels';
+import { MAIL_KIND_LABELS, mailStatusLabel, previewReminderDate, pushLabel } from './labels';
 import { composeMail, escapeHtml, formatDateList, personalDaysFor } from './messages';
 import { cancelledSubstitutionNotices, mergeNotices } from './notices';
 import { isMailOutcome, mailOutcome, NO_MAILS } from './outcome';
@@ -333,6 +333,12 @@ describe('mails: woorden in het beheer', () => {
     expect(mailStatusLabel('failed', 'versturen mislukt', 3)).toBe('mislukt (3× geprobeerd)');
     expect(mailStatusLabel('skipped', 'mails uit', 0)).toBe('niet verstuurd: mails uit');
     expect(mailStatusLabel('skipped', 'geen werkmail', 0)).toBe('niet verstuurd: geen werkmail');
+  });
+
+  it('noemt naar hoeveel toestellen de push ging (fase 4)', () => {
+    expect(pushLabel(0)).toBeNull();
+    expect(pushLabel(1)).toBe('push naar 1 toestel');
+    expect(pushLabel(3)).toBe('push naar 3 toestellen');
   });
 
   it('toont het voorbeeld voor de eerstvolgende werkdag', () => {

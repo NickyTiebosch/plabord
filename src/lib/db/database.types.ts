@@ -230,9 +230,31 @@ export interface Database {
           created_at: Timestamp;
           updated_at: Timestamp;
           sent_at: Timestamp | null;
+          push_devices: number;
         };
         Insert: { employee_id: string; kind: string; dates: string[]; status?: string; last_error?: string | null };
-        Update: { status?: string; attempts?: number; last_error?: string | null; sent_at?: Timestamp | null };
+        Update: {
+          status?: string;
+          attempts?: number;
+          last_error?: string | null;
+          sent_at?: Timestamp | null;
+          push_devices?: number;
+        };
+        Relationships: [];
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          employee_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          created_at: Timestamp;
+          last_success_at: Timestamp | null;
+        };
+        // Aanmelden gaat via register_push_subscription; direct invoegen mag niemand behalve de server.
+        Insert: { employee_id: string; endpoint: string; p256dh: string; auth: string };
+        Update: { last_success_at?: Timestamp | null };
         Relationships: [];
       };
       gap_dismissals: {
@@ -327,6 +349,7 @@ export interface Database {
       apply_substitution_review: { Args: { changes: Json }; Returns: number };
       delete_employee: { Args: { p_employee_id: string }; Returns: Json };
       log_export: { Args: { p_kind: string; p_employee_id: string | null }; Returns: undefined };
+      register_push_subscription: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string }; Returns: undefined };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

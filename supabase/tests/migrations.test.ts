@@ -161,6 +161,7 @@ describe('database zonder automatische rechten', () => {
       'delete_employee',
       'log_export',
       'move_shift',
+      'register_push_subscription',
       'set_shift_override',
     ]);
     expect(result.rows.filter((row) => !row.authenticated || row.anon)).toEqual([]);

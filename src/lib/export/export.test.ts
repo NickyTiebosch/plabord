@@ -128,6 +128,7 @@ describe('gegevens van één medewerker (V20)', () => {
     mails: [
       { kind: 'day_changed', dates: ['2026-10-16'], status: 'sent', lastError: null, attempts: 1, createdAt: '2026-10-02T12:00:00Z' },
     ],
+    devices: [{ createdAt: '2026-10-02T13:00:00Z', lastSuccessAt: '2026-10-03T14:00:00Z' }, { createdAt: '2026-10-05T08:00:00Z', lastSuccessAt: null }],
     log: [{ when: 'do 1 okt 2026 10:00', what: 'Afwezigheid ingevoerd – Sanne', detail: '14 okt, hele dag, goedgekeurd' }],
   });
 
@@ -140,6 +141,7 @@ describe('gegevens van één medewerker (V20)', () => {
       'Roosterwijzigingen',
       'Agendalinks',
       'Mails',
+      'Meldingen',
       'Logboek',
     ]);
     expect(sheets[0]?.rows).toEqual([
@@ -155,7 +157,12 @@ describe('gegevens van één medewerker (V20)', () => {
     expect(sheets[1]?.rows).toHaveLength(2);
     expect(sheets[5]?.rows).toEqual([['Vestiging Den Bosch', '1-10-2026 10:00', '']]);
     expect(sheets[6]?.rows).toEqual([['2-10-2026 14:00', 'Rooster gewijzigd', 'vr 16 okt', 'verstuurd']]);
-    expect(sheets[7]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
+    // Fase 4: de toestellen met meldingen, zonder het adres of de sleutels.
+    expect(sheets[7]?.rows).toEqual([
+      ['Toestel 1', '2-10-2026 15:00', '3-10-2026 16:00'],
+      ['Toestel 2', '5-10-2026 10:00', ''],
+    ]);
+    expect(sheets[8]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
   });
 
   it('noemt geen collega’s', () => {

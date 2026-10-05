@@ -383,13 +383,21 @@ describe('logboek', () => {
         entity: 'employees',
         employee_id: 'gone',
         source: 'verwijderen',
-        details: { recurring_shifts: 5, absences: 1, substitutions: 0, shift_overrides: 2, calendar_feeds: 1, account: true },
+        details: {
+          recurring_shifts: 5,
+          absences: 1,
+          substitutions: 0,
+          shift_overrides: 2,
+          calendar_feeds: 1,
+          push_subscriptions: 2,
+          account: true,
+        },
       },
       { ...lookups, employeeName: (id) => (id === 'e0' ? 'Anna' : 'verwijderde medewerker') },
     );
     expect(deleted).toMatchObject({
       what: 'Medewerker volledig verwijderd – verwijderde medewerker',
-      detail: '5 vaste diensten, 1 afwezigheid, 2 roosterwijzigingen, 1 agendalink en het inlogaccount',
+      detail: '5 vaste diensten, 1 afwezigheid, 2 roosterwijzigingen, 1 agendalink, 2 toestellen met meldingen en het inlogaccount',
     });
     const mails = describeAudit(
       {
@@ -556,18 +564,29 @@ describe('volledig verwijderen (fase 3, V21)', () => {
     upcomingSubstitutions: 0,
     shiftOverrides: 0,
     calendarFeeds: 0,
+    pushDevices: 0,
     account: false,
   };
 
   it('zegt vooraf wat er verdwijnt, ook dat gaten terugkomen', () => {
     expect(
-      deletionSummary({ recurringShifts: 5, absences: 1, substitutions: 3, upcomingSubstitutions: 1, shiftOverrides: 2, calendarFeeds: 1, account: true }),
+      deletionSummary({
+        recurringShifts: 5,
+        absences: 1,
+        substitutions: 3,
+        upcomingSubstitutions: 1,
+        shiftOverrides: 2,
+        calendarFeeds: 1,
+        pushDevices: 1,
+        account: true,
+      }),
     ).toEqual([
       '5 vaste diensten',
       '1 afwezigheid',
       '3 invallen, waarvan 1 nog komt: dat gat komt terug in Nog te regelen',
       '2 roosterwijzigingen',
       '1 agendalink',
+      'meldingen op 1 toestel',
       'het inlogaccount en de werkmail',
     ]);
     expect(deletionSummary({ ...none, substitutions: 2, upcomingSubstitutions: 2 })).toEqual([

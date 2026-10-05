@@ -5,7 +5,7 @@ import { dbErrorMessage } from '@/lib/admin/errors';
 import { parseNumberFields, parseSettingsForm, type ActionState } from '@/lib/admin/forms';
 import { requireAdmin } from '@/lib/auth/session';
 import { must } from '@/lib/db/queries';
-import { sendTestMail } from '@/lib/mail/dispatch';
+import { sendTestMail, sendTestPush } from '@/lib/mail/dispatch';
 import { siteBaseUrl } from '@/lib/site-url';
 
 export async function saveSettings(_previous: ActionState, formData: FormData): Promise<ActionState> {
@@ -66,7 +66,7 @@ export async function saveRanks(_previous: ActionState, formData: FormData): Pro
   return { ok: true, message: 'Invalvolgorde opgeslagen.' };
 }
 
-/** Mails aan of uit (fase 3, V18). Staat in het logboek. */
+/** Meldingen (mail en push) aan of uit (fase 3, V18; fase 4, V27). Staat in het logboek. */
 export async function setMailEnabled(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();
   const enabled = formData.get('mails') === 'aan';
@@ -87,4 +87,26 @@ export async function sendTestMailAction(): Promise<ActionState> {
     error:
       'De testmail kon niet worden verstuurd. Controleer in Netlify SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD en MAIL_FROM (zie de README).',
   };
+}
+
+/** Een testmelding aan je eigen toestellen (fase 4, V27). Gaat ook als meldingen uit staan. */
+export async function sendTestPushAction(): Promise<ActionState> {
+  const { supabase, employeeId } = await requireAdmin();
+  const result = await sendTestPush(supabase, employeeId, { now: new Date(), appUrl: null });
+  switch (result.status) {
+    case 'verstuurd':
+      return {
+        ok: true,
+        message:
+          result.sent === result.devices
+            ? `Testmelding verstuurd naar ${result.sent === 1 ? 'je toestel' : `je ${result.sent} toestellen`}.`
+            : `Testmelding verstuurd naar ${result.sent} van je ${result.devices} toestellen.`,
+      };
+    case 'geen-toestel':
+      return { error: 'Je hebt op geen enkel toestel meldingen aan. Zet ze aan onderaan Mijn rooster, op je telefoon.' };
+    case 'niet-ingesteld':
+      return { error: 'Push is nog niet ingesteld: zet eerst de sleutels in Netlify (zie hieronder).' };
+    case 'mislukt':
+      return { error: 'De testmelding kon niet worden verstuurd. Controleer de sleutels in Netlify en probeer het opnieuw.' };
+  }
 }
