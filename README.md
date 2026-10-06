@@ -174,7 +174,7 @@ Open in Supabase **Authentication**.
 4. **Rate Limits:** zet het aantal mails per uur na het instellen van SMTP op een waarde die past bij het team, bijvoorbeeld `60`.
 5. **Sessions:** laat de standaard staan, dus geen *time-box* en geen *inactivity timeout*. Zo blijf je op je eigen telefoon ingelogd.
 6. **URL Configuration:**
-   - **Site URL:** het adres van de app, bijvoorbeeld `https://planbord.vercel.app` (dat weet je na stap 4).
+   - **Site URL:** het adres van de app: `https://planbord-ten.vercel.app` (dat weet je na stap 4). Komt er later een eigen domein, zet dat dan hier.
    - **Redirect URLs:** niet nodig. Planbord gebruikt geen inloglinks.
 
 ### Stap 3. Sleutels opzoeken
@@ -194,7 +194,7 @@ Planbord draait bij Vercel, in het betaalde team van 22labs (besluit V32). Het g
 1. Ga naar [vercel.com](https://vercel.com), kies het team van 22labs en klik op **Add New → Project**. Kies bij **Import Git Repository** deze repository.
    - Ziet Vercel de repository niet? Geef de GitHub-app van Vercel er dan toegang toe (**Configure GitHub App**).
    - **Framework Preset:** Next.js. Dat vult Vercel zelf in.
-   - **Project Name:** bijvoorbeeld `planbord`. Het adres wordt dan iets als `https://planbord.vercel.app`.
+   - **Project Name:** `planbord`. Was dat adres al bezet, dan plakt Vercel er iets achter. Bij ons werd het `https://planbord-ten.vercel.app`. Je ziet het adres op de overzichtspagina van het project, onder **Domains**.
    - Laat de build-instellingen staan. De regio (Frankfurt), het bouwcommando en de geplande taken staan in [`vercel.json`](vercel.json), en Node 22 staat in `package.json`.
 2. Zet onder **Environment Variables** de waarden hieronder, voor **Production** en **Preview**. Dat kan vóór de eerste deploy, of later onder **Settings → Environment Variables**.
 
@@ -203,7 +203,7 @@ Planbord draait bij Vercel, in het betaalde team van 22labs (besluit V32). Het g
    | `NEXT_PUBLIC_SUPABASE_URL` | de Project URL | |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | de Publishable key | |
    | `SUPABASE_SECRET_KEY` | de Secret key | zet **Sensitive** aan |
-   | `SITE_URL` | het adres van de gewone app, bijvoorbeeld `https://planbord.vercel.app` | ook voor Preview: dan gaan agendalinks en de link in mails vanuit een preview naar de gewone app. Leeg = het adres waarop de app draait |
+   | `SITE_URL` | het adres van de gewone app: `https://planbord-ten.vercel.app` | ook voor Preview: dan gaan agendalinks en de link in mails vanuit een preview naar de gewone app. Leeg = het adres waarop de app draait |
 
    - Vercel zet de `NEXT_PUBLIC_`-waarden bij het bouwen in de app. Pas je een waarde aan, start dan een nieuwe deploy: **Deployments** → de bovenste → **⋯ → Redeploy**.
    - De secret key gebruikt de app alleen op de server:
@@ -350,7 +350,7 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 
 ## De uitleg doorsturen
 
-- **Stuur de link** naar het adres van Planbord met `/uitleg` erachter, bijvoorbeeld `https://planbord.vercel.app/uitleg`. Daar staan alle video's en de PDF.
+- **Stuur de link** naar het adres van Planbord met `/uitleg` erachter, nu `https://planbord-ten.vercel.app/uitleg`. Daar staan alle video's en de PDF.
 - **Liever losse bestanden?** De PDF download je bovenaan die pagina.
 - **De video's in hoge kwaliteit** (1080 × 1920), bijvoorbeeld voor de groepsapp, staan niet in de repo. Je krijgt ze los bij de oplevering. Opnieuw maken kan met [`tools/uitleg-video/`](tools/uitleg-video/README.md) (`node render.mjs`).
 
