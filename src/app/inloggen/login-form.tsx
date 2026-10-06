@@ -3,7 +3,8 @@
 import { useActionState } from 'react';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Field, Notice, inputClass } from '@/components/ui';
-import { loginAction, type LoginState } from './actions';
+import type { LoginState } from '@/lib/auth/login';
+import { loginAction } from './actions';
 
 const initialState: LoginState = { step: 'email', email: '' };
 
@@ -13,7 +14,6 @@ export function LoginForm({ next }: { next: string }) {
   if (state.step === 'email') {
     return (
       <form action={formAction} className="space-y-4" noValidate>
-        <input type="hidden" name="intent" value="request" />
         <input type="hidden" name="volgende" value={next} />
         <Field label="Je werkmail" htmlFor="email" error={state.error}>
           <input
@@ -30,10 +30,17 @@ export function LoginForm({ next }: { next: string }) {
             placeholder="naam@bedrijf.nl"
           />
         </Field>
-        <SubmitButton className="w-full">Stuur mij een inlogcode</SubmitButton>
+        {/* De eerste knop is ook die van Enter. */}
+        <SubmitButton className="w-full" name="intent" value="request">
+          Stuur mij een inlogcode
+        </SubmitButton>
         <p className="text-sm text-slate-600">
           Je krijgt een code van 6 cijfers per e-mail. Nog geen account? Vraag het de beheerder.
         </p>
+        {/* Bijvoorbeeld als de telefoon dit scherm opnieuw laadde terwijl je de mail opzocht. */}
+        <SubmitButton variant="ghost" size="sm" name="intent" value="have-code">
+          Ik heb al een code
+        </SubmitButton>
       </form>
     );
   }
