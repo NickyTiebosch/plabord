@@ -6,8 +6,9 @@ import { Badge, Card, EmptyState, Field, Notice, PageHeader, SectionTitle, butto
 import { deletionBlocker, deletionSummary } from '@/lib/admin/deletion';
 import { isUuid } from '@/lib/admin/forms';
 import { shiftsByWeekday } from '@/lib/admin/shifts';
+import { lastSignInText } from '@/lib/admin/sign-ins';
 import { requireAdminWith, type Viewer } from '@/lib/auth/session';
-import { loadInvites } from '@/lib/db/admin-queries';
+import { loadInvites, loadSignIns } from '@/lib/db/admin-queries';
 import { mapEmployee, mapRecurringShift } from '@/lib/db/mappers';
 import { loadGroups, loadSettings, must } from '@/lib/db/queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
@@ -105,21 +106,25 @@ export default async function EmployeeDetailPage({
   if (!isUuid(id)) notFound();
   const today = todayInAmsterdam(new Date());
 
-  const [{ supabase, employeeId: viewerId }, [groups, settings, employeeRow, account, eligibility, shifts, feeds, devices, invites]] =
-    await requireAdminWith((supabase) =>
-      Promise.all([
-        loadGroups(supabase),
-        loadSettings(supabase),
-        supabase.from('employees').select('*').eq('id', id).maybeSingle(),
-        supabase.from('employee_accounts').select('email, user_id').eq('employee_id', id).maybeSingle(),
-        supabase.from('counter_eligibility').select('group_id').eq('employee_id', id),
-        supabase.from('recurring_shifts').select('*').eq('employee_id', id),
-        supabase.from('calendar_feeds').select('id, kind, group_id, created_at').eq('employee_id', id).is('revoked_at', null),
-        // Fase 4: alleen het aantal toestellen met meldingen, nooit het adres.
-        supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('employee_id', id),
-        loadInvites(supabase, id),
-      ]),
-    );
+  const [
+    { supabase, employeeId: viewerId },
+    [groups, settings, employeeRow, account, eligibility, shifts, feeds, devices, invites, signIns],
+  ] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadGroups(supabase),
+      loadSettings(supabase),
+      supabase.from('employees').select('*').eq('id', id).maybeSingle(),
+      supabase.from('employee_accounts').select('email, user_id').eq('employee_id', id).maybeSingle(),
+      supabase.from('counter_eligibility').select('group_id').eq('employee_id', id),
+      supabase.from('recurring_shifts').select('*').eq('employee_id', id),
+      supabase.from('calendar_feeds').select('id, kind, group_id, created_at').eq('employee_id', id).is('revoked_at', null),
+      // Fase 4: alleen het aantal toestellen met meldingen, nooit het adres.
+      supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('employee_id', id),
+      loadInvites(supabase, id),
+      // V38: wanneer deze medewerker voor het laatst inlogde (uit Supabase Auth).
+      loadSignIns(supabase, id),
+    ]),
+  );
   const deviceCount = devices.count ?? 0;
   if (!employeeRow.data) notFound();
   const employee = mapEmployee(employeeRow.data, must(eligibility, 'de inzetbaarheid').map((row) => row.group_id));
@@ -190,6 +195,9 @@ export default async function EmployeeDetailPage({
                 </form>
               </>
             )}
+            {account.data?.user_id && signIns ? (
+              <p className="text-sm text-slate-700">{lastSignInText(signIns.get(employee.id) ?? null)}</p>
+            ) : null}
             {account.data?.user_id ? (
               <p className="text-sm text-slate-700">
                 {deviceCount === 0

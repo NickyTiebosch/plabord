@@ -2,8 +2,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
+import { onboardingBadges, onboardingSummary, onboardingSummaryText } from '@/lib/admin/sign-ins';
 import { requireAdminWith } from '@/lib/auth/session';
-import { loadEmployeesWithAccounts, loadInvites, type EmployeeWithAccount } from '@/lib/db/admin-queries';
+import {
+  loadEmployeesWithAccounts,
+  loadInvites,
+  loadPushDeviceCounts,
+  loadSignIns,
+  type EmployeeWithAccount,
+} from '@/lib/db/admin-queries';
 import { loadGroups } from '@/lib/db/queries';
 import { ROLE_LABELS } from '@/lib/engine/labels';
 import { compareByNameThenId, compareGroups } from '@/lib/engine/sort';
@@ -15,9 +22,11 @@ export const metadata: Metadata = { title: 'Medewerkers' };
 // Iedereen uitnodigen verstuurt de mails één voor één; geef dat de tijd (V33).
 export const maxDuration = 60;
 
-function InviteEveryone({ count }: { count: number }) {
+function InviteEveryone({ count, started }: { count: number; started: string | null }) {
   return (
     <Card className="mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
+      {/* Wie er al is begonnen (V38): ingelogd en meldingen aan. */}
+      {started ? <p className="w-full text-sm text-slate-700">{started}</p> : null}
       <p className="text-sm text-slate-700">
         {count === 0
           ? 'Iedereen die kan inloggen, heeft een uitnodiging gehad. Een nieuwe collega nodig je uit op diens pagina.'
@@ -37,7 +46,18 @@ function InviteEveryone({ count }: { count: number }) {
   );
 }
 
-function EmployeeRow({ employee, invited }: { employee: EmployeeWithAccount; invited: boolean }) {
+function EmployeeRow({
+  employee,
+  invited,
+  lastSignInAt,
+  devices,
+}: {
+  employee: EmployeeWithAccount;
+  invited: boolean;
+  /** `undefined` als Planbord het niet weet (V38). */
+  lastSignInAt: string | null | undefined;
+  devices: number;
+}) {
   return (
     <li>
       <Link
@@ -52,8 +72,11 @@ function EmployeeRow({ employee, invited }: { employee: EmployeeWithAccount; inv
         </span>
         <span className="flex flex-wrap gap-1">
           {employee.isAdmin ? <Badge tone="brand">beheerder</Badge> : null}
-          {!employee.email ? <Badge>geen e-mail</Badge> : !employee.hasAccount ? <Badge tone="warning">nog geen account</Badge> : null}
-          {invited ? <Badge tone="success">uitgenodigd</Badge> : null}
+          {onboardingBadges(employee, { invited, lastSignInAt, devices }).map((badge) => (
+            <Badge key={badge.label} tone={badge.tone}>
+              {badge.label}
+            </Badge>
+          ))}
           {!employee.isActive ? <Badge tone="closed">inactief</Badge> : null}
         </span>
       </Link>
@@ -63,8 +86,14 @@ function EmployeeRow({ employee, invited }: { employee: EmployeeWithAccount; inv
 
 export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ inactief?: string; melding?: string }> }) {
   const params = await searchParams;
-  const [viewer, [groups, employees, invites]] = await requireAdminWith((supabase) =>
-    Promise.all([loadGroups(supabase), loadEmployeesWithAccounts(supabase), loadInvites(supabase)]),
+  const [viewer, [groups, employees, invites, signIns, devices]] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadGroups(supabase),
+      loadEmployeesWithAccounts(supabase),
+      loadInvites(supabase),
+      loadSignIns(supabase),
+      loadPushDeviceCounts(supabase),
+    ]),
   );
   const toInvite = inviteTargets(employees, invites, viewer.employeeId).length;
   const latest = latestInvites(invites);
@@ -84,7 +113,9 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
         }
       />
       <Flash code={params.melding} />
-      {employees.length > 0 ? <InviteEveryone count={toInvite} /> : null}
+      {employees.length > 0 ? (
+        <InviteEveryone count={toInvite} started={onboardingSummaryText(onboardingSummary(employees, signIns, devices))} />
+      ) : null}
       {employees.length === 0 ? (
         <EmptyState title="Nog geen medewerkers">
           Voeg ze één voor één toe of gebruik de <Link href="/beheer/import" className="underline">Excel-import</Link>.
@@ -104,6 +135,8 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
                         key={employee.id}
                         employee={employee}
                         invited={isInvited(latest.get(employee.id)?.status ?? 'skipped')}
+                        lastSignInAt={signIns ? (signIns.get(employee.id) ?? null) : undefined}
+                        devices={devices.get(employee.id) ?? 0}
                       />
                     ))}
                   </ul>

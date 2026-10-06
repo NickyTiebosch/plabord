@@ -116,6 +116,7 @@ describe('gegevens van één medewerker (V20)', () => {
   const sheets = employeeExport({
     employee: sanne,
     hasAccount: true,
+    lastSignInAt: '2026-10-06T12:05:00Z',
     groups,
     recurringShifts: [
       shift('sanne', 1, 'den_bosch', 'counter', { validFrom: '2025-01-01', validTo: '2026-06-30' }),
@@ -153,6 +154,7 @@ describe('gegevens van één medewerker (V20)', () => {
       ['Beheerder', 'nee'],
       ['Actief', 'ja'],
       ['Inlogaccount', 'ja'],
+      ['Laatst ingelogd', '6-10-2026 14:05'],
     ]);
     expect(sheets[1]?.rows).toHaveLength(2);
     expect(sheets[5]?.rows).toEqual([['Vestiging Den Bosch', '1-10-2026 10:00', '']]);

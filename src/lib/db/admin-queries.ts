@@ -1,4 +1,5 @@
 import { attentionItems, buildGapViews, planningWindow, warningTexts, type AttentionMailState } from '../admin/planning';
+import { countByEmployee, parseSignIns } from '../admin/sign-ins';
 import { eachDay } from '../engine/dates';
 import { reviewSubstitutions } from '../engine/review';
 import type { Employee, IsoDate } from '../engine/types';
@@ -29,6 +30,25 @@ export async function loadEmployeesWithAccounts(client: DbClient): Promise<Emplo
       hasAccount: Boolean(account?.user_id),
     };
   });
+}
+
+/**
+ * Wanneer iedere medewerker met een inlogaccount voor het laatst inlogde (V38), uit Supabase Auth via
+ * `employee_sign_ins`. Alleen voor beheerders. `null` als het niet lukt, bijvoorbeeld zolang de bundel
+ * van fase 4 nog niet opnieuw is gedraaid: de pagina werkt dan gewoon, zonder die gegevens.
+ */
+export async function loadSignIns(client: DbClient, employeeId?: string): Promise<Map<string, string | null> | null> {
+  const { data, error } = await client.rpc('employee_sign_ins', employeeId ? { p_employee_id: employeeId } : {});
+  if (error) {
+    console.error('Wie er is ingelogd, laden mislukt', error.code, error.message);
+    return null;
+  }
+  return parseSignIns(data);
+}
+
+/** Het aantal toestellen met meldingen per medewerker. Alleen de medewerker-id, nooit het adres of de sleutels. */
+export async function loadPushDeviceCounts(client: DbClient): Promise<Map<string, number>> {
+  return countByEmployee(must(await client.from('push_subscriptions').select('employee_id'), 'de toestellen met meldingen'));
 }
 
 /** De uitnodigingen uit de wachtrij (V33), voor de stand bij de medewerkers. Alleen voor beheerders (RLS). */
