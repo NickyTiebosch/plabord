@@ -469,7 +469,7 @@ De eigenaar: "Ik wil graag ook zien of er mensen zijn ingelogd, op de telefoon h
 - Planbord slaat niets extra op. Het tijdstip staat al in Supabase Auth; het aantal toestellen met meldingen zagen beheerders al bij een medewerker (V28).
 - Een nieuwe functie `public.employee_sign_ins()`: `security definer` met `set search_path = ''`. Alleen een beheerder mag haar aanroepen (anders een foutmelding), en ze geeft alleen de medewerker-id en het tijdstip, geen e-mailadressen. Geen secret key nodig.
 - Alleen beheerders zien het. Het komt niet in het logboek: er verandert niets.
-- In de uitleg staat bij Welkom: "De beheerder ziet wanneer je voor het laatst inlogde en of je meldingen aan hebt." `CLAUDE.md` en de README zijn bijgewerkt.
+- Geen regel hierover in de uitleg; dat wilde de eigenaar niet ("Deze regel wil ik niet"). `CLAUDE.md` en de README zijn bijgewerkt.
 
 **Handmatige stap**
 - Draai `supabase/setup/fase-4.sql` opnieuw; dat is veilig. Tot dan toont Planbord deze gegevens niet, en de rest werkt gewoon.

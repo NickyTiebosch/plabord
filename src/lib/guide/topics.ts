@@ -49,10 +49,7 @@ export function guideTopics(address: string): GuideTopic[] {
           ],
         },
       ],
-      notes: [
-        'Collega’s zien bij afwezigheid alleen “Afwezig”, nooit de reden.',
-        'De beheerder ziet wanneer je voor het laatst inlogde en of je meldingen aan hebt.',
-      ],
+      notes: ['Collega’s zien bij afwezigheid alleen “Afwezig”, nooit de reden.'],
     },
     {
       id: 'beginscherm',

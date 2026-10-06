@@ -437,7 +437,6 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
   - het abonnement zien alleen de medewerker zelf en beheerders (om te versturen). Elders staan alleen aantallen. Het verdwijnt bij uitzetten, als het verlopen is, en bij volledig verwijderen.
 - Beheerders zien per collega wanneer die voor het laatst inlogde en op hoeveel toestellen meldingen aanstaan (besluit V38).
   - Het tijdstip komt uit Supabase Auth; Planbord slaat er niets extra voor op en houdt niet bij wanneer iemand de app gebruikt.
-  - Collega's lezen in de uitleg dat de beheerder dit ziet.
 - Geen trackers, geen analytics, geen externe scripts of lettertypen. Zoekmachines mogen niets indexeren.
 
 ---

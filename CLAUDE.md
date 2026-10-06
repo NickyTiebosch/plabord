@@ -82,7 +82,6 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Afwezigheid heeft géén reden, soort of vrij tekstveld. Alles heet "Afwezig".
 - Beheerders zien per medewerker wanneer die voor het laatst inlogde en op hoeveel toestellen meldingen aanstaan (besluit V38).
   - Het tijdstip komt uit Supabase Auth, via `public.employee_sign_ins()`, die alleen beheerders mogen aanroepen. Planbord slaat daarvoor niets extra op en legt geen gebruik van de app vast.
-  - Collega's lezen dat in de uitleg.
 - E-mailadressen staan alleen in `employee_accounts`.
   - Alleen beheerders en de medewerker zelf kunnen die tabel lezen.
   - Nooit een e-mailadres in roosters, feeds, het logboek of in meldingen die anderen zien.
