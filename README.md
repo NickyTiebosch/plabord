@@ -107,11 +107,12 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 ### Collega's uitnodigen
 
 - **Iedereen tegelijk:** Beheer → Medewerkers → **Iedereen uitnodigen**.
-  - Dat gaat naar iedereen die actief is, een inlogaccount heeft en nog geen uitnodiging kreeg.
+  - Dat gaat naar iedereen die actief is, een inlogaccount heeft en geen uitnodiging heeft die verstuurd is of klaarstaat.
+  - Ook wie een mislukte uitnodiging heeft, krijgt een nieuwe (besluit V39). Het blok zegt hoeveel collega's nog geen uitnodiging hadden en bij hoeveel hij mislukte.
   - Jijzelf krijgt er geen. Je bevestigt eerst, met het aantal erbij.
 - **Eén collega:** Beheer → Medewerkers → de naam → blok Inloggen → **Uitnodiging sturen**.
   - Daarna zie je "Uitgenodigd op …" en kun je hem opnieuw sturen.
-  - De lijst toont het label *uitgenodigd*.
+  - De lijst toont het label *uitgenodigd*, of *uitnodiging mislukt* als hij niet weg kon.
 - **De mail:**
   - alleen naar de eigen werkmail, met de voornaam;
   - een link naar Planbord en naar de uitleg, met erbij: op een iPhone in Safari, op Android in Chrome (niet in Samsung Internet);
@@ -120,8 +121,11 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - dat je de meldingen aanzet, en waar (besluit V37).
   - Er staat geen inloglink in en er zitten geen plaatjes of trackers in.
 - **Ook als Meldingen versturen uit staat.** Zo kun je iedereen uitnodigen voordat herinneringen en meldingen aan gaan.
-- **Mislukt het versturen,** dan probeert Planbord het elk uur opnieuw. Elke uitnodiging staat onder Beheer → Mails.
-- Zie besluit V33 in het plan van fase 4.
+- **Mislukt het versturen,** dan probeert Planbord het elk uur opnieuw, hooguit drie keer en in de eerste week.
+  - Bij de collega zie je of Planbord het nog probeert, of dat je hem zelf opnieuw moet sturen.
+  - Elke uitnodiging staat onder Beheer → Mails, met de oorzaak als het misging.
+- **Niemand krijgt hem twee keer.** Stuur je een nieuwe uitnodiging, dan vervalt een oudere die nog openstond. Beheer → Mails toont die als *niet verstuurd: vervangen door een nieuwe*.
+- Zie besluit V33 en V39 in het plan van fase 4.
 
 ### Wie is er al begonnen?
 
@@ -320,6 +324,7 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
    - Start daarna een nieuwe deploy (**Deployments** → de bovenste → **⋯ → Redeploy**), zodat de app de nieuwe waarden gebruikt.
 4. **Eerst testen**, in Planbord onder **Beheer → Instellingen**:
    1. Klik op **Testmail naar mij**. Die gaat naar je eigen werkmail, ook als mails nog uit staan.
+      - Lukt hij niet, dan zegt de melding wat er mis is: een instelling die ontbreekt, een app-wachtwoord dat niet klopt, een mailserver die niet bereikbaar is, of een afzender die niet mag (besluit V39).
    2. Bekijk het voorbeeld van de herinneringen voor morgen.
    3. Werkt de testmail, dan kun je je collega's uitnodigen: Beheer → Medewerkers → **Iedereen uitnodigen**. Dat kan al voordat je **Meldingen versturen** aanzet.
    4. Zet daarna pas **Meldingen versturen** aan (tot fase 4 heette die schakelaar **Mails versturen**).
