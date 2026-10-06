@@ -1,6 +1,6 @@
 # Uitlegvideo's en PDF (besluit V30)
 
-Deze map maakt de video's en de PDF op de pagina `/uitleg`. Hij hoort niet bij de app: Netlify installeert hier niets en de build kijkt er niet naar.
+Deze map maakt de video's en de PDF op de pagina `/uitleg`. Hij hoort niet bij de app: Vercel installeert hier niets en de build kijkt er niet naar.
 
 **Hoe het werkt**
 - Elke video is een HTML-pagina in `videos/`, met een eigen tijdlijn (`lib/motion.js`).
@@ -21,7 +21,7 @@ De schermafbeeldingen staan al klaar:
 cd tools/uitleg-video
 node render.mjs meldingen-iphone --frames=2,11,14   # losse beelden in out/, om te bekijken
 node render.mjs meldingen-iphone                    # de hele video naar out/meldingen-iphone.mp4
-node pdf.mjs                                        # de PDF naar out/planbord-uitleg.pdf
+UITLEG_ADRES=<adres> node pdf.mjs                    # de PDF naar out/planbord-uitleg.pdf, met dat adres en de QR-code
 node publish.mjs                                    # lichtere versies en de PDF naar public/uitleg
 ```
 
@@ -38,7 +38,7 @@ Maak de schermafbeeldingen opnieuw, met de nagebootste Supabase en het verzonnen
    NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_localtest
    SUPABASE_SECRET_KEY=sb_secret_localtest
-   SITE_URL=https://planbord-udenhout.netlify.app
+   SITE_URL=https://<het adres van Planbord>
    VAPID_PUBLIC_KEY=<een willekeurige publieke P-256-sleutel, bijvoorbeeld uit Beheer → Instellingen>
    ```
 
