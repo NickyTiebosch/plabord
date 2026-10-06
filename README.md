@@ -123,6 +123,17 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Mislukt het versturen,** dan probeert Planbord het elk uur opnieuw. Elke uitnodiging staat onder Beheer → Mails.
 - Zie besluit V33 in het plan van fase 4.
 
+### Wie is er al begonnen?
+
+- **Beheer → Medewerkers** toont bovenaan hoeveel collega's met een inlogaccount zijn ingelogd, en hoeveel er meldingen aan hebben.
+- Per collega in de lijst: *nog niet ingelogd*, of *ingelogd* met de datum, en dan *meldingen aan* of *meldingen uit*.
+- Bij een collega, in het blok Inloggen: *Laatst ingelogd op di 6 okt om 14:05*.
+- **Wat het betekent:**
+  - het tijdstip komt uit Supabase: de laatste keer dat iemand een code invulde. Collega's blijven daarna ingelogd, dus het zegt niet wanneer iemand de app voor het laatst opende;
+  - of iemand Planbord op de telefoon heeft gezet, ziet Planbord niet. *Meldingen aan* is het beste teken: op een iPhone kan dat alleen vanaf het beginscherm.
+- Alleen beheerders zien dit, en het staat ook in de export van een medewerker. Planbord slaat er niets extra voor op.
+- Draai hiervoor `supabase/setup/fase-4.sql` één keer opnieuw (besluit V38). Tot dan staat het er niet; de rest werkt gewoon.
+
 ### Snelheid
 
 - **Een laadscherm.** Na een tik zie je meteen een opzet van de pagina, terwijl de gegevens nog onderweg zijn.
@@ -424,6 +435,9 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
   - Planbord bewaart per toestel een push-abonnement: een adres bij de pushdienst van Apple, Google, Mozilla of Microsoft, met twee sleutels;
   - elke melding is versleuteld voor dat ene toestel. De pushdienst kan de inhoud niet lezen, maar ziet wel dát er een melding is. Die diensten staan deels buiten de EU;
   - het abonnement zien alleen de medewerker zelf en beheerders (om te versturen). Elders staan alleen aantallen. Het verdwijnt bij uitzetten, als het verlopen is, en bij volledig verwijderen.
+- Beheerders zien per collega wanneer die voor het laatst inlogde en op hoeveel toestellen meldingen aanstaan (besluit V38).
+  - Het tijdstip komt uit Supabase Auth; Planbord slaat er niets extra voor op en houdt niet bij wanneer iemand de app gebruikt.
+  - Collega's lezen in de uitleg dat de beheerder dit ziet.
 - Geen trackers, geen analytics, geen externe scripts of lettertypen. Zoekmachines mogen niets indexeren.
 
 ---
