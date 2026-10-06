@@ -114,8 +114,10 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - De lijst toont het label *uitgenodigd*.
 - **De mail:**
   - alleen naar de eigen werkmail, met de voornaam;
-  - een link naar Planbord en naar de uitleg, met erbij: op Android in Chrome, niet in Samsung Internet;
-  - hoe inloggen gaat: met de code uit de mail, zonder wachtwoord.
+  - een link naar Planbord en naar de uitleg, met erbij: op een iPhone in Safari, op Android in Chrome (niet in Samsung Internet);
+  - hoe je Planbord op je beginscherm zet, voor iPhone en Android;
+  - hoe inloggen gaat: via het icoon, met de code uit de mail, zonder wachtwoord;
+  - dat je de meldingen aanzet, en waar (besluit V37).
   - Er staat geen inloglink in en er zitten geen plaatjes of trackers in.
 - **Ook als Meldingen versturen uit staat.** Zo kun je iedereen uitnodigen voordat herinneringen en meldingen aan gaan.
 - **Mislukt het versturen,** dan probeert Planbord het elk uur opnieuw. Elke uitnodiging staat onder Beheer → Mails.

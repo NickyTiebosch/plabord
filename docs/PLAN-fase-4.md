@@ -21,6 +21,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V34 | Aanvulling: Nog te regelen toont bovenaan een overzicht per week, en de gaten staan per week. Zie §13. |
 | V35 | Aanvulling: de agenda koppelen op Android. Op de agendapagina, in de uitleg en in de PDF staan eigen stappen voor Android, en op een Android-telefoon is Kopieer link de knop. Zie §14. |
 | V36 | Aanvulling: inloggen bij te veel codes. Een duidelijke melding met de wachttijd, de code die al onderweg is meteen invullen, en een knop Ik heb al een code. Op Android staat overal: Chrome, niet Samsung Internet. Zie §15. |
+| V37 | Aanvulling: de uitnodiging legt ook uit hoe je Planbord op je beginscherm zet (iPhone en Android) en vraagt om de meldingen aan te zetten. Zie §16. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -431,3 +432,19 @@ Een collega kreeg bij het inloggen de melding "Te veel pogingen". De eigenaar da
 **Verder**
 - Geen nieuwe gegevens, geen migratie.
 - Advies in de README: zet in Supabase het aantal mails per uur op bijvoorbeeld 100 (Authentication → Rate Limits). Eerder stond daar 60.
+
+---
+
+## 16. Aanvulling: de uitnodiging met beginscherm en meldingen (V37)
+De eigenaar: "wellicht goed om bij de mail die we gaan versturen ook vermelden dat ze niet moeten vergeten de meldingen aan te zetten en een instructie hoe ze de app op hun telefoon zetten."
+
+**De stappen in de uitnodiging**
+1. Open Planbord op je telefoon: op een iPhone in Safari, op Android in Chrome (niet in Samsung Internet).
+2. Zet Planbord op je beginscherm, met de stappen voor iPhone en Android. Dat zijn dezelfde stappen als in de uitleg.
+3. Open Planbord voortaan via het icoon en log in met de code uit de mail.
+4. "Vergeet niet de meldingen aan te zetten", met waar je dat doet. In de html staat die zin vet.
+
+**Keuzes**
+- **Eerst het beginscherm, dan inloggen.** Op een iPhone onthouden Safari en de app je inlog los van elkaar, en meldingen werken alleen in de app. Zo log je maar één keer in.
+- **Alleen tekst:** geen plaatjes, geen inloglink en geen namen van anderen, zoals bij V33. Voor beelden staat de link naar de uitleg eronder.
+- Geen nieuwe gegevens, geen migratie en geen handmatige stappen. Wie al een uitnodiging kreeg, krijgt de nieuwe alleen als je hem opnieuw stuurt.
