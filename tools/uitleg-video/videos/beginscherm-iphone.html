@@ -10,7 +10,9 @@
 import { tl, buildStage, localBox, tap, highlight, caption, camera, intro, outro, ready, el, css } from '../lib/ui.js';
 import { iosHome, safari, shareSheet, addToHomeSheet } from '../lib/ios.js';
 
-const URL = 'planbord-udenhout.netlify.app';
+// Het adres van Planbord komt van render.mjs of pdf.mjs (UITLEG_ADRES).
+const URL = window.UITLEG_ADRES;
+if (!URL) throw new Error('UITLEG_ADRES ontbreekt');
 const s = buildStage({ title: 'Op je beginscherm', chip: 'iPhone' });
 const cam = camera(s);
 

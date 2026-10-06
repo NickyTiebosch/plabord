@@ -1,12 +1,15 @@
 // Legt de schermen van Planbord vast voor de uitlegvideo's: een fictieve medewerker (Sanne) op een
 // telefoon van 390 x 797 punten (iPhone zonder statusbalk), drie keer zo scherp. Bewaart ook waar de
 // knoppen staan (boxes.json), zodat de animaties precies op de goede plek tikken.
+// Nodig: UITLEG_ADRES (het adres in de agendalink) en Planbord op maandag 5 oktober 2026 (zie README).
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { chromium } from 'playwright';
 import { interCss } from './fonts.mjs';
+import { guideAddress } from './address.mjs';
 
 const BASE = 'http://localhost:3000';
+const ADDRESS = guideAddress();
 const OUT = new URL('./assets/screens/', import.meta.url).pathname;
 fs.mkdirSync(OUT, { recursive: true });
 const W = 390;
@@ -118,6 +121,10 @@ await page.waitForURL((url) => !url.pathname.startsWith('/inloggen'));
 // 2. Mijn rooster, met het blok voor meldingen
 await page.goto(`${BASE}/`);
 await capturePage('mijn');
+// De teksten in de video's horen bij maandag 5 oktober 2026 (UITLEG_DATUM, zie clock.cjs).
+if ((await page.locator('li', { hasText: 'ma 5 okt' }).count()) === 0) {
+  throw new Error('Mijn rooster toont ma 5 okt niet: start de nabootsing en Planbord met UITLEG_DATUM en clock.cjs (zie README).');
+}
 const mijn = boxes.mijn;
 for (const day of ['ma 5 okt', 'wo 7 okt', 'vr 9 okt', 'za 10 okt', 'wo 14 okt', 'ma 19 okt']) {
   mijn[day] = await box(page.locator('li', { hasText: day }));
@@ -154,6 +161,10 @@ await capturePage('agenda');
 boxes.agenda.makeLink = await box(page.getByRole('button', { name: 'Link maken', exact: true }));
 await page.getByRole('button', { name: 'Link maken', exact: true }).first().click();
 await page.getByRole('link', { name: 'Toevoegen aan agenda' }).first().waitFor();
+const link = await page.getByText(/\/feed\/\S+\.ics/).first().innerText();
+if (!link.startsWith(`https://${ADDRESS}/feed/`)) {
+  throw new Error(`De agendalink is ${link}, niet op ${ADDRESS}: start Planbord met SITE_URL=https://${ADDRESS}.`);
+}
 await capturePage('agenda-link');
 boxes['agenda-link'].add = await box(page.getByRole('link', { name: 'Toevoegen aan agenda' }));
 

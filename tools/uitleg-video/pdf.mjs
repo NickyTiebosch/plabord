@@ -1,20 +1,19 @@
 // Maakt de PDF-gids (A4) met de teksten van de uitlegpagina, stilstaande beelden uit de video's en
 // een QR-code naar /uitleg. Draai eerst de video's (render.mjs); dit script gebruikt dezelfde
 // composities om beelden te maken.
-//   node pdf.mjs            → out/planbord-uitleg.pdf
+//   UITLEG_ADRES=<adres> node pdf.mjs   → out/planbord-uitleg.pdf
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import QRCode from 'qrcode';
 import { chromium } from 'playwright';
+import { guideAddress } from './address.mjs';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
-// Het adres van Planbord, zonder https://, zoals op de pagina /uitleg (SITE_URL). Verplicht, zodat er
-// nooit een oud adres in de PDF en de QR-code komt.
-const ADDRESS = process.env.UITLEG_ADRES?.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-if (!ADDRESS) throw new Error('Zet UITLEG_ADRES op het adres van Planbord, bijvoorbeeld UITLEG_ADRES=planbord-ten.vercel.app node pdf.mjs');
+// Het adres van Planbord, zoals op de pagina /uitleg (SITE_URL): in de tekst, de QR-code en de beelden.
+const ADDRESS = guideAddress();
 const OUT = path.join(ROOT, 'out');
 // De teksten komen uit src/lib/guide/topics.ts, dezelfde als op de pagina /uitleg.
 const { GUIDE_QUESTIONS, guideTopics } = await import('../../src/lib/guide/topics.ts');
@@ -50,6 +49,7 @@ const browser = await chromium.launch();
 
 // 1. Stilstaande beelden: een beeld uit de video, verkleind tot 480 punten breed.
 const stillPage = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2 });
+await stillPage.addInitScript((address) => { window.UITLEG_ADRES = address; }, ADDRESS);
 for (const [video, times] of Object.entries(SHOTS)) {
   await stillPage.goto(`http://127.0.0.1:${port}/videos/${video}.html`);
   await stillPage.waitForFunction(() => window.ready === true, null, { timeout: 30000 });
