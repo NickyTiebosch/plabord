@@ -16,6 +16,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V29 | Een VAPID-sleutelpaar, dat de eigenaar één keer maakt en in Netlify zet. De herinneringen via push vallen onder V17. |
 | V30 | Aanvulling na de oplevering: een uitleg voor collega's met korte video's, op een pagina `/uitleg` zonder inloggen, plus een PDF. Zie §10. |
 | V31 | Aanvulling: Planbord sneller. Een laadscherm, minder wachten op de database en de server overdag warm houden. Een snellere serverregio is een keuze voor de eigenaar. Zie §11. |
+| V32 | Aanvulling: overstap van Netlify naar Vercel, in het betaalde team van 22labs, met de server in Frankfurt. Zie §12. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -302,3 +303,40 @@ Met de database vlakbij (zo'n 3 ms per vraag, zoals bij een server in Frankfurt)
 - **Een collega op een beheerpagina** ziet heel even het laadscherm en komt dan op Mijn rooster. Door het laadscherm is de pagina al onderweg; de omleiding gebeurt daarom in de browser in plaats van op de server. Er gaan geen beheergegevens mee. Dat is getest: geen namen, geen e-mailadressen.
 - **Warm houden** gebeurt 216 keer per dag, zo'n 6.500 keer per maand. Elke keer zijn dat twee korte aanroepen bij Netlify (de taak en de app), van een paar milliseconden.
 - **De nagebootste Supabase** (`tools/uitleg-video/mock`) kan nu ook een gekoppelde rij meesturen, zoals "het account met de medewerker erbij". Met `MOCK_DELAY_MS` en `MOCK_LOG` meet je zelf hoeveel vragen een pagina doet en hoe lang dat duurt.
+
+---
+
+## 12. Aanvulling: overstap naar Vercel (V32)
+De eigenaar heeft via 22labs al een betaald abonnement bij Vercel. In de opdracht stond "niet op Vercel", omdat het gratis plan daar alleen voor niet-commercieel gebruik is. Met het betaalde team geldt dat niet meer. Akkoord van de eigenaar: "Ja overstappen, nog niemand gebruikt hem, domein volgt later."
+
+**Waarom**
+- **De server staat in Frankfurt**, naast de database, zonder extra kosten. Dat is de grootste stap uit §11: lokaal nagebootst gaat een pagina van zo'n 0,35 naar 0,05 tot 0,1 seconde.
+- **Nu is het goede moment.** Nog niemand gebruikt de app, dus niemand hoeft iets opnieuw in te stellen.
+
+**Wat er verandert**
+- **`vercel.json`** zet:
+  - de regio op `fra1` (Frankfurt);
+  - het bouwen zonder telemetrie van Next.js;
+  - de geplande taken via Vercel Cron:
+    - elk uur `/taken/herinneringen`. Vercel roept die aan met GET en stuurt `CRON_SECRET` mee als Bearer-token. De route accepteert daarom ook GET; met POST start je hem nog steeds met de hand;
+    - overdag elke 5 minuten `/taken/wakker` (V31). Op Vercel is dat misschien minder nodig, maar het kost vrijwel niets.
+- **Weg:** `netlify.toml` en `netlify/functions/`.
+- **`middleware.ts` heet nu `proxy.ts`**, zoals Next.js 16 wil. Op Netlify kon dat niet (§16 van het plan van fase 1).
+- **Node 22 staat vast** in `package.json` (`22.x`). Anders kiest Vercel vanzelf de nieuwste versie.
+- **Teksten in de app** die naar Netlify verwezen (sleutels, testmail en de inlogpagina zonder Supabase) noemen nu Vercel.
+- **Een test controleert `vercel.json`:** de regio, de geplande taken, dat elke taak een route met GET heeft, en dat de taken buiten de proxy blijven.
+
+**Keuzes**
+- **Geen meetdiensten.** Geen Vercel Analytics en geen Speed Insights; zoals altijd geen trackers. De Vercel Toolbar op previews zet de eigenaar uit; onze beveiligingsregels (CSP) blokkeren hem toch.
+- **Eén database.** Previews en productie delen nog steeds één database, net als bij Netlify.
+- **Een tijdelijk adres.** Het adres eindigt voorlopig op `vercel.app`. Komt het eigen domein, dan veranderen alleen `SITE_URL`, de Site URL in Supabase en het adres in de uitleg.
+- **De uitleg.** De PDF krijgt het nieuwe adres. De video's tonen in een paar beelden nog het oude Netlify-adres (in de adresbalk en de agendalink). Die maken we opnieuw zodra het eigen domein er is, zodat dat maar één keer hoeft. De stappen op de pagina `/uitleg` tonen altijd het goede adres (`SITE_URL`).
+
+**Gevolgen**
+- **Opzetten.** De eigenaar maakt het project aan in Vercel en zet de omgevingsvariabelen over. De stappen staan in de pull request en in de README (stap 4).
+- **Netlify opruimen.** Daarna verwijdert de eigenaar de site bij Netlify. Na de merge draaien daar al geen geplande taken meer, dus dubbele herinneringen komen er niet.
+- **De eigen telefoon:**
+  - zet eerst in de oude app de meldingen uit;
+  - haal het oude icoon weg;
+  - zet de nieuwe app op het beginscherm;
+  - log opnieuw in en zet de meldingen weer aan.

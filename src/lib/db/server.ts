@@ -20,7 +20,7 @@ export async function createClient() {
         try {
           for (const { name, value, options } of cookiesToSet) cookieStore.set(name, value, options);
         } catch {
-          // In een Server Component kan dit niet. De middleware ververst de sessie bij elk verzoek.
+          // In een Server Component kan dit niet. De proxy ververst de sessie bij elk verzoek.
         }
       },
     },

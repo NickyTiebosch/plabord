@@ -11,7 +11,10 @@ import { chromium } from 'playwright';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
-const ADDRESS = process.env.UITLEG_ADRES ?? 'planbord-udenhout.netlify.app';
+// Het adres van Planbord, zonder https://, zoals op de pagina /uitleg (SITE_URL). Verplicht, zodat er
+// nooit een oud adres in de PDF en de QR-code komt.
+const ADDRESS = process.env.UITLEG_ADRES?.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+if (!ADDRESS) throw new Error('Zet UITLEG_ADRES op het adres van Planbord, bijvoorbeeld UITLEG_ADRES=planbord-ten.vercel.app node pdf.mjs');
 const OUT = path.join(ROOT, 'out');
 // De teksten komen uit src/lib/guide/topics.ts, dezelfde als op de pagina /uitleg.
 const { GUIDE_QUESTIONS, guideTopics } = await import('../../src/lib/guide/topics.ts');

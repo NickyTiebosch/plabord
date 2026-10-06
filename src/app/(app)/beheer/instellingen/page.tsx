@@ -95,7 +95,7 @@ export default async function SettingsPage() {
             ) : (
               <div className="mt-1 space-y-2">
                 <p className="text-sm text-slate-600">
-                  Push is nog niet ingesteld. Maak hier eenmalig de sleutels, zet ze in Netlify en start een nieuwe deploy.
+                  Push is nog niet ingesteld. Maak hier eenmalig de sleutels, zet ze in Vercel en start een nieuwe deploy.
                 </p>
                 <VapidGenerator subject={`mailto:${email ?? 'jij@bedrijf.nl'}`} />
               </div>

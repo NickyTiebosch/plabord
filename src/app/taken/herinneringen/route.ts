@@ -17,11 +17,14 @@ function authorized(request: Request): boolean {
 }
 
 /**
- * De geplande taak voor mails (fase 3), elk uur aangeroepen door netlify/functions/herinneringen.mts:
- * mislukte mails opnieuw proberen, om 16:00 de herinneringen voor morgen (V15), en de wachtrij
- * opruimen. Geen sessie: daarom met de secret key (besluit V17). Het antwoord bevat alleen aantallen.
+ * De geplande taak voor mails (fase 3): mislukte mails opnieuw proberen, om 16:00 de herinneringen
+ * voor morgen (V15), en de wachtrij opruimen. Geen sessie: daarom met de secret key (besluit V17).
+ * Het antwoord bevat alleen aantallen.
+ *
+ * Vercel Cron roept dit elk uur aan (vercel.json, besluit V32): met GET, en met CRON_SECRET als
+ * Bearer-token. Met de hand starten kan ook met POST.
  */
-export async function POST(request: Request) {
+async function runJob(request: Request) {
   if (!authorized(request)) return new Response('Niet toegestaan', { status: 401, headers: HEADERS });
   try {
     const result = await runMailJob(createAdminClient(), { now: new Date(), appUrl: `${await siteBaseUrl()}/` });
@@ -31,3 +34,6 @@ export async function POST(request: Request) {
     return new Response('Mislukt', { status: 500, headers: HEADERS });
   }
 }
+
+export const GET = runJob;
+export const POST = runJob;

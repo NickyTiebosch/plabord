@@ -16,14 +16,15 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - Auth met een e-mailcode (OTP);
   - Postgres met RLS;
   - clients via `@supabase/ssr` en `@supabase/supabase-js`.
-- Hosting op Netlify, met deploy previews per pull request. Nooit op Vercel.
+- Hosting op Vercel (team van 22labs, betaald), met previews per pull request (besluit V32). De server draait in Frankfurt (`fra1`), naast de database. De instellingen staan in `vercel.json`.
 - Tests met Vitest. Databasetests draaien op PGlite met een nagebootst `auth`-schema.
 - Excel: `read-excel-file` voor de import en `write-excel-file` voor het sjabloon en de export, allebei actief onderhouden.
   - Niet `exceljs`: sinds 2023 geen release meer en er staat een audit-waarschuwing open.
   - Niet `xlsx` van npm: die versie is verouderd.
 - Mail (fase 3): `nodemailer` via SMTP, met de Google Workspace-mailbox van de eigenaar (besluit V16). Niet Resend: dat vraagt DNS-records.
-- Geplande taak (fase 3): een Netlify scheduled function in `netlify/functions/`. Die roept elk uur een beveiligde route in de app aan, met `CRON_SECRET`. Zo'n taak draait alleen op de gepubliceerde site, niet op een preview.
-  - Sinds besluit V31 ook `wakker-houden.mts`: overdag elke 5 minuten een verzoek aan `/taken/wakker`, zodat de server niet in slaap valt. Die route doet niets en raakt de database niet, dus geen geheim.
+- Geplande taken: Vercel Cron, in `vercel.json` (besluit V32). Ze draaien alleen op de gepubliceerde site, niet op een preview.
+  - Elk uur `/taken/herinneringen` (fase 3). Vercel roept die aan met GET en stuurt `CRON_SECRET` mee als Bearer-token.
+  - Overdag elke 5 minuten `/taken/wakker` (besluit V31), zodat de server niet in slaap valt. Die route doet niets en raakt de database niet, dus geen geheim.
 - Pushmeldingen (fase 4): web push volgens RFC 8030, 8291 en 8292, zelf gebouwd met `node:crypto`. Niet het pakket `web-push`: sinds januari 2024 geen release meer.
   - Sleutels: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (geheim) en `VAPID_SUBJECT`.
   - De service worker `public/sw.js` toont alleen meldingen (besluit V23).
@@ -55,7 +56,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Een pagina laadt haar gegevens met `requireViewerWith` of `requireAdminWith` (besluit V31): tegelijk met de controle wie er kijkt, niet erna. Hebben de gegevens de kijker nodig, dan eerst `requireViewer()`.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
 - Geen AI of taalmodel in de roosterlogica.
-- Geen trackers, analytics, externe fonts of scripts van derden.
+- Geen trackers, analytics, externe fonts of scripts van derden. Ook geen Vercel Analytics of Speed Insights.
 - Laat geen enkele pagina indexeren: noindex in de metadata, een `X-Robots-Tag`-header en een `robots.txt` die alles blokkeert.
 - De uitleg voor collega's (`/uitleg`, besluit V30) is de enige pagina zonder inloggen naast `/inloggen`. Ze toont geen gegevens uit de database.
   - De teksten staan in `src/lib/guide/topics.ts`, de video's en de PDF in `public/uitleg`.
@@ -114,7 +115,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
   - constraints en de seed;
   - dat de setup-bundel twee keer achter elkaar kan draaien.
 - Fix je een bug, schrijf dan eerst een test die faalt.
-- Schermen worden hier niet end-to-end getest; de eigenaar test via de Netlify-preview. Houd pagina's daarom dun en zet de logica in geteste functies.
+- Schermen worden hier niet end-to-end getest; de eigenaar test via de preview van Vercel. Houd pagina's daarom dun en zet de logica in geteste functies.
 
 ## Niet doen
 - Geen verlofsaldo's, ziekteverzuim, urenregistratie of salaris.
@@ -124,4 +125,3 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Geen offline-modus, en geen analytics of tracking.
   - Een service worker alleen voor pushmeldingen (besluit V23): geen cache en geen `fetch`-handler.
 - Geen magic links. Inloggen gaat alleen met de 6-cijferige code, met `shouldCreateUser: false`.
-- Niet deployen naar Vercel.

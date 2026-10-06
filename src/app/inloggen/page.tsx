@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <LoginForm next={next} />
         ) : (
           <Notice tone="error">
-            De app is nog niet gekoppeld aan Supabase. Zet de omgevingsvariabelen uit .env.example in Netlify en deploy
+            De app is nog niet gekoppeld aan Supabase. Zet de omgevingsvariabelen uit .env.example in Vercel en deploy
             opnieuw.
           </Notice>
         )}

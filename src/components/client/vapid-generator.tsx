@@ -6,7 +6,7 @@ import { CopyButton } from './form-controls';
 
 /**
  * De sleutels voor pushmeldingen maken (fase 4, V29). Je eigen browser maakt het sleutelpaar; het
- * gaat niet naar de server en wordt nergens bewaard. Je kopieert het naar Netlify.
+ * gaat niet naar de server en wordt nergens bewaard. Je kopieert het naar Vercel.
  */
 
 function toBase64url(bytes: Uint8Array): string {
@@ -35,7 +35,7 @@ export function VapidGenerator({ subject }: { subject: string }) {
   const rows = keys
     ? [
         { name: 'VAPID_PUBLIC_KEY', value: keys.publicKey, note: null },
-        { name: 'VAPID_PRIVATE_KEY', value: keys.privateKey, note: 'Geheim: vink in Netlify Contains secret values aan.' },
+        { name: 'VAPID_PRIVATE_KEY', value: keys.privateKey, note: 'Geheim: zet in Vercel Sensitive aan.' },
         { name: 'VAPID_SUBJECT', value: subject, note: null },
       ]
     : [];
@@ -49,7 +49,7 @@ export function VapidGenerator({ subject }: { subject: string }) {
       {keys ? (
         <div className="space-y-3">
           <p className="text-sm text-slate-700">
-            Zet deze drie waarden in Netlify (Environment variables) en start een nieuwe deploy. Ze worden nergens bewaard:
+            Zet deze drie waarden in Vercel (Settings → Environment Variables) en start een nieuwe deploy. Ze worden nergens bewaard:
             laad je deze pagina opnieuw, dan zijn ze weg. Deel de privésleutel nooit via chat of mail.
           </p>
           {rows.map((row) => (
