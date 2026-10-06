@@ -218,4 +218,43 @@ describe('fase 4: pushmeldingen', () => {
       });
     });
   });
+
+  describe('wie er is ingelogd (V38)', () => {
+    type SignIn = { employee_id: string; last_sign_in_at: string | null };
+    const signIns = async (asPerson: TestPerson, employeeId?: string) => {
+      const result = await withSession(db, session(asPerson), () =>
+        employeeId
+          ? db.query<{ r: SignIn[] }>('select public.employee_sign_ins($1) as r', [employeeId])
+          : db.query<{ r: SignIn[] }>('select public.employee_sign_ins() as r'),
+      );
+      return result.rows[0]?.r ?? [];
+    };
+
+    it('laat een beheerder zien wanneer iemand voor het laatst inlogde, zonder e-mailadressen', async () => {
+      await db.query(`update auth.users set last_sign_in_at = '2026-10-06T12:05:00Z' where id = $1`, [bas.userId]);
+      const rows = await signIns(admin);
+      expect(new Date(rows.find((row) => row.employee_id === bas.employeeId)?.last_sign_in_at ?? '').toISOString()).toBe(
+        '2026-10-06T12:05:00.000Z',
+      );
+      expect(rows.find((row) => row.employee_id === eva.employeeId)?.last_sign_in_at).toBeNull();
+      expect(rows.map((row) => Object.keys(row).sort().join())).toContain('employee_id,last_sign_in_at');
+      expect(JSON.stringify(rows)).not.toContain('@');
+      expect((await signIns(admin, bas.employeeId)).map((row) => row.employee_id)).toEqual([bas.employeeId]);
+    });
+
+    it('slaat medewerkers zonder inlogaccount over', async () => {
+      const zonder = await createPerson(db, { name: 'Zonder', withUser: false });
+      expect((await signIns(admin)).map((row) => row.employee_id)).not.toContain(zonder.employeeId);
+      expect(await signIns(admin, zonder.employeeId)).toEqual([]);
+    });
+
+    it('weigert een gewone medewerker en iemand die niet is ingelogd', async () => {
+      await withSession(db, session(bas), async () => {
+        await expectError(db.query('select public.employee_sign_ins()'), /Alleen een beheerder/);
+      });
+      await withSession(db, { role: 'anon' }, async () => {
+        await expectError(db.query('select public.employee_sign_ins()'), /permission denied/);
+      });
+    });
+  });
 });

@@ -25,7 +25,7 @@ alter default privileges in schema public grant all on sequences to anon, authen
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;`}
 create schema auth;
 grant usage on schema auth to anon, authenticated, service_role;
-create table auth.users (id uuid primary key, email text unique, created_at timestamptz not null default now(), banned_until timestamptz);
+create table auth.users (id uuid primary key, email text unique, created_at timestamptz not null default now(), banned_until timestamptz, last_sign_in_at timestamptz);
 create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
 create function auth.uid() returns uuid language sql stable as $$ select nullif(auth.jwt() ->> 'sub', '')::uuid $$;
 grant execute on function auth.jwt() to anon, authenticated, service_role;
@@ -119,6 +119,8 @@ async function handleAuth(req, res, url) {
     const user = await findUserByEmail(body.email ?? '');
     if (!user || body.token !== OTP_CODE) return authError(res, 403, 'otp_expired', 'Token has expired or is invalid');
     if (user.banned_until && new Date(user.banned_until) > new Date()) return authError(res, 403, 'user_banned', 'User is banned');
+    // Zoals Supabase: het moment van inloggen (V38).
+    await db.query('update auth.users set last_sign_in_at = now() where id = $1', [user.id]);
     return send(res, 200, session(user));
   }
   if (path === '/token' && req.method === 'POST') {

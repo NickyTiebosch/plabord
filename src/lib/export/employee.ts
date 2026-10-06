@@ -22,6 +22,8 @@ import {
 export interface EmployeeData {
   employee: ExportEmployee;
   hasAccount: boolean;
+  /** Wanneer die voor het laatst inlogde (V38, uit Supabase Auth); `null` = nog nooit, `undefined` = onbekend. */
+  lastSignInAt?: string | null;
   groups: readonly Group[];
   recurringShifts: readonly RecurringShift[];
   absences: readonly Absence[];
@@ -62,6 +64,16 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
         ['Beheerder', employee.isAdmin ? 'ja' : 'nee'],
         ['Actief', employee.isActive ? 'ja' : 'nee'],
         ['Inlogaccount', data.hasAccount ? 'ja' : 'nee'],
+        [
+          'Laatst ingelogd',
+          !data.hasAccount
+            ? ''
+            : data.lastSignInAt
+              ? formatExportMoment(data.lastSignInAt)
+              : data.lastSignInAt === null
+                ? 'nog niet'
+                : 'onbekend',
+        ],
       ],
     },
     {

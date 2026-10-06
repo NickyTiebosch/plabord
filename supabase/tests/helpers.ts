@@ -33,7 +33,8 @@ grant usage on schema auth to anon, authenticated, service_role;
 create table auth.users (
   id uuid primary key,
   email text unique,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  last_sign_in_at timestamptz
 );
 create function auth.jwt() returns jsonb language sql stable as $$
   select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb

@@ -356,6 +356,7 @@ export interface Database {
       };
       apply_substitution_review: { Args: { changes: Json }; Returns: number };
       delete_employee: { Args: { p_employee_id: string }; Returns: Json };
+      employee_sign_ins: { Args: { p_employee_id?: string }; Returns: Json };
       log_export: { Args: { p_kind: string; p_employee_id: string | null }; Returns: undefined };
       register_push_subscription: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string }; Returns: undefined };
     };

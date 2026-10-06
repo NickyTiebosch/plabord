@@ -104,21 +104,32 @@ export function guideUrl(appUrl: string): string {
   return new URL('uitleg', appUrl).toString();
 }
 
+/** Waar je Planbord opent. Op Android werken niet alle stappen in Samsung Internet (besluit V36). */
+const INVITE_BROWSERS = 'Op een iPhone in Safari, op Android in Chrome (niet in Samsung Internet).';
+const INVITE_HOME_SCREEN = 'Zet Planbord op je beginscherm. Dat hoeft maar één keer.';
+/** Dezelfde stappen als in de uitleg (src/lib/guide/topics.ts). */
+const INVITE_HOME_SCREEN_DEVICES = [
+  {
+    device: 'iPhone',
+    step: 'tik op de deelknop (het vierkantje met het pijltje; op nieuwere iPhones zit hij achter •••). Kies Zet op beginscherm, laat Open als webapp aan staan en tik op Voeg toe.',
+  },
+  { device: 'Android', step: 'tik rechtsboven op ⋮, kies App installeren (of Toevoegen aan startscherm) en tik op Installeren.' },
+] as const;
+/** Via het icoon: op een iPhone onthouden Safari en de app je inlog los van elkaar, en werken meldingen alleen in de app. */
+const INVITE_LOG_IN =
+  'Open Planbord voortaan via het icoon en log in met je werkmail: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers. Vul de code in. Een wachtwoord is niet nodig.';
+const INVITE_NOTIFICATIONS_LEAD = 'Vergeet niet de meldingen aan te zetten.';
+const INVITE_NOTIFICATIONS =
+  'Scrol op Mijn rooster helemaal naar beneden, tik op Meldingen aanzetten en kies Sta toe (iPhone) of Toestaan (Android). Dan krijg je een melding als je rooster verandert.';
+
 /**
  * De uitnodiging (V33): hoe je begint, met een gewone link naar de app en de uitleg. Bewust geen
- * inloglink: mailscanners openen die en maken hem dan ongeldig. Inloggen gaat met de code.
+ * inloglink: mailscanners openen die en maken hem dan ongeldig. Inloggen gaat met de code. Sinds
+ * V37 ook hoe je Planbord op je beginscherm zet, en dat je de meldingen aanzet.
  */
 function composeInvite(name: string, appUrl: string | null): MailContent {
   const { subject, headline } = headings('invite', []);
   const greeting = `Hoi ${firstName(name)},`;
-  // Op Android werken niet alle stappen in Samsung Internet (besluit V36).
-  const where = 'op je telefoon (op Android in Chrome, niet in Samsung Internet)';
-  const steps = [
-    appUrl ? `Open Planbord ${where}: ${appUrl}` : `Open Planbord ${where}.`,
-    'Vul je werkmail in: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers.',
-    'Vul de code in. Een wachtwoord is niet nodig.',
-    'Zet Planbord op je beginscherm en zet de meldingen aan.',
-  ];
   const guide = appUrl ? guideUrl(appUrl) : null;
 
   const text = [
@@ -127,16 +138,25 @@ function composeInvite(name: string, appUrl: string | null): MailContent {
     headline,
     '',
     'Zo begin je:',
-    ...steps.map((step, index) => `${index + 1}. ${step}`),
+    appUrl ? `1. Open Planbord op je telefoon: ${appUrl}` : '1. Open Planbord op je telefoon.',
+    `   ${INVITE_BROWSERS}`,
+    `2. ${INVITE_HOME_SCREEN}`,
+    ...INVITE_HOME_SCREEN_DEVICES.map(({ device, step }) => `   - ${device}: ${step}`),
+    `3. ${INVITE_LOG_IN}`,
+    `4. ${INVITE_NOTIFICATIONS_LEAD} ${INVITE_NOTIFICATIONS}`,
     ...(guide ? ['', `Korte video's van elke stap: ${guide}`] : []),
     '',
     FOOTER,
     '',
   ].join('\n');
 
+  const open = appUrl ? `Open <a href="${escapeHtml(appUrl)}">Planbord</a> op je telefoon.` : 'Open Planbord op je telefoon.';
+  const devices = INVITE_HOME_SCREEN_DEVICES.map(({ device, step }) => `<li><strong>${device}:</strong> ${escapeHtml(step)}</li>`);
   const htmlSteps = [
-    appUrl ? `Open <a href="${escapeHtml(appUrl)}">Planbord</a> ${escapeHtml(where)}.` : escapeHtml(`Open Planbord ${where}.`),
-    ...steps.slice(1).map((step) => escapeHtml(step)),
+    `${open} ${escapeHtml(INVITE_BROWSERS)}`,
+    `${escapeHtml(INVITE_HOME_SCREEN)}<ul style="margin:4px 0 0;padding-left:20px">${devices.join('')}</ul>`,
+    escapeHtml(INVITE_LOG_IN),
+    `<strong>${escapeHtml(INVITE_NOTIFICATIONS_LEAD)}</strong> ${escapeHtml(INVITE_NOTIFICATIONS)}`,
   ];
   const html = [
     '<!doctype html><html lang="nl"><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#0f172a">',
