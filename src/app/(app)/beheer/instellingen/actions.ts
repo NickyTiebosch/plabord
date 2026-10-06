@@ -85,7 +85,7 @@ export async function sendTestMailAction(): Promise<ActionState> {
   if (result === 'geen-adres') return { error: 'Je hebt geen werkmail in Planbord, dus de testmail kan nergens heen.' };
   return {
     error:
-      'De testmail kon niet worden verstuurd. Controleer in Netlify SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD en MAIL_FROM (zie de README).',
+      'De testmail kon niet worden verstuurd. Controleer in Vercel SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD en MAIL_FROM (zie de README).',
   };
 }
 
@@ -105,8 +105,8 @@ export async function sendTestPushAction(): Promise<ActionState> {
     case 'geen-toestel':
       return { error: 'Je hebt op geen enkel toestel meldingen aan. Zet ze aan onderaan Mijn rooster, op je telefoon.' };
     case 'niet-ingesteld':
-      return { error: 'Push is nog niet ingesteld: zet eerst de sleutels in Netlify (zie hieronder).' };
+      return { error: 'Push is nog niet ingesteld: zet eerst de sleutels in Vercel (zie hieronder).' };
     case 'mislukt':
-      return { error: 'De testmelding kon niet worden verstuurd. Controleer de sleutels in Netlify en probeer het opnieuw.' };
+      return { error: 'De testmelding kon niet worden verstuurd. Controleer de sleutels in Vercel en probeer het opnieuw.' };
   }
 }
