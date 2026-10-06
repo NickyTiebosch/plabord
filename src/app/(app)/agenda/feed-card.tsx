@@ -14,7 +14,11 @@ export interface FeedCardProps {
   active: { id: string; since: string } | null;
 }
 
-export function FeedCard({ kind, groupId, title, description, active }: FeedCardProps) {
+/**
+ * Op Android (`android`) werkt Toevoegen aan agenda niet. Daar is Kopieer link de knop, met een
+ * verwijzing naar de stappen voor Android op de pagina (besluit V35).
+ */
+export function FeedCard({ kind, groupId, title, description, active, android }: FeedCardProps & { android: boolean }) {
   const [state, formAction] = useActionState<FeedLinkState, FormData>(createFeedLink, {});
 
   return (
@@ -35,12 +39,23 @@ export function FeedCard({ kind, groupId, title, description, active }: FeedCard
             Je nieuwe link. <strong>Je ziet hem maar één keer:</strong> voeg hem nu toe aan je agenda of bewaar hem.
           </p>
           <div className="flex flex-wrap gap-2">
-            <a href={state.webcal} className={buttonClass('primary')}>
-              <IconCalendar />
-              Toevoegen aan agenda
-            </a>
-            <CopyButton text={state.https} />
+            {android ? null : (
+              <a href={state.webcal} className={buttonClass('primary')}>
+                <IconCalendar />
+                Toevoegen aan agenda
+              </a>
+            )}
+            <CopyButton text={state.https} variant={android ? 'primary' : 'secondary'} />
           </div>
+          {android ? (
+            <p className="text-sm text-slate-800">
+              Op Android gaat dat via de website van Google Agenda. Kopieer de link en volg de{' '}
+              <a href="#android" className="font-medium text-brand-800 underline">
+                stappen voor Android
+              </a>
+              .
+            </p>
+          ) : null}
           <p className="text-xs break-all text-slate-600 select-all">{state.https}</p>
         </div>
       ) : null}
