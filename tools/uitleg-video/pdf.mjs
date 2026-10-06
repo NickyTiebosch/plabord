@@ -75,11 +75,19 @@ const blocks = topics
   .filter((topic) => topic.id !== 'welkom')
   .flatMap((topic, index) =>
     topic.videos.map((video) => {
-      const group = topic.steps.find((g) => g.device === video.device) ?? topic.steps[0];
+      // De stappen bij deze video, plus die voor een toestel zonder eigen video: bij de agenda staan
+      // de stappen voor Android als tekst naast die van de iPhone (besluit V35).
+      const own = topic.steps.filter((g) => g.device === video.device);
+      const extra = topic.steps.filter((g) => g.device && !topic.videos.some((v) => v.device === g.device));
+      const groups = own.length ? [...own, ...extra] : [topic.steps[0]];
+      const text =
+        groups.length > 1
+          ? `<div class="cols">${groups.map((g) => `<div><h3>${g.device}</h3>${steps(g.steps)}</div>`).join('')}</div>`
+          : steps(groups[0].steps);
       const device = video.device && topic.videos.length > 1 ? `<span class="chip">${video.device}</span>` : '';
       // Elk blok staat op zichzelf: lees je alleen het blok van je eigen telefoon, dan mis je niets.
       const notes = topic.notes.length ? `<ul class="notes">${topic.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : '';
-      return { number: index + 1, title: topic.title, device, video: video.file, steps: steps(group.steps), notes };
+      return { number: index + 1, title: topic.title, device, video: video.file, steps: text, notes };
     }),
   );
 const sections = blocks
@@ -119,6 +127,8 @@ h2 .n { display: inline-grid; place-items: center; width: 7mm; height: 7mm; bord
 .stills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; width: 85%; margin: 0 auto; }
 .stills img { width: 100%; border-radius: 2.5mm; border: .3mm solid #e2e8f0; }
 .text { margin-top: 3mm; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+h3 { font-size: 10.5pt; font-weight: 800; color: #0f766e; margin-bottom: 1mm; }
 ol { padding-left: 5mm; }
 ol li { margin: .6mm 0; }
 .notes { list-style: none; margin-top: 2mm; padding: 2mm 3mm; border-radius: 2mm; background: #f1f5f9; color: #475569; font-size: 9pt; }
