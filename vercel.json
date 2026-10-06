@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["fra1"],
+  "buildCommand": "NEXT_TELEMETRY_DISABLED=1 npm run build",
+  "crons": [
+    { "path": "/taken/herinneringen", "schedule": "0 * * * *" },
+    { "path": "/taken/wakker", "schedule": "*/5 4-21 * * *" }
+  ]
+}
