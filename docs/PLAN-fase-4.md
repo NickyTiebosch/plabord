@@ -23,6 +23,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V36 | Aanvulling: inloggen bij te veel codes. Een duidelijke melding met de wachttijd, de code die al onderweg is meteen invullen, en een knop Ik heb al een code. Op Android staat overal: Chrome, niet Samsung Internet. Zie §15. |
 | V37 | Aanvulling: de uitnodiging legt ook uit hoe je Planbord op je beginscherm zet (iPhone en Android) en vraagt om de meldingen aan te zetten. Zie §16. |
 | V38 | Aanvulling: beheerders zien wie er is ingelogd (met datum en tijd van de laatste keer) en wie meldingen aan heeft. Planbord slaat daar niets extra voor op. Zie §17. |
+| V39 | Aanvulling: een mislukte uitnodiging heet ook zo. Iedereen uitnodigen neemt die collega's opnieuw mee, zonder dat iemand hem twee keer krijgt. De testmail zegt wat er mis is. Zie §18. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -374,6 +375,7 @@ De eigenaar vroeg: "Maak die knop Uitnodiging sturen maar. En kan ik ook in een 
   - Bij Iedereen uitnodigen gaan de mails één voor één. Duurt dat te lang, dan staan de rest al klaar in de wachtrij en verstuurt de geplande taak ze.
 - **De stand komt uit de wachtrij.** Er komt geen nieuw gegeven over medewerkers bij.
   - Uitgenodigd is wie een uitnodiging heeft die verstuurd is, klaarstaat of nog opnieuw geprobeerd wordt.
+  - Sinds V39 telt een mislukte uitnodiging niet meer als uitgenodigd; zie §18.
   - Na 90 dagen ruimt Planbord de wachtrij op; daarna telt iemand weer als niet uitgenodigd. Iedereen uitnodigen is vooral voor de start; een nieuwe collega nodig je los uit.
 - **Rechten:** alleen beheerders, in de server action én via de bestaande RLS van de wachtrij. De mail gaat met de sessie van de beheerder. Alleen het opnieuw proberen gebeurt in de geplande taak, met de secret key, zoals bij de andere mails (V17).
 - **Logboek:** een uitnodiging verandert geen gegevens, dus er komt niets in het logboek. Beheer → Mails laat zien wanneer welke uitnodiging ging.
@@ -457,7 +459,7 @@ De eigenaar: "Ik wil graag ook zien of er mensen zijn ingelogd, op de telefoon h
 
 **Wat de beheerder ziet**
 - **Beheer → Medewerkers**, bovenaan: "8 van de 12 collega's met een inlogaccount zijn ingelogd. 5 hebben meldingen aan." Dat telt alleen actieve collega's met een inlogaccount.
-- **Per collega in de lijst:** *nog niet ingelogd*, of *ingelogd di 6 okt*, en dan *meldingen aan* of *meldingen uit*. Wie nog niet is ingelogd maar wel is uitgenodigd, houdt het label *uitgenodigd*. Bij inactieve collega's verandert er niets.
+- **Per collega in de lijst:** *nog niet ingelogd*, of *ingelogd di 6 okt*, en dan *meldingen aan* of *meldingen uit*. Wie nog niet is ingelogd maar wel is uitgenodigd, houdt het label *uitgenodigd*. Sinds V39 staat er *uitnodiging mislukt* als die niet aankwam (§18). Bij inactieve collega's verandert er niets.
 - **Bij een collega**, in het blok Inloggen: "Laatst ingelogd op di 6 okt om 14:05." of "Nog niet ingelogd.", in Nederlandse tijd.
 - **In de export van een medewerker** (inzageverzoek): een regel *Laatst ingelogd*.
 
@@ -473,3 +475,47 @@ De eigenaar: "Ik wil graag ook zien of er mensen zijn ingelogd, op de telefoon h
 
 **Handmatige stap**
 - Draai `supabase/setup/fase-4.sql` opnieuw; dat is veilig. Tot dan toont Planbord deze gegevens niet, en de rest werkt gewoon.
+
+---
+
+## 18. Aanvulling: een eerlijke stand van de uitnodiging, en de oorzaak bij de testmail (V39)
+De uitnodigingen kwamen niet aan, omdat de mailserver het app-wachtwoord weigerde. Planbord liet dat niet goed zien:
+- in de lijst stond *uitgenodigd*;
+- bij de collega stond "Planbord probeert het elk uur opnieuw", ook toen Planbord na drie pogingen was gestopt;
+- **Iedereen uitnodigen** sloeg deze collega's over;
+- de testmail noemde alleen alle instellingen tegelijk.
+
+De eigenaar op het voorstel om dat te verbeteren: "ja bouw maar".
+
+**De stand van de uitnodiging**
+- Per collega telt de laatste uitnodiging.
+- In de lijst met medewerkers:
+  - verstuurd of klaar om te versturen: *uitgenodigd*;
+  - mislukt: *uitnodiging mislukt*, in oranje.
+- Bij de collega, als het mislukt is:
+  - probeert Planbord het nog: "De uitnodiging is nog niet gelukt. Planbord probeert het elk uur opnieuw (nog 2 keer).";
+  - is Planbord gestopt: "De uitnodiging is niet gelukt en Planbord probeert het niet meer. Doe eerst een testmail (Beheer → Instellingen); lukt die, stuur hem dan opnieuw."
+- Planbord stopt na drie pogingen, of als de uitnodiging ouder is dan een week. Dat blijft zoals het was.
+
+**Iedereen uitnodigen**
+- Neemt nu ook wie een mislukte uitnodiging heeft, ook als Planbord het nog probeert. Na een storing hoef je dan niet per collega op **Opnieuw sturen** te drukken of op de volgende poging te wachten.
+- Het blok noemt beide groepen, bijvoorbeeld: "2 collega's kunnen inloggen maar hebben nog geen uitnodiging gehad. Bij 3 collega's is de uitnodiging mislukt."
+- Wie een uitnodiging heeft die verstuurd is of klaarstaat, krijgt geen nieuwe. Een nieuwe collega nodig je nog steeds los uit.
+
+**Niemand krijgt hem twee keer**
+- Stuur je een nieuwe uitnodiging, met Iedereen uitnodigen of met Opnieuw sturen, dan vervalt een oudere die nog openstond. Zo verstuurt de geplande taak de oude niet alsnog.
+- Beheer → Mails toont de oude als *niet verstuurd: vervangen door een nieuwe*.
+- Tot nu toe kon dat wel: wie tijdens een storing op Opnieuw sturen drukte, kreeg er later twee.
+
+**De testmail zegt wat er mis is**
+- Er ontbreekt een instelling in Vercel: de melding noemt welke, bijvoorbeeld `SMTP_PASSWORD`.
+- De mailserver weigert het inloggen: maak een nieuw app-wachtwoord en zet het bij `SMTP_PASSWORD`.
+- De mailserver is niet bereikbaar: controleer `SMTP_HOST` en `SMTP_PORT` (bij Google `smtp.gmail.com` en `465`).
+- De mailserver weigert de mail: controleer `MAIL_FROM` en je eigen werkmail in Planbord.
+- Gaat het om een instelling in Vercel, dan zegt de melding er ook bij dat je daarna een nieuwe deploy start (Redeploy). Pas dan gebruikt Planbord de nieuwe waarde.
+- In Beheer → Mails staat bij een mislukte mail voortaan ook de oorzaak, bijvoorbeeld *inloggen bij mailserver geweigerd*.
+- Nooit een adres, wachtwoord of de letterlijke melding van de mailserver: alleen het soort fout.
+
+**Geen nieuwe gegevens**
+- Geen migratie en geen handmatige stappen. De wachtrij had alles al: de stand, het aantal pogingen en een korte oorzaak.
+- Een uitnodiging verandert geen gegevens, dus er komt niets in het logboek, zoals bij V33.
