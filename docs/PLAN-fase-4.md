@@ -16,7 +16,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V29 | Een VAPID-sleutelpaar, dat de eigenaar één keer maakt en in Netlify zet. De herinneringen via push vallen onder V17. |
 | V30 | Aanvulling na de oplevering: een uitleg voor collega's met korte video's, op een pagina `/uitleg` zonder inloggen, plus een PDF. Zie §10. |
 | V31 | Aanvulling: Planbord sneller. Een laadscherm, minder wachten op de database en de server overdag warm houden. Een snellere serverregio is een keuze voor de eigenaar. Zie §11. |
-| V32 | Aanvulling: overstap van Netlify naar Vercel, in het betaalde team van 22labs, met de server in Frankfurt. Zie §12. |
+| V32 | Aanvulling: overstap van Netlify naar Vercel, in het betaalde team van 22labs, met de server in Frankfurt. Geen eigen domein: het adres is `planbord-ten.vercel.app`. Zie §12. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -329,8 +329,14 @@ De eigenaar heeft via 22labs al een betaald abonnement bij Vercel. In de opdrach
 **Keuzes**
 - **Geen meetdiensten.** Geen Vercel Analytics en geen Speed Insights; zoals altijd geen trackers. De Vercel Toolbar op previews zet de eigenaar uit; onze beveiligingsregels (CSP) blokkeren hem toch.
 - **Eén database.** Previews en productie delen nog steeds één database, net als bij Netlify.
-- **Een tijdelijk adres.** Het adres eindigt voorlopig op `vercel.app`. Komt het eigen domein, dan veranderen alleen `SITE_URL`, de Site URL in Supabase en het adres in de uitleg.
-- **De uitleg.** De PDF krijgt het nieuwe adres. De video's tonen in een paar beelden nog het oude Netlify-adres (in de adresbalk en de agendalink). Die maken we opnieuw zodra het eigen domein er is, zodat dat maar één keer hoeft. De stappen op de pagina `/uitleg` tonen altijd het goede adres (`SITE_URL`).
+- **Geen eigen domein.** Na de overstap koos de eigenaar ervoor om bij het adres van Vercel te blijven: "Blijf bij vercel.app, maak de video's opnieuw." Het adres is `https://planbord-ten.vercel.app`.
+  - Komt er later toch een eigen domein, dan veranderen alleen `SITE_URL`, de Site URL in Supabase en het adres in de uitleg (`UITLEG_ADRES`).
+  - Doe dat dan vóórdat collega's de app gebruiken. Het adres zit vast aan het icoon op het beginscherm, de meldingen en de agendalinks.
+- **De uitleg.** De video's en de PDF tonen `planbord-ten.vercel.app`.
+  - Het adres komt op één plek binnen: `UITLEG_ADRES` (`tools/uitleg-video/address.mjs`). Het geldt voor de video's, voor de PDF (tekst, QR-code en beelden) en als controle bij het vastleggen van de schermen.
+  - Eerst kreeg alleen de tekst van de PDF het nieuwe adres. De beelden in de PDF komen uit de video's en toonden nog het oude adres; dat is nu ook goed.
+  - De schermen van Planbord zijn opnieuw vastgelegd, op maandag 5 oktober 2026, de dag van de teksten in de video's (`clock.cjs`). Daardoor tonen zeven video's nu ook de link "Uitleg" in de kop en "Bekijk de uitleg" op de inlogpagina. De twee video's over meldingen zijn niet veranderd.
+  - De stappen op de pagina `/uitleg` tonen altijd het goede adres (`SITE_URL`).
 
 **Gevolgen**
 - **Opzetten.** De eigenaar maakt het project aan in Vercel en zet de omgevingsvariabelen over. De stappen staan in de pull request en in de README (stap 4).
