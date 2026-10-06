@@ -34,10 +34,11 @@
   },
   "fase-4": {
     "title": "Fase 4: pushmeldingen",
-    "note": "Draai eerst fase-1.sql, fase-2.sql en fase-3.sql. Deze bundel voegt een tabel, een kolom en functies toe; de app van fase 3 merkt er niets van.",
+    "note": "Draai eerst fase-1.sql, fase-2.sql en fase-3.sql. Deze bundel voegt een tabel, een kolom en functies toe; de app van fase 3 merkt er niets van. Sinds de uitnodiging (V33) staat de soort mail 'invite' er ook in: draai de bundel dan opnieuw.",
     "migrations": [
       "20261004000100_push_subscriptions.sql",
-      "20261004000200_push_phase4.sql"
+      "20261004000200_push_phase4.sql",
+      "20261006000100_mail_invite.sql"
     ]
   }
 }
