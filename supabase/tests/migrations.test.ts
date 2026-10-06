@@ -159,6 +159,7 @@ describe('database zonder automatische rechten', () => {
       'apply_substitution_review',
       'claim_account',
       'delete_employee',
+      'employee_sign_ins',
       'log_export',
       'move_shift',
       'register_push_subscription',
