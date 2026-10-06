@@ -79,6 +79,12 @@ function headings(kind: MailKind, dates: readonly IsoDate[]): { subject: string;
         subject: 'Planbord: testmail',
         headline: 'Dit is een testmail van Planbord. Komt hij aan, dan werkt het versturen van mails.',
       };
+    case 'invite':
+      return {
+        subject: 'Je bent uitgenodigd voor Planbord',
+        headline:
+          'Je bent uitgenodigd voor Planbord, de planning van het verhuurteam. Je ziet er je eigen diensten, het rooster van je vestiging en wie er afwezig is.',
+      };
   }
 }
 
@@ -91,7 +97,61 @@ function dayLines(day: MyScheduleDay): string[] {
 
 const FOOTER = 'Deze mail komt van Planbord, de planning van het verhuurteam.';
 
+const paragraph = (content: string) => `<p style="margin:0 0 12px">${content}</p>`;
+
+/** De pagina met de uitleg, naast het adres van de app (dat eindigt op een /). */
+export function guideUrl(appUrl: string): string {
+  return new URL('uitleg', appUrl).toString();
+}
+
+/**
+ * De uitnodiging (V33): hoe je begint, met een gewone link naar de app en de uitleg. Bewust geen
+ * inloglink: mailscanners openen die en maken hem dan ongeldig. Inloggen gaat met de code.
+ */
+function composeInvite(name: string, appUrl: string | null): MailContent {
+  const { subject, headline } = headings('invite', []);
+  const greeting = `Hoi ${firstName(name)},`;
+  const steps = [
+    appUrl ? `Open Planbord op je telefoon: ${appUrl}` : 'Open Planbord op je telefoon.',
+    'Vul je werkmail in: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers.',
+    'Vul de code in. Een wachtwoord is niet nodig.',
+    'Zet Planbord op je beginscherm en zet de meldingen aan.',
+  ];
+  const guide = appUrl ? guideUrl(appUrl) : null;
+
+  const text = [
+    greeting,
+    '',
+    headline,
+    '',
+    'Zo begin je:',
+    ...steps.map((step, index) => `${index + 1}. ${step}`),
+    ...(guide ? ['', `Korte video's van elke stap: ${guide}`] : []),
+    '',
+    FOOTER,
+    '',
+  ].join('\n');
+
+  const htmlSteps = [
+    appUrl ? `Open <a href="${escapeHtml(appUrl)}">Planbord</a> op je telefoon.` : 'Open Planbord op je telefoon.',
+    ...steps.slice(1).map((step) => escapeHtml(step)),
+  ];
+  const html = [
+    '<!doctype html><html lang="nl"><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#0f172a">',
+    paragraph(escapeHtml(greeting)),
+    paragraph(escapeHtml(headline)),
+    paragraph('Zo begin je:'),
+    `<ol style="margin:0 0 12px;padding-left:20px">${htmlSteps.map((step) => `<li>${step}</li>`).join('')}</ol>`,
+    ...(guide ? [paragraph(`<a href="${escapeHtml(guide)}">Korte video's van elke stap</a>`)] : []),
+    `<p style="margin:16px 0 0;font-size:13px;color:#64748b">${escapeHtml(FOOTER)}</p>`,
+    '</body></html>',
+  ].join('');
+
+  return { subject, text, html };
+}
+
 export function composeMail(input: ComposeInput): MailContent {
+  if (input.kind === 'invite') return composeInvite(input.name, input.appUrl);
   const dates = input.days.map((day) => day.date);
   const kind = effectiveKind(input.kind, input.days);
   const { subject, headline } = headings(kind, dates);
@@ -111,7 +171,6 @@ export function composeMail(input: ComposeInput): MailContent {
     '',
   ].join('\n');
 
-  const paragraph = (content: string) => `<p style="margin:0 0 12px">${content}</p>`;
   const html = [
     '<!doctype html><html lang="nl"><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#0f172a">',
     paragraph(escapeHtml(greeting)),

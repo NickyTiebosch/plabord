@@ -9,11 +9,13 @@ import {
 } from '../engine/__fixtures__/team';
 import { reviewNotices } from '../db/review';
 import { MAIL_KIND_LABELS, mailStatusLabel, previewReminderDate, pushLabel } from './labels';
-import { composeMail, escapeHtml, formatDateList, personalDaysFor } from './messages';
+import { inviteStatusText, inviteTargets, latestInvites } from './invites';
+import { composeMail, escapeHtml, formatDateList, guideUrl, personalDaysFor } from './messages';
 import { cancelledSubstitutionNotices, mergeNotices } from './notices';
 import { isMailOutcome, mailOutcome, NO_MAILS } from './outcome';
 import { MAX_ATTEMPTS, queueCleanupBefore, reminderDateAt, reminderTargets, shouldRetry } from './reminders';
 import { mailErrorCode, serverUnavailable } from './smtp-errors';
+import { alwaysSent } from './types';
 
 const WED = '2026-10-14';
 
@@ -346,5 +348,96 @@ describe('mails: woorden in het beheer', () => {
     // Op zaterdag: de herinneringen voor maandag gaan zondag weg.
     expect(previewReminderDate('2026-10-17')).toEqual({ date: '2026-10-19', sendDate: '2026-10-18' });
     expect(previewReminderDate('2026-10-16')).toEqual({ date: '2026-10-17', sendDate: '2026-10-16' });
+  });
+});
+
+describe('mails: de uitnodiging (V33)', () => {
+  const invite = composeMail({ kind: 'invite', name: 'Sanne de Vries', days: [], groups, appUrl: 'https://planbord.example/' });
+
+  it('legt uit hoe je begint, met een link naar de app en de uitleg', () => {
+    expect(invite.subject).toBe('Je bent uitgenodigd voor Planbord');
+    expect(invite.text).toBe(
+      [
+        'Hoi Sanne,',
+        '',
+        'Je bent uitgenodigd voor Planbord, de planning van het verhuurteam. Je ziet er je eigen diensten, het rooster van je vestiging en wie er afwezig is.',
+        '',
+        'Zo begin je:',
+        '1. Open Planbord op je telefoon: https://planbord.example/',
+        '2. Vul je werkmail in: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers.',
+        '3. Vul de code in. Een wachtwoord is niet nodig.',
+        '4. Zet Planbord op je beginscherm en zet de meldingen aan.',
+        '',
+        "Korte video's van elke stap: https://planbord.example/uitleg",
+        '',
+        'Deze mail komt van Planbord, de planning van het verhuurteam.',
+        '',
+      ].join('\n'),
+    );
+    expect(guideUrl('https://planbord-ten.vercel.app/')).toBe('https://planbord-ten.vercel.app/uitleg');
+  });
+
+  it('heeft geen inloglink, geen plaatjes en geen namen of adressen van anderen', () => {
+    const links = [...invite.html.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
+    expect(links).toEqual(['https://planbord.example/', 'https://planbord.example/uitleg']);
+    expect(invite.html).not.toMatch(/<img|<script/i);
+    expect(invite.text).not.toContain('@');
+    for (const other of employees.filter((employee) => employee.id !== 'sanne')) {
+      expect(invite.text).not.toContain(other.name);
+      expect(invite.html).not.toContain(other.name);
+    }
+  });
+
+  it('werkt ook zonder het adres van de app', () => {
+    const plain = composeMail({ kind: 'invite', name: 'Bo', days: [], groups, appUrl: null });
+    expect(plain.text).toContain('1. Open Planbord op je telefoon.');
+    expect(plain.text).not.toContain('http');
+    expect(plain.html).not.toContain('href');
+  });
+
+  it('gaat altijd, zonder push, en blijft het proberen hoewel hij geen datums heeft', () => {
+    expect(alwaysSent('invite')).toBe(true);
+    expect(alwaysSent('test')).toBe(true);
+    expect(alwaysSent('reminder')).toBe(false);
+    const queued = { kind: 'invite' as const, status: 'failed' as const, attempts: 1, dates: [] };
+    expect(shouldRetry(queued, WED)).toBe(true);
+    expect(shouldRetry({ ...queued, attempts: MAX_ATTEMPTS }, WED)).toBe(false);
+    expect(shouldRetry({ ...queued, status: 'sent' }, WED)).toBe(false);
+  });
+
+  it('kiest bij Iedereen uitnodigen wie actief is, kan inloggen en nog geen uitnodiging kreeg', () => {
+    const people = [
+      { id: 'zelf', isActive: true, hasAccount: true },
+      { id: 'nieuw', isActive: true, hasAccount: true },
+      { id: 'verstuurd', isActive: true, hasAccount: true },
+      { id: 'mislukt', isActive: true, hasAccount: true },
+      { id: 'overgeslagen', isActive: true, hasAccount: true },
+      { id: 'inactief', isActive: false, hasAccount: true },
+      { id: 'geen-account', isActive: true, hasAccount: false },
+    ];
+    const invites = [
+      { employeeId: 'verstuurd', status: 'sent' as const },
+      { employeeId: 'mislukt', status: 'failed' as const },
+      { employeeId: 'overgeslagen', status: 'skipped' as const },
+    ];
+    expect(inviteTargets(people, invites, 'zelf')).toEqual(['nieuw', 'overgeslagen']);
+  });
+
+  it('toont bij een medewerker de stand van de laatste uitnodiging', () => {
+    const at = (createdAt: string, status: 'sent' | 'pending' | 'failed' | 'skipped', sentAt: string | null = null) => ({
+      employeeId: 'sanne',
+      status,
+      createdAt,
+      sentAt,
+    });
+    expect(inviteStatusText(null)).toBe('Nog niet uitgenodigd.');
+    // 22:30 UTC is in Amsterdam al de volgende dag.
+    expect(inviteStatusText(at('2026-10-06T22:29:00Z', 'sent', '2026-10-06T22:30:00Z'))).toBe('Uitgenodigd op wo 7 okt.');
+    expect(inviteStatusText(at('2026-10-06T09:00:00Z', 'pending'))).toBe('De uitnodiging wordt verstuurd.');
+    expect(inviteStatusText(at('2026-10-06T09:00:00Z', 'failed'))).toContain('probeert het elk uur opnieuw');
+    expect(inviteStatusText(at('2026-10-06T09:00:00Z', 'skipped'))).toBe('De uitnodiging is niet verstuurd: er was geen werkmail.');
+    const latest = latestInvites([at('2026-10-06T09:00:00Z', 'sent', '2026-10-06T09:00:05Z'), at('2026-10-01T09:00:00Z', 'failed')]);
+    expect(latest.get('sanne')?.status).toBe('sent');
+    expect(MAIL_KIND_LABELS.invite).toBe('Uitnodiging');
   });
 });
