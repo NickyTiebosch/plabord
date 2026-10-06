@@ -72,7 +72,7 @@ export function guideTopics(address: string): GuideTopic[] {
         {
           device: 'Android',
           steps: [
-            `Open Chrome en ga naar ${address}.`,
+            `Open Chrome (niet Samsung Internet) en ga naar ${address}.`,
             'Tik rechtsboven op ⋮.',
             'Kies App installeren (of Toevoegen aan startscherm) en tik op Installeren.',
             'Open Planbord voortaan via het icoon.',
@@ -98,6 +98,8 @@ export function guideTopics(address: string): GuideTopic[] {
       ],
       notes: [
         'Log op een iPhone in via het icoon op je beginscherm. Safari en de app onthouden je inlog los van elkaar.',
+        'Gebruik op Android Chrome, niet Samsung Internet. Ook die twee onthouden je inlog los van elkaar.',
+        'Een nieuwe code kan pas na een minuut, en alleen de code uit de nieuwste mail werkt. Heb je de code al? Tik dan op Ik heb al een code.',
         'Lukt het niet? Vraag de beheerder of je werkmail in Planbord staat.',
       ],
     },
@@ -163,7 +165,7 @@ export function guideTopics(address: string): GuideTopic[] {
           device: 'Android',
           steps: [
             'Tik onderin op Agenda, bij Mijn rooster op Link maken en dan op Kopieer link.',
-            'Open Chrome en ga naar calendar.google.com. Tik op ⋮ en zet Desktopsite aan.',
+            'Open Chrome (niet Samsung Internet) en ga naar calendar.google.com. Tik op ⋮ en zet Desktopsite aan.',
             'Tik bij Andere agenda’s op + en kies Via URL. Zie je dat niet? Tik dan eerst linksboven op ☰.',
             'Plak de link en tik op Agenda toevoegen.',
             'Open de app Google Agenda: ☰ → Instellingen → de nieuwe agenda (of eerst Meer weergeven). Zet Synchroniseren aan.',

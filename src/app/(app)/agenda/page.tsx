@@ -121,8 +121,8 @@ function AndroidSteps({ open }: { open: boolean }) {
           Tik op <strong>Link maken</strong> en daarna op <strong>Kopieer link</strong>.
         </li>
         <li>
-          Open Chrome en ga naar <strong>calendar.google.com</strong>. Tik op <strong>⋮</strong> en zet{' '}
-          <strong>Desktopsite</strong> aan.
+          Open <strong>Chrome</strong>, niet Samsung Internet, en ga naar <strong>calendar.google.com</strong>. Tik op{' '}
+          <strong>⋮</strong> en zet <strong>Desktopsite</strong> aan.
         </li>
         <li>
           Tik bij <strong>Andere agenda&apos;s</strong> op <strong>+</strong> en kies <strong>Via URL</strong>. Zie je dat

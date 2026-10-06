@@ -49,7 +49,7 @@ export function FeedCard({ kind, groupId, title, description, active, android }:
           </div>
           {android ? (
             <p className="text-sm text-slate-800">
-              Op Android gaat dat via de website van Google Agenda. Kopieer de link en volg de{' '}
+              Op Android gaat dat via de website van Google Agenda, in Chrome. Kopieer de link en volg de{' '}
               <a href="#android" className="font-medium text-brand-800 underline">
                 stappen voor Android
               </a>
