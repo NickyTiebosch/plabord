@@ -93,11 +93,12 @@ Planbord is de rooster- en verlofapp van het verhuurteam. De opdracht in `docs/S
 - Een agendatoken bestaat uit minstens 32 willekeurige bytes. De database bewaart alleen de SHA-256-hash.
 - Het logboek legt vast wie wat wanneer deed. Het is alleen zichtbaar voor beheerders.
   - Geen e-mailadressen, tokens of namen als tekst; verwijs naar id's.
-- Mails (fase 3) gaan alleen naar de medewerker zelf, en alleen over het eigen rooster.
+- Mails (fase 3) gaan alleen naar de medewerker zelf, en alleen over het eigen rooster. De uitnodiging (besluit V33) gaat over Planbord zelf: een link naar de app en de uitleg, nooit een inloglink.
   - Geen namen van anderen, geen reden van afwezigheid en geen andere e-mailadressen.
   - Geen plaatjes, trackers of leesbevestigingen.
   - De wachtrij `mail_queue` bewaart geen adressen en geen tekst; de tekst ontstaat pas bij het versturen.
   - Zonder de schakelaar "Meldingen versturen" (tot fase 4: "Mails versturen") gaat er geen mail of push naar collega's. De testmail en de testmelding gaan alleen naar jezelf.
+  - Uitzondering: een uitnodiging die een beheerder zelf verstuurt, gaat ook als de schakelaar uit staat (besluit V33).
 - Pushmeldingen (fase 4) volgen dezelfde regels als mails.
   - Alleen naar de eigen toestellen van de medewerker, en alleen over het eigen rooster.
   - De inhoud is versleuteld per toestel. Nooit namen van anderen of een reden van afwezigheid.
