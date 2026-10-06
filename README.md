@@ -114,7 +114,7 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - De lijst toont het label *uitgenodigd*.
 - **De mail:**
   - alleen naar de eigen werkmail, met de voornaam;
-  - een link naar Planbord en naar de uitleg;
+  - een link naar Planbord en naar de uitleg, met erbij: op Android in Chrome, niet in Samsung Internet;
   - hoe inloggen gaat: met de code uit de mail, zonder wachtwoord.
   - Er staat geen inloglink in en er zitten geen plaatjes of trackers in.
 - **Ook als Meldingen versturen uit staat.** Zo kun je iedereen uitnodigen voordat herinneringen en meldingen aan gaan.
@@ -189,7 +189,7 @@ Open in Supabase **Authentication**.
      <p>De code is 10 minuten geldig. Heb je niet geprobeerd in te loggen? Dan kun je deze mail negeren.</p>
      ```
    - Pas "10 minuten" aan als je bij stap 2.1 een andere geldigheid kiest.
-4. **Rate Limits:** zet het aantal mails per uur na het instellen van SMTP op een waarde die past bij het team, bijvoorbeeld `60`.
+4. **Rate Limits:** zet na het instellen van SMTP het aantal mails per uur (*Rate limit for sending emails*) op een waarde die past bij het team, bijvoorbeeld `100`. Elke inlogcode is een mail, en die grens geldt voor het hele team samen. Staat hij te laag, dan zien collega's *Er zijn net te veel inlogcodes aangevraagd* (zie Bekende punten).
 5. **Sessions:** laat de standaard staan, dus geen *time-box* en geen *inactivity timeout*. Zo blijf je op je eigen telefoon ingelogd.
 6. **URL Configuration:**
    - **Site URL:** het adres van de app: `https://planbord-ten.vercel.app` (dat weet je na stap 4). Komt er later een eigen domein, zet dat dan hier.
@@ -379,7 +379,7 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 
 1. **Zet Planbord op je beginscherm.**
    - **iPhone:** open Planbord in Safari, tik op de deelknop en kies **Zet op beginscherm**. Open Planbord voortaan via dat icoon. Meldingen werken alleen zo, en vanaf iOS 16.4.
-   - **Android:** open Planbord in Chrome, tik op het menu (⋮) en kies **App installeren** of **Toevoegen aan startscherm**.
+   - **Android:** open Planbord in Chrome (niet in Samsung Internet), tik op het menu (⋮) en kies **App installeren** of **Toevoegen aan startscherm**.
 2. Ga naar **Mijn rooster** en tik onderaan op **Meldingen aanzetten**. Kies **Toestaan** als je telefoon het vraagt.
 3. Je krijgt een melding als je ergens invalt, als een inval niet doorgaat, als je rooster voor één dag verandert, en om 16:00 als je rooster morgen afwijkt. De mail blijft ook komen.
 4. Uitzetten kan op dezelfde plek. Heb je eerder **Niet toestaan** gekozen? Zet meldingen dan aan in de instellingen van je telefoon, bij Planbord.
@@ -392,7 +392,7 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 2. Zet de link in je agenda:
    - **iPhone of iPad:** tik op **Toevoegen aan agenda** en daarna op **Abonneer**. Of kopieer de link: Instellingen → Agenda → Accounts → Voeg account toe → Andere → Voeg agenda-abonnement toe → plak de link.
    - **Android:** de app Google Agenda kan geen agenda via een link toevoegen, en Toevoegen aan agenda werkt daar niet. Op een Android-telefoon toont Planbord daarom **Kopieer link** als knop (besluit V35). Daarna:
-     1. Open Chrome en ga naar calendar.google.com. Tik op ⋮ en zet **Desktopsite** aan.
+     1. Open Chrome (niet Samsung Internet) en ga naar calendar.google.com. Tik op ⋮ en zet **Desktopsite** aan.
      2. Tik bij *Andere agenda's* op **+** → **Via URL**. Zie je dat niet? Tik dan eerst linksboven op ☰.
      3. Plak de link en tik op **Agenda toevoegen**.
      4. Open de app Google Agenda: ☰ → **Instellingen** → de nieuwe agenda (of eerst **Meer weergeven**). Zet **Synchroniseren** aan.
@@ -461,6 +461,12 @@ npm run dev                  # http://localhost:3000
 - **Tijdvelden** tonen de tijd zoals het toestel is ingesteld. Op een Nederlands ingesteld toestel is dat 24-uurs.
 - **Herinneringen alleen op de gewone app.** Vercel draait de geplande taken niet op een preview. In een preview test je met de testmail en het voorbeeld; de echte herinnering zie je pas na de merge.
 - **Spam.** Belandt een mail van Planbord toch in de spam, laat collega's het adres dan aan hun contacten toevoegen.
+- **Te veel inlogcodes** (besluit V36 in het plan van fase 4).
+  - Per mailadres kan een nieuwe code pas na een minuut, en alleen de code uit de nieuwste mail werkt. Vraagt iemand binnen die minuut opnieuw, dan laat Planbord de code invullen die al onderweg is, met de wachttijd erbij.
+  - Is het scherm opnieuw geladen terwijl iemand de mail opzocht? Dan kan diegene na het invullen van de werkmail op **Ik heb al een code** tikken.
+  - Zien meer collega's *Er zijn net te veel inlogcodes aangevraagd*, dan is een grens voor het hele team bereikt. Verhoog in Supabase onder **Authentication → Rate Limits** het aantal mails per uur. Alle aanvragen komen van de server van Planbord, dus ook de grenzen per IP-adres gelden voor het hele team samen.
+  - In de logs van Vercel staat dan *Inlogcode versturen mislukt*, met wat Supabase zei, zonder e-mailadres.
+- **Android:** gebruik Chrome, niet Samsung Internet. De stappen in de uitleg zijn voor Chrome, en Chrome en Samsung Internet onthouden je inlog los van elkaar.
 - **Pushmeldingen.**
   - Op een iPhone werken ze alleen vanaf het beginscherm, en Apple kan een abonnement zonder melding laten verlopen. Opent iemand Mijn rooster, dan werkt Planbord het abonnement van dat toestel bij.
   - Op Android kan batterijbesparing een melding vertragen. Daarom blijft de mail.
