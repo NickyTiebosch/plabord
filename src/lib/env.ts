@@ -4,9 +4,13 @@
  */
 
 export class ConfigError extends Error {
+  /** De naam van de omgevingsvariabele die ontbreekt, nooit een waarde. */
+  readonly variable: string;
+
   constructor(name: string) {
     super(`De omgevingsvariabele ${name} ontbreekt. Zie .env.example en de README.`);
     this.name = 'ConfigError';
+    this.variable = name;
   }
 }
 

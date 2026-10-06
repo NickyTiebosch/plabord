@@ -38,30 +38,46 @@ describe('wie er is ingelogd (V38)', () => {
   });
 
   it('toont in de lijst hoe ver iemand is', () => {
-    const status = { invited: false, lastSignInAt: null, devices: 0 };
+    const status = { invite: 'none' as const, lastSignInAt: null, devices: 0 };
     expect(onboardingBadges(person({ email: null, hasAccount: false }), status)).toEqual([{ label: 'geen e-mail', tone: 'neutral' }]);
     expect(onboardingBadges(person({ hasAccount: false }), status)).toEqual([{ label: 'nog geen account', tone: 'warning' }]);
     expect(onboardingBadges(person(), status)).toEqual([{ label: 'nog niet ingelogd', tone: 'warning' }]);
-    expect(onboardingBadges(person(), { ...status, invited: true })).toEqual([
-      { label: 'uitgenodigd', tone: 'success' },
-      { label: 'nog niet ingelogd', tone: 'warning' },
-    ]);
-    expect(onboardingBadges(person(), { invited: true, lastSignInAt: '2026-10-06T12:05:00Z', devices: 0 })).toEqual([
+    for (const invite of ['sent', 'pending'] as const) {
+      expect(onboardingBadges(person(), { ...status, invite })).toEqual([
+        { label: 'uitgenodigd', tone: 'success' },
+        { label: 'nog niet ingelogd', tone: 'warning' },
+      ]);
+    }
+    expect(onboardingBadges(person(), { invite: 'sent', lastSignInAt: '2026-10-06T12:05:00Z', devices: 0 })).toEqual([
       { label: 'ingelogd di 6 okt', tone: 'success' },
       { label: 'meldingen uit', tone: 'warning' },
     ]);
-    expect(onboardingBadges(person(), { invited: true, lastSignInAt: '2026-10-06T12:05:00Z', devices: 2 })).toEqual([
+    expect(onboardingBadges(person(), { invite: 'sent', lastSignInAt: '2026-10-06T12:05:00Z', devices: 2 })).toEqual([
       { label: 'ingelogd di 6 okt', tone: 'success' },
       { label: 'meldingen aan', tone: 'success' },
     ]);
   });
 
+  it('toont een mislukte uitnodiging als mislukt, niet als uitgenodigd (V39)', () => {
+    const status = { lastSignInAt: null, devices: 0 };
+    for (const invite of ['retrying', 'failed'] as const) {
+      expect(onboardingBadges(person(), { ...status, invite })).toEqual([
+        { label: 'uitnodiging mislukt', tone: 'warning' },
+        { label: 'nog niet ingelogd', tone: 'warning' },
+      ]);
+    }
+    expect(onboardingBadges(person(), { ...status, invite: 'skipped' })).toEqual([{ label: 'nog niet ingelogd', tone: 'warning' }]);
+    expect(onboardingBadges(person(), { invite: 'failed', lastSignInAt: undefined, devices: 0 })).toEqual([
+      { label: 'uitnodiging mislukt', tone: 'warning' },
+    ]);
+  });
+
   it('toont bij inactieve medewerkers en zonder gegevens over inloggen alleen wat er al stond', () => {
-    expect(onboardingBadges(person({ isActive: false }), { invited: true, lastSignInAt: '2026-10-06T12:05:00Z', devices: 1 })).toEqual([
+    expect(onboardingBadges(person({ isActive: false }), { invite: 'sent', lastSignInAt: '2026-10-06T12:05:00Z', devices: 1 })).toEqual([
       { label: 'uitgenodigd', tone: 'success' },
     ]);
     // Zonder de functie in de database (bundel nog niet opnieuw gedraaid) weet Planbord het niet.
-    expect(onboardingBadges(person(), { invited: true, lastSignInAt: undefined, devices: 1 })).toEqual([
+    expect(onboardingBadges(person(), { invite: 'sent', lastSignInAt: undefined, devices: 1 })).toEqual([
       { label: 'uitgenodigd', tone: 'success' },
     ]);
   });

@@ -8,6 +8,7 @@
  */
 import { amsterdamDateTime } from '../engine/dates';
 import { formatDayShort } from '../engine/format';
+import { inviteFailed, isInvited, type InviteState } from '../mail/invites';
 
 /** Per medewerker met een inlogaccount: wanneer die voor het laatst inlogde, of `null` als nog nooit. */
 export type SignIns = ReadonlyMap<string, string | null>;
@@ -43,17 +44,24 @@ interface OnboardingPerson {
   hasAccount: boolean;
 }
 
+/** Het label voor de uitnodiging: verstuurd of klaar, of mislukt (V39). */
+function inviteBadge(state: InviteState): OnboardingBadge[] {
+  if (isInvited(state)) return [{ label: 'uitgenodigd', tone: 'success' }];
+  if (inviteFailed(state)) return [{ label: 'uitnodiging mislukt', tone: 'warning' }];
+  return [];
+}
+
 /**
  * De labels in de lijst met medewerkers. `lastSignInAt` is `undefined` als Planbord het niet weet,
  * bijvoorbeeld zolang de bundel van fase 4 nog niet opnieuw is gedraaid: dan blijft de lijst zoals hij was.
  */
 export function onboardingBadges(
   employee: OnboardingPerson,
-  status: { invited: boolean; lastSignInAt: string | null | undefined; devices: number },
+  status: { invite: InviteState; lastSignInAt: string | null | undefined; devices: number },
 ): OnboardingBadge[] {
   if (!employee.email) return [{ label: 'geen e-mail', tone: 'neutral' }];
   if (!employee.hasAccount) return [{ label: 'nog geen account', tone: 'warning' }];
-  const invited: OnboardingBadge[] = status.invited ? [{ label: 'uitgenodigd', tone: 'success' }] : [];
+  const invited = inviteBadge(status.invite);
   if (!employee.isActive || status.lastSignInAt === undefined) return invited;
   if (status.lastSignInAt === null) return [...invited, { label: 'nog niet ingelogd', tone: 'warning' }];
   const { date } = amsterdamDateTime(new Date(status.lastSignInAt));

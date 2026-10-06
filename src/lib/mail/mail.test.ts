@@ -8,13 +8,14 @@ import {
   teamSnapshot,
 } from '../engine/__fixtures__/team';
 import { reviewNotices } from '../db/review';
-import { MAIL_KIND_LABELS, mailStatusLabel, previewReminderDate, pushLabel } from './labels';
-import { inviteStatusText, inviteTargets, latestInvites } from './invites';
+import { ConfigError } from '../env';
+import { MAIL_KIND_LABELS, mailFailureReason, mailStatusLabel, previewReminderDate, pushLabel, testMailErrorText } from './labels';
+import { inviteEveryoneText, inviteState, inviteStatusText, inviteTargets, latestInvites } from './invites';
 import { composeMail, escapeHtml, formatDateList, guideUrl, personalDaysFor } from './messages';
 import { cancelledSubstitutionNotices, mergeNotices } from './notices';
 import { isMailOutcome, mailOutcome, NO_MAILS } from './outcome';
 import { MAX_ATTEMPTS, queueCleanupBefore, reminderDateAt, reminderTargets, shouldRetry } from './reminders';
-import { mailErrorCode, serverUnavailable } from './smtp-errors';
+import { failureCode, mailErrorCode, mailFailure, serverUnavailable } from './smtp-errors';
 import { alwaysSent } from './types';
 
 const WED = '2026-10-14';
@@ -416,39 +417,159 @@ describe('mails: de uitnodiging (V33)', () => {
     expect(shouldRetry({ ...queued, status: 'sent' }, WED)).toBe(false);
   });
 
-  it('kiest bij Iedereen uitnodigen wie actief is, kan inloggen en nog geen uitnodiging kreeg', () => {
+  const NOW = new Date('2026-10-06T15:00:00Z');
+  const inviteRow = (
+    employeeId: string,
+    status: 'sent' | 'pending' | 'failed' | 'skipped',
+    createdAt = '2026-10-06T12:00:00Z',
+    attempts = status === 'pending' ? 0 : 1,
+  ) => ({ employeeId, status, createdAt, attempts, sentAt: status === 'sent' ? createdAt : null });
+  const colleague = (id: string, overrides: Partial<{ isActive: boolean; hasAccount: boolean }> = {}) => ({
+    id,
+    isActive: true,
+    hasAccount: true,
+    ...overrides,
+  });
+
+  it('kiest bij Iedereen uitnodigen wie actief is, kan inloggen en geen uitnodiging heeft die verstuurd is of klaarstaat (V39)', () => {
     const people = [
-      { id: 'zelf', isActive: true, hasAccount: true },
-      { id: 'nieuw', isActive: true, hasAccount: true },
-      { id: 'verstuurd', isActive: true, hasAccount: true },
-      { id: 'mislukt', isActive: true, hasAccount: true },
-      { id: 'overgeslagen', isActive: true, hasAccount: true },
-      { id: 'inactief', isActive: false, hasAccount: true },
-      { id: 'geen-account', isActive: true, hasAccount: false },
+      colleague('zelf'),
+      colleague('nieuw'),
+      colleague('verstuurd'),
+      colleague('klaar'),
+      colleague('mislukt'),
+      colleague('gestopt'),
+      colleague('overgeslagen'),
+      colleague('later-gelukt'),
+      colleague('later-mislukt'),
+      colleague('inactief', { isActive: false }),
+      colleague('geen-account', { hasAccount: false }),
     ];
     const invites = [
-      { employeeId: 'verstuurd', status: 'sent' as const },
-      { employeeId: 'mislukt', status: 'failed' as const },
-      { employeeId: 'overgeslagen', status: 'skipped' as const },
+      inviteRow('verstuurd', 'sent'),
+      inviteRow('klaar', 'pending'),
+      inviteRow('mislukt', 'failed'),
+      inviteRow('gestopt', 'failed', '2026-10-06T09:00:00Z', MAX_ATTEMPTS),
+      inviteRow('overgeslagen', 'skipped'),
+      // Per collega telt de laatste uitnodiging.
+      inviteRow('later-gelukt', 'failed', '2026-10-06T09:00:00Z', MAX_ATTEMPTS),
+      inviteRow('later-gelukt', 'sent', '2026-10-06T14:00:00Z'),
+      inviteRow('later-mislukt', 'sent', '2026-10-01T09:00:00Z'),
+      inviteRow('later-mislukt', 'failed', '2026-10-06T14:00:00Z'),
     ];
-    expect(inviteTargets(people, invites, 'zelf')).toEqual(['nieuw', 'overgeslagen']);
+    expect(inviteTargets(people, invites, 'zelf', NOW)).toEqual(['nieuw', 'mislukt', 'gestopt', 'overgeslagen', 'later-mislukt']);
+    expect(inviteEveryoneText(people, invites, 'zelf', NOW)).toEqual({
+      count: 5,
+      text: "2 collega's kunnen inloggen maar hebben nog geen uitnodiging gehad. Bij 3 collega's is de uitnodiging mislukt.",
+    });
+  });
+
+  it('zegt bij Iedereen uitnodigen voor wie de knop is, ook in het enkelvoud', () => {
+    const people = [colleague('zelf'), colleague('nieuw'), colleague('mislukt')];
+    expect(inviteEveryoneText(people, [inviteRow('mislukt', 'failed')], 'zelf', NOW)).toEqual({
+      count: 2,
+      text: '1 collega kan inloggen maar heeft nog geen uitnodiging gehad. Bij 1 collega is de uitnodiging mislukt.',
+    });
+    expect(inviteEveryoneText(people, [inviteRow('nieuw', 'sent'), inviteRow('mislukt', 'failed')], 'zelf', NOW)).toEqual({
+      count: 1,
+      text: 'Bij 1 collega is de uitnodiging mislukt.',
+    });
+    expect(inviteEveryoneText(people, [inviteRow('nieuw', 'sent'), inviteRow('mislukt', 'pending')], 'zelf', NOW)).toEqual({
+      count: 0,
+      text: 'Iedereen die kan inloggen, heeft een uitnodiging gehad. Een nieuwe collega nodig je uit op diens pagina.',
+    });
   });
 
   it('toont bij een medewerker de stand van de laatste uitnodiging', () => {
-    const at = (createdAt: string, status: 'sent' | 'pending' | 'failed' | 'skipped', sentAt: string | null = null) => ({
-      employeeId: 'sanne',
-      status,
-      createdAt,
-      sentAt,
-    });
-    expect(inviteStatusText(null)).toBe('Nog niet uitgenodigd.');
+    expect(inviteStatusText(null, NOW)).toBe('Nog niet uitgenodigd.');
     // 22:30 UTC is in Amsterdam al de volgende dag.
-    expect(inviteStatusText(at('2026-10-06T22:29:00Z', 'sent', '2026-10-06T22:30:00Z'))).toBe('Uitgenodigd op wo 7 okt.');
-    expect(inviteStatusText(at('2026-10-06T09:00:00Z', 'pending'))).toBe('De uitnodiging wordt verstuurd.');
-    expect(inviteStatusText(at('2026-10-06T09:00:00Z', 'failed'))).toContain('probeert het elk uur opnieuw');
-    expect(inviteStatusText(at('2026-10-06T09:00:00Z', 'skipped'))).toBe('De uitnodiging is niet verstuurd: er was geen werkmail.');
-    const latest = latestInvites([at('2026-10-06T09:00:00Z', 'sent', '2026-10-06T09:00:05Z'), at('2026-10-01T09:00:00Z', 'failed')]);
+    expect(inviteStatusText({ ...inviteRow('sanne', 'sent', '2026-10-06T22:29:00Z'), sentAt: '2026-10-06T22:30:00Z' }, NOW)).toBe(
+      'Uitgenodigd op wo 7 okt.',
+    );
+    expect(inviteStatusText(inviteRow('sanne', 'pending'), NOW)).toBe('De uitnodiging wordt verstuurd.');
+    expect(inviteStatusText(inviteRow('sanne', 'skipped'), NOW)).toBe('De uitnodiging is niet verstuurd: er was geen werkmail.');
+    const latest = latestInvites([inviteRow('sanne', 'sent', '2026-10-06T09:00:00Z'), inviteRow('sanne', 'failed', '2026-10-01T09:00:00Z')]);
     expect(latest.get('sanne')?.status).toBe('sent');
     expect(MAIL_KIND_LABELS.invite).toBe('Uitnodiging');
+  });
+
+  it('zegt eerlijk of Planbord een mislukte uitnodiging nog opnieuw probeert (V39)', () => {
+    expect(inviteStatusText(inviteRow('sanne', 'failed', '2026-10-06T12:00:00Z', 1), NOW)).toBe(
+      'De uitnodiging is nog niet gelukt. Planbord probeert het elk uur opnieuw (nog 2 keer).',
+    );
+    expect(inviteStatusText(inviteRow('sanne', 'failed', '2026-10-06T12:00:00Z', 2), NOW)).toBe(
+      'De uitnodiging is nog niet gelukt. Planbord probeert het elk uur opnieuw (nog 1 keer).',
+    );
+    const stopped =
+      'De uitnodiging is niet gelukt en Planbord probeert het niet meer. Doe eerst een testmail (Beheer → Instellingen); lukt die, stuur hem dan opnieuw.';
+    expect(inviteStatusText(inviteRow('sanne', 'failed', '2026-10-06T12:00:00Z', MAX_ATTEMPTS), NOW)).toBe(stopped);
+    // Ouder dan een week: daar kijkt de geplande taak niet meer naar.
+    expect(inviteStatusText(inviteRow('sanne', 'failed', '2026-09-29T14:59:00Z', 1), NOW)).toBe(stopped);
+    expect(inviteStatusText(inviteRow('sanne', 'pending', '2026-09-29T14:59:00Z'), NOW)).toBe(stopped);
+    expect(inviteState(inviteRow('sanne', 'failed', '2026-09-29T15:01:00Z', 1), NOW)).toBe('retrying');
+    expect(inviteState(inviteRow('sanne', 'failed', '2026-09-29T14:59:00Z', 1), NOW)).toBe('failed');
+    expect(inviteState(undefined, NOW)).toBe('none');
+  });
+
+  it('noemt een uitnodiging die door een nieuwe is vervangen (V39)', () => {
+    expect(mailStatusLabel('skipped', 'vervangen', 1)).toBe('niet verstuurd: vervangen door een nieuwe');
+  });
+});
+
+describe('mails: de oorzaak als versturen mislukt (V39)', () => {
+  // De melding van de mailserver kan een adres bevatten; Planbord kijkt alleen naar de code.
+  const smtpError = (code: string) => Object.assign(new Error('535 5.7.8 geweigerd: iemand@voorbeeld.nl'), { code });
+
+  it('herkent het soort fout', () => {
+    expect(mailFailure(new ConfigError('SMTP_PASSWORD'))).toEqual({ kind: 'config', variable: 'SMTP_PASSWORD' });
+    expect(mailFailure(smtpError('EAUTH'))).toEqual({ kind: 'auth' });
+    expect(mailFailure(smtpError('ENOAUTH'))).toEqual({ kind: 'auth' });
+    for (const code of ['ECONNECTION', 'ETIMEDOUT', 'ESOCKET', 'EDNS', 'ETLS', 'EPROXY']) {
+      expect(mailFailure(smtpError(code))).toEqual({ kind: 'connection' });
+    }
+    expect(mailFailure(smtpError('EENVELOPE'))).toEqual({ kind: 'rejected' });
+    expect(mailFailure(smtpError('EMESSAGE'))).toEqual({ kind: 'rejected' });
+    expect(mailFailure(new Error('iets anders'))).toEqual({ kind: 'unknown' });
+    expect(mailFailure('geen fout')).toEqual({ kind: 'unknown' });
+  });
+
+  it('bewaart in de wachtrij een korte oorzaak, zonder adres of wachtwoord', () => {
+    expect(failureCode({ kind: 'config', variable: 'SMTP_PASSWORD' })).toBe('mailserver niet ingesteld');
+    expect(failureCode({ kind: 'auth' })).toBe('inloggen bij mailserver geweigerd');
+    expect(failureCode({ kind: 'connection' })).toBe('mailserver onbereikbaar');
+    expect(failureCode({ kind: 'rejected' })).toBe('mail geweigerd');
+    expect(failureCode({ kind: 'unknown' })).toBe('versturen mislukt');
+    expect(failureCode(null)).toBe('versturen mislukt');
+  });
+
+  it('toont in Beheer → Mails waarom een mail mislukte', () => {
+    expect(mailFailureReason('failed', 'inloggen bij mailserver geweigerd')).toBe('inloggen bij mailserver geweigerd');
+    expect(mailFailureReason('failed', 'mailserver onbereikbaar')).toBe('mailserver onbereikbaar');
+    expect(mailFailureReason('failed', 'mailserver niet ingesteld')).toBe('mailserver niet ingesteld');
+    expect(mailFailureReason('failed', 'mail geweigerd')).toBe('mail geweigerd');
+    // Niets extra als het niets toevoegt, of als het geen bekende oorzaak is.
+    expect(mailFailureReason('failed', 'versturen mislukt')).toBeNull();
+    expect(mailFailureReason('failed', null)).toBeNull();
+    expect(mailFailureReason('failed', 'iets anders')).toBeNull();
+    expect(mailFailureReason('sent', null)).toBeNull();
+    expect(mailFailureReason('skipped', 'mails uit')).toBeNull();
+  });
+
+  it('zegt bij de testmail wat er mis is en wat je doet', () => {
+    expect(testMailErrorText({ kind: 'config', variable: 'SMTP_PASSWORD' })).toBe(
+      'De testmail kon niet weg: in Vercel ontbreekt SMTP_PASSWORD. Vul die in bij Settings → Environment Variables en start daarna een nieuwe deploy (Deployments → de bovenste → ⋯ → Redeploy).',
+    );
+    expect(testMailErrorText({ kind: 'auth' })).toBe(
+      'De mailserver weigert het inloggen: SMTP_USER of SMTP_PASSWORD klopt niet. Maak een nieuw app-wachtwoord voor die mailbox, zet het in Vercel bij SMTP_PASSWORD en start daarna een nieuwe deploy (Deployments → de bovenste → ⋯ → Redeploy).',
+    );
+    expect(testMailErrorText({ kind: 'connection' })).toBe(
+      'De mailserver is niet bereikbaar. Controleer in Vercel SMTP_HOST en SMTP_PORT (bij Google: smtp.gmail.com en 465) en start daarna een nieuwe deploy (Deployments → de bovenste → ⋯ → Redeploy). Klopt dat, probeer het dan over een paar minuten opnieuw.',
+    );
+    expect(testMailErrorText({ kind: 'rejected' })).toBe(
+      'De mailserver weigerde de testmail. Controleer in Vercel MAIL_FROM: dat moet het adres van de mailbox zijn, of een alias ervan. Controleer ook je eigen werkmail in Planbord.',
+    );
+    expect(testMailErrorText({ kind: 'unknown' })).toBe(
+      'De testmail kon niet worden verstuurd. Controleer in Vercel SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD en MAIL_FROM (zie de README).',
+    );
   });
 });

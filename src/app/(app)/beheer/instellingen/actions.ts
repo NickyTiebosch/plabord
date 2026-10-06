@@ -6,6 +6,7 @@ import { parseNumberFields, parseSettingsForm, type ActionState } from '@/lib/ad
 import { requireAdmin } from '@/lib/auth/session';
 import { must } from '@/lib/db/queries';
 import { sendTestMail, sendTestPush } from '@/lib/mail/dispatch';
+import { testMailErrorText } from '@/lib/mail/labels';
 import { siteBaseUrl } from '@/lib/site-url';
 
 export async function saveSettings(_previous: ActionState, formData: FormData): Promise<ActionState> {
@@ -74,19 +75,19 @@ export async function setMailEnabled(formData: FormData): Promise<void> {
   revalidatePath('/beheer', 'layout');
 }
 
-/** Een testmail aan je eigen werkmail (V18). Gaat ook als mails uit staan. */
+/** Een testmail aan je eigen werkmail (V18). Gaat ook als mails uit staan. Mislukt hij, dan staat erbij waarom (V39). */
 export async function sendTestMailAction(): Promise<ActionState> {
   const { supabase, employeeId } = await requireAdmin();
   const result = await sendTestMail(supabase, employeeId, { now: new Date(), appUrl: `${await siteBaseUrl()}/` });
   revalidatePath('/beheer/mails');
-  if (result === 'verstuurd') {
-    return { ok: true, message: 'Testmail verstuurd naar je werkmail. Kijk in je inbox, en anders bij spam.' };
+  switch (result.status) {
+    case 'verstuurd':
+      return { ok: true, message: 'Testmail verstuurd naar je werkmail. Kijk in je inbox, en anders bij spam.' };
+    case 'geen-adres':
+      return { error: 'Je hebt geen werkmail in Planbord, dus de testmail kan nergens heen.' };
+    case 'mislukt':
+      return { error: testMailErrorText(result.failure) };
   }
-  if (result === 'geen-adres') return { error: 'Je hebt geen werkmail in Planbord, dus de testmail kan nergens heen.' };
-  return {
-    error:
-      'De testmail kon niet worden verstuurd. Controleer in Vercel SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD en MAIL_FROM (zie de README).',
-  };
 }
 
 /** Een testmelding aan je eigen toestellen (fase 4, V27). Gaat ook als meldingen uit staan. */

@@ -5,7 +5,7 @@ import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { amsterdamDateTime } from '@/lib/engine/dates';
 import { formatDayShort } from '@/lib/engine/format';
-import { MAIL_KIND_LABELS, mailStatusLabel, pushLabel } from '@/lib/mail/labels';
+import { MAIL_KIND_LABELS, mailFailureReason, mailStatusLabel, pushLabel } from '@/lib/mail/labels';
 import { formatDateList } from '@/lib/mail/messages';
 import { MAIL_KINDS, MAIL_STATUSES } from '@/lib/mail/types';
 
@@ -47,6 +47,7 @@ export default async function MailsPage() {
         dates: formatDateList(row.dates),
         status,
         statusLabel: mailStatusLabel(status, row.last_error, row.attempts),
+        reason: mailFailureReason(status, row.last_error),
         push: pushLabel(row.push_devices),
       },
     ];
@@ -86,6 +87,8 @@ export default async function MailsPage() {
                     {row.statusLabel}
                   </Badge>
                   {row.push ? <Badge tone="brand">{row.push}</Badge> : null}
+                  {/* Waarom het mislukte (V39): alleen het soort fout. */}
+                  {row.reason ? <span className="text-slate-600">{row.reason}</span> : null}
                 </p>
               </li>
             ))}
