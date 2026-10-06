@@ -3,8 +3,8 @@
  * invallen die aandacht nodig hebben. Puur en los te testen; de pagina's tonen alleen wat hier staat.
  */
 import { evaluateCandidates, PROPOSAL_COUNT, type Candidate, type Exclusion } from '../engine/candidates';
-import { addDays } from '../engine/dates';
-import { formatDayShort } from '../engine/format';
+import { addDays, dayOfMonth, isoWeekKey, isoWeekOf, maxDate, minDate, startOfIsoWeek, weekdayOf } from '../engine/dates';
+import { formatDateRange, formatDayShort, weekdayShort } from '../engine/format';
 import { findGaps, type Gap } from '../engine/gaps';
 import { DAY_PART_LABELS } from '../engine/labels';
 import type { AbsenceImpact } from '../engine/impact';
@@ -74,6 +74,45 @@ export function buildGapViews(
     gaps: scan.gaps.map((gap) => gapView(context, normOf, snapshot.substitutions, gap)),
     ignored: scan.ignored.map((gap) => gapView(context, normOf, snapshot.substitutions, gap)),
   };
+}
+
+/** Eén week in het overzicht van Nog te regelen (V34). */
+export interface GapWeek<T> {
+  /** De weeksleutel, zoals '2026-W42'. Het anker op de pagina is `week-2026-W42`. */
+  key: string;
+  week: number;
+  /** Het deel van de week dat in de periode valt. */
+  from: IsoDate;
+  to: IsoDate;
+  /** '12–18 okt' */
+  rangeLabel: string;
+  /** De dagen met een gat, kort: 'di 13', 'do 15'. */
+  dayLabels: string[];
+  gaps: T[];
+}
+
+/**
+ * De gaten per week (V34): elke ISO-week in de periode, ook als er niets te regelen is, op volgorde.
+ * Binnen een week blijven de gaten in de volgorde waarin ze binnenkomen.
+ */
+export function gapWeeks<T extends { date: IsoDate }>(gaps: readonly T[], window: { from: IsoDate; to: IsoDate }): GapWeek<T>[] {
+  const weeks: GapWeek<T>[] = [];
+  for (let monday = startOfIsoWeek(window.from); monday <= window.to; monday = addDays(monday, 7)) {
+    const from = maxDate(monday, window.from);
+    const to = minDate(addDays(monday, 6), window.to);
+    const inWeek = gaps.filter((gap) => gap.date >= from && gap.date <= to);
+    const dates = [...new Set(inWeek.map((gap) => gap.date))].sort();
+    weeks.push({
+      key: isoWeekKey(monday),
+      week: isoWeekOf(monday).week,
+      from,
+      to,
+      rangeLabel: formatDateRange(from, to),
+      dayLabels: dates.map((date) => `${weekdayShort(weekdayOf(date))} ${dayOfMonth(date)}`),
+      gaps: inWeek,
+    });
+  }
+  return weeks;
 }
 
 export interface GapOption {

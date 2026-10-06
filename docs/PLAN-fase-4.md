@@ -17,6 +17,8 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V30 | Aanvulling na de oplevering: een uitleg voor collega's met korte video's, op een pagina `/uitleg` zonder inloggen, plus een PDF. Zie §10. |
 | V31 | Aanvulling: Planbord sneller. Een laadscherm, minder wachten op de database en de server overdag warm houden. Een snellere serverregio is een keuze voor de eigenaar. Zie §11. |
 | V32 | Aanvulling: overstap van Netlify naar Vercel, in het betaalde team van 22labs, met de server in Frankfurt. Geen eigen domein: het adres is `planbord-ten.vercel.app`. Zie §12. |
+| V33 | Aanvulling: een knop Uitnodiging sturen, per medewerker en voor iedereen tegelijk. De uitnodiging gaat ook als Meldingen versturen uit staat. Zie §13. |
+| V34 | Aanvulling: Nog te regelen toont bovenaan een overzicht per week, en de gaten staan per week. Zie §13. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -346,3 +348,34 @@ De eigenaar heeft via 22labs al een betaald abonnement bij Vercel. In de opdrach
   - haal het oude icoon weg;
   - zet de nieuwe app op het beginscherm;
   - log opnieuw in en zet de meldingen weer aan.
+
+---
+
+## 13. Aanvulling: uitnodiging sturen en een overzicht per week (V33, V34)
+De eigenaar vroeg: "Maak die knop Uitnodiging sturen maar. En kan ik ook in een overzicht zien op welke datum's/weken ik nog vervanging moet regelen?" Op de vraag of de uitnodiging een uitzondering mag zijn op Meldingen versturen: "Ja, uitnodiging mag altijd". Op de vraag over een overzicht per week: "Ja, maak het erbij".
+
+**Uitnodiging sturen (V33)**
+- **Waar:**
+  - Bij een medewerker, in het blok Inloggen: **Uitnodiging sturen**, met de stand ("Uitgenodigd op di 6 okt"). Daarna kun je hem opnieuw sturen.
+  - In de lijst met medewerkers: **Iedereen uitnodigen**. Dat stuurt een uitnodiging aan iedere actieve medewerker met een inlogaccount die er nog geen kreeg, behalve aan jezelf. Je bevestigt eerst, met het aantal erbij.
+- **De mail:**
+  - Alleen naar de eigen werkmail, met "Hoi" en de voornaam.
+  - Wat Planbord is, een link naar de app en naar `/uitleg`, en hoe inloggen gaat: werkmail invullen, de code van 6 cijfers uit de mail invullen, geen wachtwoord.
+  - Geen inloglink (zie de opdracht: mailscanners maken die ongeldig), geen plaatjes of trackers en geen namen van anderen. Geen push: wie nog niet heeft ingelogd, heeft ook geen toestel met meldingen.
+- **Ook als Meldingen versturen uit staat.** Zo kan de eigenaar iedereen uitnodigen voordat herinneringen en meldingen aan gaan. `CLAUDE.md` is daarop aangepast.
+- **Via de wachtrij:**
+  - Een nieuwe soort mail, `invite`, zonder datums.
+  - Mislukt het versturen, dan probeert de geplande taak het elk uur opnieuw, ook als meldingen uit staan. Dat gebeurt hooguit drie keer, in de eerste week.
+  - Beheer → Mails toont elke uitnodiging.
+  - Bij Iedereen uitnodigen gaan de mails één voor één. Duurt dat te lang, dan staan de rest al klaar in de wachtrij en verstuurt de geplande taak ze.
+- **De stand komt uit de wachtrij.** Er komt geen nieuw gegeven over medewerkers bij.
+  - Uitgenodigd is wie een uitnodiging heeft die verstuurd is, klaarstaat of nog opnieuw geprobeerd wordt.
+  - Na 90 dagen ruimt Planbord de wachtrij op; daarna telt iemand weer als niet uitgenodigd. Iedereen uitnodigen is vooral voor de start; een nieuwe collega nodig je los uit.
+- **Rechten:** alleen beheerders, in de server action én via de bestaande RLS van de wachtrij. De mail gaat met de sessie van de beheerder. Alleen het opnieuw proberen gebeurt in de geplande taak, met de secret key, zoals bij de andere mails (V17).
+- **Logboek:** een uitnodiging verandert geen gegevens, dus er komt niets in het logboek. Beheer → Mails laat zien wanneer welke uitnodiging ging.
+- **Database:** één migratie, die de soort `invite` toestaat in de wachtrij. De eigenaar draait de SQL van fase 4 opnieuw (`supabase/setup/fase-4.sql`); dat is veilig.
+
+**Een overzicht per week in Nog te regelen (V34)**
+- Bovenaan staat per week in de periode één regel, bijvoorbeeld "Week 42 · 12–18 okt · 3 gaten · di 13 · do 15 · vr 16". Weken zonder gat staan er ook, als "niets te regelen".
+- Een tik op een week springt naar die week. Daaronder staan de gaten per week, met de week als kopje.
+- Het indelen per week is een pure functie met tests (`gapWeeks` in `src/lib/admin/planning.ts`).

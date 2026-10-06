@@ -70,12 +70,14 @@ export function reminderTargets(snapshot: PlanningSnapshot, date: IsoDate): Remi
 /**
  * Probeert de geplande taak deze mail (nog eens) te versturen? Alleen als hij nog niet is
  * verstuurd, minder dan MAX_ATTEMPTS keer is geprobeerd, en nog over vandaag of later gaat.
- * Een testmail niet: die stuur je gewoon opnieuw.
+ * Een uitnodiging gaat over geen dag, dus die wel. Een testmail niet: die stuur je gewoon opnieuw.
  */
 export function shouldRetry(mail: Pick<QueuedMail, 'kind' | 'status' | 'attempts' | 'dates'>, today: IsoDate): boolean {
   if (mail.kind === 'test') return false;
   if (mail.status !== 'pending' && mail.status !== 'failed') return false;
   if (mail.attempts >= MAX_ATTEMPTS) return false;
+  // Een uitnodiging gaat over geen enkele dag (V33): die blijft het proberen waard.
+  if (mail.kind === 'invite') return true;
   return mail.dates.some((date) => date >= today);
 }
 

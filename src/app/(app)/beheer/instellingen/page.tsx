@@ -148,7 +148,7 @@ export default async function SettingsPage() {
               <Field label="Grens ochtend/middag" htmlFor="dayPartBoundary" hint="Vóór deze tijd is het ochtend.">
                 <input id="dayPartBoundary" name="dayPartBoundary" type="time" required defaultValue={settings.dayPartBoundary} className={inputClass} />
               </Field>
-              <Field label="Nog te regelen: weken vooruit" htmlFor="lookaheadWeeks" hint="Gebruikt vanaf fase 2.">
+              <Field label="Nog te regelen: weken vooruit" htmlFor="lookaheadWeeks" hint="Zo ver kijkt Nog te regelen vooruit, ook in het overzicht per week.">
                 <input
                   id="lookaheadWeeks"
                   name="lookaheadWeeks"

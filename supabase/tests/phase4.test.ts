@@ -179,4 +179,43 @@ describe('fase 4: pushmeldingen', () => {
       expect(left.rows[0]?.count).toBe(0);
     });
   });
+  describe('de uitnodiging (V33)', () => {
+    function queueInvite(employeeId: string, dates: string[] = []) {
+      return db.query<{ id: string }>(
+        `insert into public.mail_queue (employee_id, kind, dates) values ($1, 'invite', $2) returning id`,
+        [employeeId, dates],
+      );
+    }
+
+    it('zet een beheerder in de wachtrij, zonder datums', async () => {
+      await withSession(db, session(admin), async () => {
+        const queued = await queueInvite(bas.employeeId);
+        expect(queued.rows).toHaveLength(1);
+        const rows = await db.query<{ kind: string; dates: string[]; status: string }>(
+          'select kind, dates, status from public.mail_queue where id = $1',
+          [queued.rows[0]?.id],
+        );
+        expect(rows.rows).toEqual([{ kind: 'invite', dates: [], status: 'pending' }]);
+      });
+    });
+
+    it('heeft nooit datums, en een medewerker kan er geen versturen', async () => {
+      await withSession(db, session(admin), async () => {
+        await expectError(queueInvite(bas.employeeId, ['2026-10-14']), /mail_queue_dates/);
+      });
+      await withSession(db, session(bas), async () => {
+        await expectError(queueInvite(bas.employeeId), /row-level security|permission denied/);
+      });
+    });
+
+    it('laat de andere soorten zoals ze waren: een testmail zonder datums, de rest met', async () => {
+      await withSession(db, session(admin), async () => {
+        await db.query(`insert into public.mail_queue (employee_id, kind, dates) values ($1, 'test', '{}')`, [admin.employeeId]);
+        await expectError(
+          db.query(`insert into public.mail_queue (employee_id, kind, dates) values ($1, 'day_changed', '{}')`, [bas.employeeId]),
+          /mail_queue_dates/,
+        );
+      });
+    });
+  });
 });

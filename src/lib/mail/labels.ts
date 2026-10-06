@@ -11,6 +11,7 @@ export const MAIL_KIND_LABELS: Record<MailKind, string> = {
   day_changed: 'Rooster gewijzigd',
   reminder: 'Herinnering',
   test: 'Testmail',
+  invite: 'Uitnodiging',
 };
 
 /** "verstuurd", "mislukt (2× geprobeerd)", "niet verstuurd: mails uit", … */

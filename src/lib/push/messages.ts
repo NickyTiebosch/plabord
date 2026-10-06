@@ -86,6 +86,9 @@ export function composePush(input: ComposePushInput): PushContent {
         return only ? `Morgen wijkt je rooster af: ${daySummary(only, groupName)}` : 'Morgen wijkt je rooster af';
       case 'test':
         return 'Testmelding: meldingen op dit toestel werken.';
+      case 'invite':
+        // Een uitnodiging gaat nooit als push (V33); alleen voor de volledigheid.
+        return 'Je bent uitgenodigd voor Planbord.';
     }
   })();
 

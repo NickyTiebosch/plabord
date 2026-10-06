@@ -11,7 +11,7 @@ import { NO_MAILS, type DispatchCounts } from './outcome';
 import { queueCleanupBefore, reminderDateAt, reminderTargets, shouldRetry } from './reminders';
 import { smtpTransport, type MailTransport } from './send';
 import { mailErrorCode, serverUnavailable } from './smtp-errors';
-import { MAIL_KINDS, MAIL_STATUSES, type MailKind, type MailNotice, type QueuedMail } from './types';
+import { alwaysSent, MAIL_KINDS, MAIL_STATUSES, type MailKind, type MailNotice, type QueuedMail } from './types';
 
 /**
  * De wachtrij en het versturen (fase 3), en sinds fase 4 de push naast de mail (V24). Twee ingangen:
@@ -79,7 +79,10 @@ interface NewMail {
   dates: string[];
 }
 
-/** Zet mails in de wachtrij: `pending`, of meteen `skipped` als mails uit staan of er geen werkmail is. */
+/**
+ * Zet mails in de wachtrij: `pending`, of meteen `skipped` als mails uit staan of er geen werkmail
+ * is. De testmail en de uitnodiging gaan ook als mails uit staan (V18, V33).
+ */
 async function enqueue(
   client: DbClient,
   mails: readonly NewMail[],
@@ -87,7 +90,7 @@ async function enqueue(
   people: ReadonlyMap<string, Recipient>,
 ): Promise<QueuedMail[]> {
   const rows = mails.map((mail) => {
-    const off = !enabled && mail.kind !== 'test';
+    const off = !enabled && !alwaysSent(mail.kind);
     const noAddress = !people.get(mail.employeeId)?.email;
     return {
       employee_id: mail.employeeId,
@@ -167,7 +170,7 @@ async function deliver(
       const content = composeMail({
         kind: mail.kind,
         name: person.name,
-        days: snapshot && mail.kind !== 'test' ? personalDaysFor(snapshot, mail.employeeId, mail.dates) : [],
+        days: snapshot && !alwaysSent(mail.kind) ? personalDaysFor(snapshot, mail.employeeId, mail.dates) : [],
         groups: snapshot?.groups ?? [],
         appUrl: options.appUrl,
       });
@@ -237,7 +240,7 @@ async function pushQueued(
   snapshot: PlanningSnapshot | null,
   options: DispatchOptions,
 ): Promise<void> {
-  const targets = mails.filter((mail) => mail.status === 'pending' && mail.kind !== 'test' && people.get(mail.employeeId)?.email);
+  const targets = mails.filter((mail) => mail.status === 'pending' && !alwaysSent(mail.kind) && people.get(mail.employeeId)?.email);
   if (targets.length === 0) return;
   const send = (options.push ?? webPushSender)();
   if (!send) return;
@@ -297,6 +300,24 @@ export async function sendTestMail(client: DbClient, employeeId: string, options
   } catch (error) {
     console.error('Testmail mislukt', error instanceof Error ? error.message : error);
     return 'mislukt';
+  }
+}
+
+/**
+ * De uitnodiging (V33): per persoon één mail met een link naar de app en de uitleg, met de sessie
+ * van de beheerder. Gaat ook als meldingen uit staan, en zonder push. Eerst staan alle mails in de
+ * wachtrij, dan gaan ze één voor één: wat niet meer lukt, verstuurt de geplande taak later.
+ */
+export async function sendInvites(client: DbClient, employeeIds: readonly string[], options: DispatchOptions): Promise<DispatchCounts> {
+  const ids = [...new Set(employeeIds)];
+  if (ids.length === 0) return NO_MAILS;
+  try {
+    const people = await recipients(client, ids);
+    const queued = await enqueue(client, ids.map((employeeId) => ({ employeeId, kind: 'invite' as const, dates: [] })), true, people);
+    return addCounts(countSkipped(queued, people), await deliver(client, queued, people, options, null));
+  } catch (error) {
+    console.error('Uitnodigingen versturen mislukt', error instanceof Error ? error.message : error);
+    return { ...NO_MAILS, failed: ids.length };
   }
 }
 
@@ -383,16 +404,19 @@ export async function runMailJob(client: DbClient, options: DispatchOptions): Pr
     }
   }
 
-  // 3. Opnieuw proberen.
+  // 3. Opnieuw proberen. Staan mails uit, dan alleen de uitnodigingen (V33); de rest vervalt.
   let retried = { ...NO_MAILS };
   if (retry.length > 0) {
-    if (!enabled) {
-      await client.from('mail_queue').update({ status: 'skipped', last_error: 'mails uit' }).in('id', retry.map((mail) => mail.id));
-      retried = { ...NO_MAILS, disabled: retry.length };
-    } else {
-      const people = await recipients(client, retry.map((mail) => mail.employeeId));
-      retried = await deliver(client, retry, people, options);
+    const stopped = enabled ? [] : retry.filter((mail) => !alwaysSent(mail.kind));
+    const again = enabled ? retry : retry.filter((mail) => alwaysSent(mail.kind));
+    if (stopped.length > 0) {
+      await client.from('mail_queue').update({ status: 'skipped', last_error: 'mails uit' }).in('id', stopped.map((mail) => mail.id));
     }
+    if (again.length > 0) {
+      const people = await recipients(client, again.map((mail) => mail.employeeId));
+      retried = await deliver(client, again, people, options);
+    }
+    retried = { ...retried, disabled: retried.disabled + stopped.length };
   }
 
   // 4. Opruimen: de wachtrij is geen planning, dus niet langer bewaren dan nodig.

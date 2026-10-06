@@ -7,6 +7,7 @@ import { deletionBlocker, deletionSummary } from '@/lib/admin/deletion';
 import { isUuid } from '@/lib/admin/forms';
 import { shiftsByWeekday } from '@/lib/admin/shifts';
 import { requireAdminWith, type Viewer } from '@/lib/auth/session';
+import { loadInvites } from '@/lib/db/admin-queries';
 import { mapEmployee, mapRecurringShift } from '@/lib/db/mappers';
 import { loadGroups, loadSettings, must } from '@/lib/db/queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
@@ -15,9 +16,10 @@ import { ROLE_LABELS } from '@/lib/engine/labels';
 import { effectiveShiftTimes } from '@/lib/engine/schedule';
 import { formatTimeRange } from '@/lib/engine/time';
 import type { RecurringShift, Settings } from '@/lib/engine/types';
+import { canBeInvited, inviteStatusText, latestInvites } from '@/lib/mail/invites';
 import { revokeFeedLink } from '../../../agenda/actions';
 import { Flash } from '../../admin-shared';
-import { deleteShift, retryAccount } from '../actions';
+import { deleteShift, inviteEmployee, retryAccount } from '../actions';
 import { DeleteEmployeeForm } from '../delete-form';
 import { EmployeeForm } from '../employee-form';
 import { ShiftEndForm, ShiftFromForm } from '../shift-forms';
@@ -103,7 +105,7 @@ export default async function EmployeeDetailPage({
   if (!isUuid(id)) notFound();
   const today = todayInAmsterdam(new Date());
 
-  const [{ supabase, employeeId: viewerId }, [groups, settings, employeeRow, account, eligibility, shifts, feeds, devices]] =
+  const [{ supabase, employeeId: viewerId }, [groups, settings, employeeRow, account, eligibility, shifts, feeds, devices, invites]] =
     await requireAdminWith((supabase) =>
       Promise.all([
         loadGroups(supabase),
@@ -115,6 +117,7 @@ export default async function EmployeeDetailPage({
         supabase.from('calendar_feeds').select('id, kind, group_id, created_at').eq('employee_id', id).is('revoked_at', null),
         // Fase 4: alleen het aantal toestellen met meldingen, nooit het adres.
         supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('employee_id', id),
+        loadInvites(supabase, id),
       ]),
     );
   const deviceCount = devices.count ?? 0;
@@ -127,6 +130,9 @@ export default async function EmployeeDetailPage({
   // Volledig verwijderen (fase 3, V21): wat er verdwijnt, en of het nu mag.
   const blocker = deletionBlocker({ id: employee.id, isActive: employee.isActive }, viewerId);
   const counts = blocker ? null : await loadDeletionCounts(supabase, employee.id, today, Boolean(account.data));
+  // De uitnodiging (V33): alleen voor wie actief is en kan inloggen.
+  const invitable = canBeInvited({ id: employee.id, isActive: employee.isActive, hasAccount: Boolean(account.data?.user_id) });
+  const lastInvite = latestInvites(invites).get(employee.id) ?? null;
 
   return (
     <>
@@ -190,6 +196,15 @@ export default async function EmployeeDetailPage({
                   ? 'Meldingen staan op geen enkel toestel aan.'
                   : `Meldingen aan op ${deviceCount} ${deviceCount === 1 ? 'toestel' : 'toestellen'}.`}
               </p>
+            ) : null}
+            {invitable ? (
+              <form action={inviteEmployee} className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                <input type="hidden" name="id" value={employee.id} />
+                <span className="text-sm text-slate-700">{inviteStatusText(lastInvite)}</span>
+                <SubmitButton size="sm" variant={lastInvite ? 'secondary' : 'primary'}>
+                  {lastInvite ? 'Opnieuw sturen' : 'Uitnodiging sturen'}
+                </SubmitButton>
+              </form>
             ) : null}
           </Card>
 
