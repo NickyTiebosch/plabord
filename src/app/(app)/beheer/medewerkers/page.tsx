@@ -14,7 +14,7 @@ import {
 import { loadGroups } from '@/lib/db/queries';
 import { ROLE_LABELS } from '@/lib/engine/labels';
 import { compareByNameThenId, compareGroups } from '@/lib/engine/sort';
-import { inviteTargets, isInvited, latestInvites } from '@/lib/mail/invites';
+import { inviteEveryoneText, inviteState, latestInvites, type InviteState } from '@/lib/mail/invites';
 import { Flash } from '../admin-shared';
 import { inviteEveryone } from './actions';
 
@@ -22,16 +22,13 @@ export const metadata: Metadata = { title: 'Medewerkers' };
 // Iedereen uitnodigen verstuurt de mails één voor één; geef dat de tijd (V33).
 export const maxDuration = 60;
 
-function InviteEveryone({ count, started }: { count: number; started: string | null }) {
+function InviteEveryone({ count, text, started }: { count: number; text: string; started: string | null }) {
   return (
     <Card className="mb-5 flex flex-wrap items-center justify-between gap-3 p-4">
       {/* Wie er al is begonnen (V38): ingelogd en meldingen aan. */}
       {started ? <p className="w-full text-sm text-slate-700">{started}</p> : null}
-      <p className="text-sm text-slate-700">
-        {count === 0
-          ? 'Iedereen die kan inloggen, heeft een uitnodiging gehad. Een nieuwe collega nodig je uit op diens pagina.'
-          : `${count} ${count === 1 ? 'collega kan' : "collega's kunnen"} inloggen maar ${count === 1 ? 'heeft' : 'hebben'} nog geen uitnodiging gehad.`}
-      </p>
+      {/* Wie nog geen uitnodiging had, en bij wie hij mislukte (V39). */}
+      <p className="text-sm text-slate-700">{text}</p>
       {count > 0 ? (
         <form action={inviteEveryone}>
           <SubmitButton
@@ -48,12 +45,12 @@ function InviteEveryone({ count, started }: { count: number; started: string | n
 
 function EmployeeRow({
   employee,
-  invited,
+  invite,
   lastSignInAt,
   devices,
 }: {
   employee: EmployeeWithAccount;
-  invited: boolean;
+  invite: InviteState;
   /** `undefined` als Planbord het niet weet (V38). */
   lastSignInAt: string | null | undefined;
   devices: number;
@@ -72,7 +69,7 @@ function EmployeeRow({
         </span>
         <span className="flex flex-wrap gap-1">
           {employee.isAdmin ? <Badge tone="brand">beheerder</Badge> : null}
-          {onboardingBadges(employee, { invited, lastSignInAt, devices }).map((badge) => (
+          {onboardingBadges(employee, { invite, lastSignInAt, devices }).map((badge) => (
             <Badge key={badge.label} tone={badge.tone}>
               {badge.label}
             </Badge>
@@ -95,7 +92,8 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
       loadPushDeviceCounts(supabase),
     ]),
   );
-  const toInvite = inviteTargets(employees, invites, viewer.employeeId).length;
+  const now = new Date();
+  const toInvite = inviteEveryoneText(employees, invites, viewer.employeeId, now);
   const latest = latestInvites(invites);
   const showInactive = params.inactief === '1';
   const visible = employees.filter((employee) => showInactive || employee.isActive);
@@ -114,7 +112,11 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
       />
       <Flash code={params.melding} />
       {employees.length > 0 ? (
-        <InviteEveryone count={toInvite} started={onboardingSummaryText(onboardingSummary(employees, signIns, devices))} />
+        <InviteEveryone
+          count={toInvite.count}
+          text={toInvite.text}
+          started={onboardingSummaryText(onboardingSummary(employees, signIns, devices))}
+        />
       ) : null}
       {employees.length === 0 ? (
         <EmptyState title="Nog geen medewerkers">
@@ -134,7 +136,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
                       <EmployeeRow
                         key={employee.id}
                         employee={employee}
-                        invited={isInvited(latest.get(employee.id)?.status ?? 'skipped')}
+                        invite={inviteState(latest.get(employee.id), now)}
                         lastSignInAt={signIns ? (signIns.get(employee.id) ?? null) : undefined}
                         devices={devices.get(employee.id) ?? 0}
                       />

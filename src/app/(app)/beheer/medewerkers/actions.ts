@@ -181,13 +181,16 @@ export async function inviteEmployee(formData: FormData): Promise<void> {
   redirect(`/beheer/medewerkers/${id}?melding=${melding}`);
 }
 
-/** "Iedereen uitnodigen" (V33): wie actief is, kan inloggen en nog geen uitnodiging kreeg. Niet jezelf. */
+/**
+ * "Iedereen uitnodigen" (V33): wie actief is, kan inloggen en geen uitnodiging heeft die verstuurd
+ * is of klaarstaat. Dus ook wie een mislukte uitnodiging heeft (V39). Niet jezelf.
+ */
 export async function inviteEveryone(): Promise<void> {
   const { supabase, employeeId } = await requireAdmin();
   let melding = 'uitnodigingen-mislukt';
   try {
     const [employees, invites] = await Promise.all([loadEmployeesWithAccounts(supabase), loadInvites(supabase)]);
-    const targets = inviteTargets(employees, invites, employeeId);
+    const targets = inviteTargets(employees, invites, employeeId, new Date());
     if (targets.length === 0) {
       melding = 'uitnodigingen-niemand';
     } else {

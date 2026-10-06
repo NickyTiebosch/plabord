@@ -53,11 +53,13 @@ export async function loadPushDeviceCounts(client: DbClient): Promise<Map<string
 
 /** De uitnodigingen uit de wachtrij (V33), voor de stand bij de medewerkers. Alleen voor beheerders (RLS). */
 export async function loadInvites(client: DbClient, employeeId?: string): Promise<InviteRecord[]> {
-  const query = client.from('mail_queue').select('employee_id, status, created_at, sent_at').eq('kind', 'invite');
+  const query = client.from('mail_queue').select('employee_id, status, attempts, created_at, sent_at').eq('kind', 'invite');
   const rows = must(await (employeeId ? query.eq('employee_id', employeeId) : query), 'de uitnodigingen');
   return rows.flatMap((row) => {
     const status = MAIL_STATUSES.find((item) => item === row.status);
-    return status ? [{ employeeId: row.employee_id, status, createdAt: row.created_at, sentAt: row.sent_at }] : [];
+    return status
+      ? [{ employeeId: row.employee_id, status, attempts: row.attempts, createdAt: row.created_at, sentAt: row.sent_at }]
+      : [];
   });
 }
 

@@ -8,9 +8,9 @@ import { webPushSender, type PushSender } from '../push/send';
 import { composeMail, personalDaysFor } from './messages';
 import { mergeNotices } from './notices';
 import { NO_MAILS, type DispatchCounts } from './outcome';
-import { queueCleanupBefore, reminderDateAt, reminderTargets, shouldRetry } from './reminders';
+import { queueCleanupBefore, reminderDateAt, reminderTargets, RETRY_WINDOW_MS, shouldRetry } from './reminders';
 import { smtpTransport, type MailTransport } from './send';
-import { mailErrorCode, serverUnavailable } from './smtp-errors';
+import { failureCode, mailErrorCode, mailFailure, serverUnavailable, type MailFailure } from './smtp-errors';
 import { alwaysSent, MAIL_KINDS, MAIL_STATUSES, type MailKind, type MailNotice, type QueuedMail } from './types';
 
 /**
@@ -130,29 +130,35 @@ async function snapshotFor(client: DbClient, mails: readonly QueuedMail[]): Prom
   return first && last ? loadPlanningSnapshot(client, { from: first, to: last }) : null;
 }
 
+/** Wat er met de mails gebeurde, en bij een fout het soort (V39): de testmail noemt dat. */
+interface Delivery {
+  counts: DispatchCounts;
+  failure: MailFailure | null;
+}
+
 async function deliver(
   client: DbClient,
   mails: readonly QueuedMail[],
   people: ReadonlyMap<string, Recipient>,
   options: DispatchOptions,
   preloaded?: PlanningSnapshot | null,
-): Promise<DispatchCounts> {
+): Promise<Delivery> {
   const open = mails.filter(isOpen);
-  if (open.length === 0) return NO_MAILS;
+  if (open.length === 0) return { counts: NO_MAILS, failure: null };
   const snapshot = preloaded === undefined ? await snapshotFor(client, open) : preloaded;
 
   let transport: MailTransport | null = null;
-  let setupError = 'mailserver niet ingesteld';
+  // Gezet als de mailserver niet bruikbaar blijkt: dan de rest deze keer niet meer proberen.
+  let unusable: MailFailure | null = null;
+  let firstFailure: MailFailure | null = null;
   try {
     transport = (options.transport ?? smtpTransport)();
   } catch (error) {
-    if (!(error instanceof ConfigError)) setupError = 'mailserver onbereikbaar';
+    unusable = error instanceof ConfigError ? mailFailure(error) : { kind: 'connection' };
     console.error('Mailserver niet beschikbaar', error instanceof Error ? error.message : error);
   }
 
   const counts = { ...NO_MAILS };
-  // Wordt `false` als de mailserver onbereikbaar blijkt: dan de rest deze keer niet meer proberen.
-  let usable = true;
   try {
     for (const mail of open) {
       const person = people.get(mail.employeeId);
@@ -162,8 +168,8 @@ async function deliver(
         counts.noAddress++;
         continue;
       }
-      if (!transport || !usable) {
-        await client.from('mail_queue').update({ status: 'failed', attempts, last_error: setupError }).eq('id', mail.id);
+      if (!transport || unusable) {
+        await client.from('mail_queue').update({ status: 'failed', attempts, last_error: failureCode(unusable) }).eq('id', mail.id);
         counts.failed++;
         continue;
       }
@@ -179,15 +185,11 @@ async function deliver(
       } catch (error) {
         // Nooit het adres loggen: alleen de soort mail en de foutcode.
         console.error('Mail versturen mislukt', mail.kind, mailErrorCode(error));
-        if (serverUnavailable(error)) {
-          // Elke volgende poging kost tot tien seconden; de geplande taak probeert het later opnieuw.
-          usable = false;
-          setupError = 'mailserver onbereikbaar';
-        }
-        await client
-          .from('mail_queue')
-          .update({ status: 'failed', attempts, last_error: usable ? 'versturen mislukt' : setupError })
-          .eq('id', mail.id);
+        const failure = mailFailure(error);
+        firstFailure ??= failure;
+        // Elke volgende poging kost tot tien seconden; de geplande taak probeert het later opnieuw.
+        if (serverUnavailable(error)) unusable = failure;
+        await client.from('mail_queue').update({ status: 'failed', attempts, last_error: failureCode(failure) }).eq('id', mail.id);
         counts.failed++;
         continue;
       }
@@ -207,7 +209,7 @@ async function deliver(
   } finally {
     transport?.close();
   }
-  return counts;
+  return { counts, failure: unusable ?? firstFailure };
 }
 
 type DeviceRow = { id: string; employee_id: string; endpoint: string; p256dh: string; auth: string };
@@ -278,7 +280,7 @@ export async function sendNotices(client: DbClient, notices: readonly MailNotice
     const [enabled, people] = await Promise.all([mailEnabled(client), recipients(client, merged.map((mail) => mail.employeeId))]);
     const queued = await enqueue(client, merged, enabled, people);
     const snapshot = await snapshotFor(client, queued.filter(isOpen));
-    const counts = addCounts(countSkipped(queued, people), await deliver(client, queued, people, options, snapshot));
+    const counts = addCounts(countSkipped(queued, people), (await deliver(client, queued, people, options, snapshot)).counts);
     await pushQueued(client, queued, people, snapshot, options);
     return counts;
   } catch (error) {
@@ -287,20 +289,39 @@ export async function sendNotices(client: DbClient, notices: readonly MailNotice
   }
 }
 
-export type TestMailResult = 'verstuurd' | 'mislukt' | 'geen-adres';
+export type TestMailResult = { status: 'verstuurd' | 'geen-adres' } | { status: 'mislukt'; failure: MailFailure };
 
-/** De testmail van een beheerder aan zichzelf (V18). Gaat altijd, ook als mails uit staan. */
+/**
+ * De testmail van een beheerder aan zichzelf (V18). Gaat altijd, ook als mails uit staan. Mislukt
+ * hij, dan zegt het soort fout wat er mis is (V39).
+ */
 export async function sendTestMail(client: DbClient, employeeId: string, options: DispatchOptions): Promise<TestMailResult> {
   try {
     const people = await recipients(client, [employeeId]);
-    if (!people.get(employeeId)?.email) return 'geen-adres';
+    if (!people.get(employeeId)?.email) return { status: 'geen-adres' };
     const queued = await enqueue(client, [{ employeeId, kind: 'test', dates: [] }], true, people);
-    const counts = await deliver(client, queued, people, options);
-    return counts.sent > 0 ? 'verstuurd' : 'mislukt';
+    const { counts, failure } = await deliver(client, queued, people, options);
+    return counts.sent > 0 ? { status: 'verstuurd' } : { status: 'mislukt', failure: failure ?? { kind: 'unknown' } };
   } catch (error) {
     console.error('Testmail mislukt', error instanceof Error ? error.message : error);
-    return 'mislukt';
+    return { status: 'mislukt', failure: { kind: 'unknown' } };
   }
+}
+
+/**
+ * Een nieuwe uitnodiging vervangt een oudere die nog openstond (V39). Die verstuurt de geplande
+ * taak dan niet alsnog, zodat niemand hem twee keer krijgt. Lukt dat niet, dan alleen loggen.
+ */
+async function replaceOlderInvites(client: DbClient, fresh: readonly QueuedMail[]): Promise<void> {
+  if (fresh.length === 0) return;
+  const { error } = await client
+    .from('mail_queue')
+    .update({ status: 'skipped', last_error: 'vervangen' })
+    .eq('kind', 'invite')
+    .in('employee_id', [...new Set(fresh.map((mail) => mail.employeeId))])
+    .in('status', ['pending', 'failed'])
+    .not('id', 'in', `(${fresh.map((mail) => mail.id).join(',')})`);
+  if (error) console.error('Oudere uitnodigingen vervangen mislukt', error.message);
 }
 
 /**
@@ -314,7 +335,8 @@ export async function sendInvites(client: DbClient, employeeIds: readonly string
   try {
     const people = await recipients(client, ids);
     const queued = await enqueue(client, ids.map((employeeId) => ({ employeeId, kind: 'invite' as const, dates: [] })), true, people);
-    return addCounts(countSkipped(queued, people), await deliver(client, queued, people, options, null));
+    await replaceOlderInvites(client, queued);
+    return addCounts(countSkipped(queued, people), (await deliver(client, queued, people, options, null)).counts);
   } catch (error) {
     console.error('Uitnodigingen versturen mislukt', error instanceof Error ? error.message : error);
     return { ...NO_MAILS, failed: ids.length };
@@ -355,8 +377,6 @@ export interface MailJobResult {
 
 /** Een mail die net is klaargezet, verstuurt de actie zelf; de taak blijft er de eerste minuten af. */
 const RETRY_AFTER_MS = 10 * 60 * 1000;
-/** Ouder dan dit probeert de taak niet meer. */
-const RETRY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * De geplande taak, elk uur, met de secret key (V17): om 16:00 de herinneringen voor morgen (V15),
@@ -399,7 +419,7 @@ export async function runMailJob(client: DbClient, options: DispatchOptions): Pr
         }
       }
       const snapshot = await snapshotFor(client, queued.filter(isOpen));
-      reminders = addCounts(countSkipped(queued, people), await deliver(client, queued, people, options, snapshot));
+      reminders = addCounts(countSkipped(queued, people), (await deliver(client, queued, people, options, snapshot)).counts);
       await pushQueued(client, queued, people, snapshot, options);
     }
   }
@@ -414,7 +434,7 @@ export async function runMailJob(client: DbClient, options: DispatchOptions): Pr
     }
     if (again.length > 0) {
       const people = await recipients(client, again.map((mail) => mail.employeeId));
-      retried = await deliver(client, again, people, options);
+      retried = (await deliver(client, again, people, options)).counts;
     }
     retried = { ...retried, disabled: retried.disabled + stopped.length };
   }

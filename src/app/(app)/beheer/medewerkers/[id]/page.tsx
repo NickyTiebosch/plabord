@@ -17,7 +17,7 @@ import { ROLE_LABELS } from '@/lib/engine/labels';
 import { effectiveShiftTimes } from '@/lib/engine/schedule';
 import { formatTimeRange } from '@/lib/engine/time';
 import type { RecurringShift, Settings } from '@/lib/engine/types';
-import { canBeInvited, inviteStatusText, latestInvites } from '@/lib/mail/invites';
+import { canBeInvited, inviteFailed, inviteState, inviteStatusText, latestInvites } from '@/lib/mail/invites';
 import { revokeFeedLink } from '../../../agenda/actions';
 import { Flash } from '../../admin-shared';
 import { deleteShift, inviteEmployee, retryAccount } from '../actions';
@@ -104,7 +104,8 @@ export default async function EmployeeDetailPage({
 }) {
   const [{ id }, { melding, mail }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const today = todayInAmsterdam(new Date());
+  const now = new Date();
+  const today = todayInAmsterdam(now);
 
   const [
     { supabase, employeeId: viewerId },
@@ -138,6 +139,8 @@ export default async function EmployeeDetailPage({
   // De uitnodiging (V33): alleen voor wie actief is en kan inloggen.
   const invitable = canBeInvited({ id: employee.id, isActive: employee.isActive, hasAccount: Boolean(account.data?.user_id) });
   const lastInvite = latestInvites(invites).get(employee.id) ?? null;
+  // Mislukt (V39): dan is opnieuw sturen de knop die je zoekt.
+  const inviteAgain = inviteFailed(inviteState(lastInvite, now));
 
   return (
     <>
@@ -208,8 +211,8 @@ export default async function EmployeeDetailPage({
             {invitable ? (
               <form action={inviteEmployee} className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
                 <input type="hidden" name="id" value={employee.id} />
-                <span className="text-sm text-slate-700">{inviteStatusText(lastInvite)}</span>
-                <SubmitButton size="sm" variant={lastInvite ? 'secondary' : 'primary'}>
+                <span className="text-sm text-slate-700">{inviteStatusText(lastInvite, now)}</span>
+                <SubmitButton size="sm" variant={lastInvite && !inviteAgain ? 'secondary' : 'primary'}>
                   {lastInvite ? 'Opnieuw sturen' : 'Uitnodiging sturen'}
                 </SubmitButton>
               </form>

@@ -14,6 +14,9 @@ export const REMINDER_HOUR = 16;
 /** Zo vaak probeert de app een mail hooguit te versturen. */
 export const MAX_ATTEMPTS = 3;
 
+/** Ouder dan dit probeert de geplande taak een mail niet meer. */
+export const RETRY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 /** Regels in de wachtrij ouder dan dit ruimt de geplande taak op. */
 export const QUEUE_RETENTION_DAYS = 90;
 
