@@ -31,6 +31,7 @@ Zet daarna de bestanden in `public/uitleg` in een commit. De test `src/lib/guide
 Maak de schermafbeeldingen opnieuw, met de nagebootste Supabase en het verzonnen team uit `mock/seed.sql`:
 
 1. Start de nagebootste Supabase: `node mock/server.mjs` (poort 54321). De inlogcode is altijd `123456`.
+   - Snelheid meten (besluit V31): `MOCK_DELAY_MS=100` geeft elke vraag 0,1 seconde vertraging, zoals tussen de VS en Frankfurt. Met `MOCK_LOG=1` zie je elke vraag die de app stelt.
 2. Bouw en start Planbord in de hoofdmap, met deze waarden. Ze werken alleen tegen de nabootsing:
 
    ```sh

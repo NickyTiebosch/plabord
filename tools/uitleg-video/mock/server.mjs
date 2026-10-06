@@ -8,6 +8,9 @@ import { PGlite } from '../../../node_modules/@electric-sql/pglite/dist/index.js
 import { btree_gist } from '../../../node_modules/@electric-sql/pglite/dist/contrib/btree_gist.js';
 
 const PORT = Number(process.env.MOCK_PORT ?? 54321);
+// Vertraging per verzoek in milliseconden, om een database ver weg na te bootsen. Bijvoorbeeld 100
+// voor de app in de VS en de database in Frankfurt. Standaard geen.
+const DELAY_MS = Number(process.env.MOCK_DELAY_MS ?? 0);
 const JWT_SECRET = 'local-test-jwt-secret-local-test-jwt-secret';
 const SECRET_KEY = 'sb_secret_localtest';
 const OTP_CODE = '123456';
@@ -241,10 +244,55 @@ function whereClause(url, params, table) {
   return conds.length ? ` where ${conds.join(' and ')}` : '';
 }
 
-function selectList(url, alias) {
+// Splitst op komma's, maar niet binnen haakjes: "a,b:c(d,e)" geeft ["a", "b:c(d,e)"].
+function splitTop(text) {
+  const parts = [];
+  let depth = 0;
+  let current = '';
+  for (const char of text) {
+    if (char === ',' && depth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    if (char === '(') depth += 1;
+    if (char === ')') depth -= 1;
+    current += char;
+  }
+  return [...parts, current];
+}
+
+// De vreemde sleutel van een tabel naar een andere, voor een ingebedde rij.
+async function foreignKey(table, target) {
+  const r = await db.query(
+    `select a.attname as col, af.attname as ref from pg_constraint c
+       join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+       join pg_attribute af on af.attrelid = c.confrelid and af.attnum = c.confkey[1]
+     where c.contype = 'f' and c.conrelid = $1::regclass and c.confrelid = $2::regclass`,
+    [`public.${table}`, `public.${target}`],
+  );
+  if (r.rows.length !== 1) throw Object.assign(new Error(`Geen eenduidige relatie tussen ${table} en ${target}`), { code: 'PGRST200' });
+  return r.rows[0];
+}
+
+// Kolommen, en ingebedde rijen zoals "employee:employees(id,name)". Alleen veel-op-één, via een
+// vreemde sleutel van deze tabel: meer heeft de app niet nodig. RLS geldt ook voor de ingebedde rij.
+async function selectList(url, alias, table) {
   const select = url.searchParams.get('select') ?? '*';
   if (select === '*') return `${alias}.*`;
-  return select.split(',').map((c) => `${alias}.${q(c.trim())}`).join(', ');
+  const columns = [];
+  for (const item of splitTop(select).map((part) => part.trim())) {
+    const embed = item.match(/^(?:(\w+):)?(\w+)\((.*)\)$/);
+    if (!embed) {
+      columns.push(`${alias}.${q(item)}`);
+      continue;
+    }
+    const [, name, target, inner] = embed;
+    const fk = await foreignKey(table, target);
+    const list = inner.split(',').map((c) => `_e.${q(c.trim())}`).join(', ');
+    columns.push(`(select to_json(_x) from (select ${list} from public.${q(target)} _e where _e.${q(fk.ref)} = ${alias}.${q(fk.col)}) _x) as ${q(name ?? target)}`);
+  }
+  return columns.join(', ');
 }
 
 function orderClause(url, alias) {
@@ -309,7 +357,7 @@ async function handleRest(req, res, url) {
       const where = whereClause(url, params, alias);
       const limit = url.searchParams.get('limit');
       const offset = url.searchParams.get('offset');
-      const inner = `select ${selectList(url, alias)} from ${table} ${alias}${where}${orderClause(url, alias)}${limit ? ` limit ${Number(limit)}` : ''}${offset ? ` offset ${Number(offset)}` : ''}`;
+      const inner = `select ${await selectList(url, alias, path)} from ${table} ${alias}${where}${orderClause(url, alias)}${limit ? ` limit ${Number(limit)}` : ''}${offset ? ` offset ${Number(offset)}` : ''}`;
       sql = `select coalesce(json_agg(_r), '[]') as r from (${inner}) _r`;
       const countSql = prefer.includes('count=exact') ? `select count(*)::int as n from ${table} ${alias}${where}` : null;
       const { rows, count } = await withRole(role, jwtClaims, async (tx) => {
@@ -382,6 +430,8 @@ http
   .createServer(async (req, res) => {
     const url = new URL(req.url, `http://localhost:${PORT}`);
     try {
+      if (process.env.MOCK_LOG) console.log(`[mock] ${req.method} ${url.pathname}${url.search}`);
+      if (DELAY_MS > 0 && !url.pathname.startsWith('/mock/')) await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
       if (url.pathname.startsWith('/auth/v1')) return await handleAuth(req, res, url);
       if (url.pathname.startsWith('/rest/v1')) return await handleRest(req, res, url);
       if (url.pathname.startsWith('/mock/')) return await handleMock(req, res, url);

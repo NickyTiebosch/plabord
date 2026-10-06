@@ -5,7 +5,7 @@ import { StatefulForm } from '@/components/client/stateful-form';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
 import { Badge, Card, Choice, EmptyState, Field, PageHeader, SectionTitle, buttonClass, inputClass } from '@/components/ui';
 import { closureScope, holidaySummary } from '@/lib/admin/closures';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { mapClosure } from '@/lib/db/mappers';
 import { loadGroups, must } from '@/lib/db/queries';
 import { closureOverviewForYear } from '@/lib/engine/closures';
@@ -17,21 +17,22 @@ export const metadata: Metadata = { title: 'Sluitingsdagen' };
 
 export default async function ClosureDaysPage({ searchParams }: { searchParams: Promise<{ jaar?: string }> }) {
   const params = await searchParams;
-  const { supabase } = await requireAdmin();
   const currentYear = yearOf(todayInAmsterdam(new Date()));
   const requested = Number(params.jaar);
   const year = Number.isInteger(requested) && requested >= 2000 && requested <= 2100 ? requested : currentYear;
 
-  const [groups, overrides] = await Promise.all([
-    loadGroups(supabase),
-    supabase
-      .from('closure_days')
-      .select('*')
-      .gte('date', `${year}-01-01`)
-      .lte('date', `${year}-12-31`)
-      .order('date')
-      .then((result) => must(result, 'de sluitingsdagen').map(mapClosure)),
-  ]);
+  const [, [groups, overrides]] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadGroups(supabase),
+      supabase
+        .from('closure_days')
+        .select('*')
+        .gte('date', `${year}-01-01`)
+        .lte('date', `${year}-12-31`)
+        .order('date')
+        .then((result) => must(result, 'de sluitingsdagen').map(mapClosure)),
+    ]),
+  );
   const overview = closureOverviewForYear(year, groups, overrides);
   const names = new Map(groups.map((group) => [group.id, group.name]));
 

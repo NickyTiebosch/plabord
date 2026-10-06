@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Badge, Card, EmptyState, PageHeader, buttonClass } from '@/components/ui';
 import { AUDIT_ENTITIES, describeAudit, type AuditRow } from '@/lib/admin/audit';
 import { isUuid } from '@/lib/admin/forms';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { loadGroups } from '@/lib/db/queries';
 
@@ -17,21 +17,21 @@ export default async function AuditLogPage({
   searchParams: Promise<{ soort?: string; medewerker?: string; pagina?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase } = await requireAdmin();
   const page = Math.max(1, Number.parseInt(params.pagina ?? '1', 10) || 1);
   const entity = params.soort && params.soort in AUDIT_ENTITIES ? params.soort : '';
   const employeeId = isUuid(params.medewerker) ? params.medewerker : '';
 
-  let query = supabase
-    .from('audit_log')
-    .select('*', { count: 'exact' })
-    .order('occurred_at', { ascending: false })
-    .order('id', { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-  if (entity) query = query.eq('entity', entity);
-  if (employeeId) query = query.eq('employee_id', employeeId);
-
-  const [names, groups, result] = await Promise.all([loadEmployeeNames(supabase), loadGroups(supabase), query]);
+  const [{ supabase }, [names, groups, result]] = await requireAdminWith((supabase) => {
+    let query = supabase
+      .from('audit_log')
+      .select('*', { count: 'exact' })
+      .order('occurred_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+    if (entity) query = query.eq('entity', entity);
+    if (employeeId) query = query.eq('employee_id', employeeId);
+    return Promise.all([loadEmployeeNames(supabase), loadGroups(supabase), query]);
+  });
   if (result.error) throw new Error('Het logboek kon niet worden geladen.');
   // Bij een gewijzigde inval staat alleen wat veranderde in het logboek; vestiging en dag halen we bij de inval zelf.
   const substitutionIds = [

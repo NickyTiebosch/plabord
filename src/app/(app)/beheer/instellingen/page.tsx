@@ -3,7 +3,7 @@ import { SubmitButton } from '@/components/client/form-controls';
 import { StatefulForm } from '@/components/client/stateful-form';
 import { VapidGenerator } from '@/components/client/vapid-generator';
 import { Card, Field, PageHeader, SectionTitle, inputClass } from '@/components/ui';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadGroups, loadPlanningSnapshot, loadSettings, must } from '@/lib/db/queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDayShort, weekdayShort } from '@/lib/engine/format';
@@ -21,16 +21,17 @@ export const metadata: Metadata = { title: 'Instellingen' };
 const numberClass = 'block w-16 min-h-11 rounded-lg border border-slate-300 bg-white px-2 text-center text-base tabular-nums';
 
 export default async function SettingsPage() {
-  const { supabase, email } = await requireAdmin();
   const preview = previewReminderDate(todayInAmsterdam(new Date()));
   const pushReady = vapidPublicKey() !== null;
-  const [settings, groups, norms, mailSetting, snapshot] = await Promise.all([
-    loadSettings(supabase),
-    loadGroups(supabase),
-    supabase.from('staffing_norms').select('group_id, weekday, day_part, min_staff').then((result) => must(result, 'de normen')),
-    supabase.from('settings').select('mail_enabled').maybeSingle(),
-    loadPlanningSnapshot(supabase, { from: preview.date, to: preview.date }),
-  ]);
+  const [{ email }, [settings, groups, norms, mailSetting, snapshot]] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadSettings(supabase),
+      loadGroups(supabase),
+      supabase.from('staffing_norms').select('group_id, weekday, day_part, min_staff').then((result) => must(result, 'de normen')),
+      supabase.from('settings').select('mail_enabled').maybeSingle(),
+      loadPlanningSnapshot(supabase, { from: preview.date, to: preview.date }),
+    ]),
+  );
   const mailEnabled = Boolean(mailSetting.data?.mail_enabled);
   // Het voorbeeld van de herinneringen (V18): wie er een krijgt, en met welke tekst.
   const reminders = reminderTargets(snapshot, preview.date).map((target) => {

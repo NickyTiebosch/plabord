@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { RosterExportForm } from '@/components/roster-export-form';
 import { LinkTabs, PeriodNav, PersonLineView, ShortageNotice, WorkingBlockView } from '@/components/schedule';
 import { Badge, Card, buttonClass } from '@/components/ui';
-import { requireViewer } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
 import {
   addDays,
@@ -29,12 +29,13 @@ export default async function GroupRosterPage({
   searchParams: Promise<{ week?: string }>;
 }) {
   const [{ group }, { week }] = await Promise.all([params, searchParams]);
-  const viewer = await requireViewer();
   const today = todayInAmsterdam(new Date());
   // Op zondag laten we de week erna zien.
   const currentMonday = weekdayOf(today) === 7 ? addDays(today, 1) : startOfIsoWeek(today);
   const monday = (week ? mondayOfIsoWeekKey(week) : null) ?? currentMonday;
-  const snapshot = await loadPlanningSnapshot(viewer.supabase, { from: monday, to: addDays(monday, 5) });
+  const [viewer, snapshot] = await requireViewerWith((supabase) =>
+    loadPlanningSnapshot(supabase, { from: monday, to: addDays(monday, 5) }),
+  );
   const tab = findTab(snapshot.groups, group);
   if (!tab) notFound();
 

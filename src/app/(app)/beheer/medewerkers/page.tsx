@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeesWithAccounts, type EmployeeWithAccount } from '@/lib/db/admin-queries';
 import { loadGroups } from '@/lib/db/queries';
 import { ROLE_LABELS } from '@/lib/engine/labels';
@@ -35,8 +35,9 @@ function EmployeeRow({ employee }: { employee: EmployeeWithAccount }) {
 
 export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ inactief?: string; melding?: string }> }) {
   const params = await searchParams;
-  const { supabase } = await requireAdmin();
-  const [groups, employees] = await Promise.all([loadGroups(supabase), loadEmployeesWithAccounts(supabase)]);
+  const [, [groups, employees]] = await requireAdminWith((supabase) =>
+    Promise.all([loadGroups(supabase), loadEmployeesWithAccounts(supabase)]),
+  );
   const showInactive = params.inactief === '1';
   const visible = employees.filter((employee) => showInactive || employee.isActive);
   const inactiveCount = employees.filter((employee) => !employee.isActive).length;

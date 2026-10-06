@@ -2,6 +2,7 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { createClient, type ServerClient } from '../db/server';
+import { loadWhileChecking } from './parallel';
 
 export interface Viewer {
   userId: string;
@@ -13,20 +14,23 @@ export interface Viewer {
   supabase: ServerClient;
 }
 
+/** De Supabase-client van dit verzoek, met de sessie uit de cookies. */
+const getClient = cache(createClient);
+
 async function findEmployee(supabase: ServerClient, userId: string) {
-  const account = await supabase.from('employee_accounts').select('employee_id').eq('user_id', userId).maybeSingle();
-  if (!account.data) return null;
-  const employee = await supabase
-    .from('employees')
-    .select('id, name, group_id, is_admin, is_active')
-    .eq('id', account.data.employee_id)
+  // Eén vraag aan de database: het account met de medewerker erbij. RLS geldt voor allebei.
+  const account = await supabase
+    .from('employee_accounts')
+    .select('employee:employees(id, name, group_id, is_admin, is_active)')
+    .eq('user_id', userId)
     .maybeSingle();
-  return employee.data?.is_active ? employee.data : null;
+  const employee = account.data?.employee;
+  return employee?.is_active ? employee : null;
 }
 
 /** De sessie van dit verzoek (één keer per verzoek opgehaald). */
 export const getSession = cache(async () => {
-  const supabase = await createClient();
+  const supabase = await getClient();
   const { data, error } = await supabase.auth.getClaims();
   const claims = error ? null : data?.claims;
   if (!claims?.sub) return { supabase, userId: null, email: null, employee: null } as const;
@@ -66,4 +70,26 @@ export async function requireAdmin(): Promise<Viewer> {
   const viewer = await requireViewer();
   if (!viewer.isAdmin) redirect('/');
   return viewer;
+}
+
+/**
+ * Als requireViewer(), maar de gegevens van de pagina laden al terwijl de controle loopt, in plaats
+ * van erna. Dat scheelt een rondgang naar de database. De pagina krijgt de gegevens pas als de
+ * controle slaagt, en RLS schermt ze hoe dan ook af.
+ */
+export function requireViewerWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
+  return checkWhileLoading(requireViewer, load);
+}
+
+/** Als requireAdmin(), met de gegevens tegelijk geladen (zie requireViewerWith). */
+export function requireAdminWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
+  return checkWhileLoading(requireAdmin, load);
+}
+
+async function checkWhileLoading<T>(
+  check: () => Promise<Viewer>,
+  load: (supabase: ServerClient) => Promise<T>,
+): Promise<[Viewer, T]> {
+  const supabase = await getClient();
+  return loadWhileChecking(check, () => load(supabase));
 }

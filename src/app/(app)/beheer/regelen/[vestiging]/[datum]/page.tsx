@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Card, EmptyState, Notice, PageHeader, SectionTitle } from '@/components/ui';
 import { buildGapDetail } from '@/lib/admin/planning';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireAdminWith } from '@/lib/auth/session';
 import { mapGapDismissal } from '@/lib/db/mappers';
 import { loadPlanningSnapshot, must } from '@/lib/db/queries';
 import { isIsoDate, isoWeekKey, todayInAmsterdam } from '@/lib/engine/dates';
@@ -24,17 +24,18 @@ export default async function GapDetailPage({
 }) {
   const [{ vestiging, datum }, { melding, mail }] = await Promise.all([params, searchParams]);
   if (!isIsoDate(datum) || !/^[a-z-]{1,40}$/.test(vestiging)) notFound();
-  const { supabase } = await requireAdmin();
   const groupId = vestiging.replace(/-/g, '_');
-  const [snapshot, dismissals] = await Promise.all([
-    loadPlanningSnapshot(supabase, { from: datum, to: datum }),
-    supabase
-      .from('gap_dismissals')
-      .select('group_id, date, day_part, shortage')
-      .eq('group_id', groupId)
-      .eq('date', datum)
-      .then((result) => must(result, 'de genegeerde gaten').map(mapGapDismissal)),
-  ]);
+  const [, [snapshot, dismissals]] = await requireAdminWith((supabase) =>
+    Promise.all([
+      loadPlanningSnapshot(supabase, { from: datum, to: datum }),
+      supabase
+        .from('gap_dismissals')
+        .select('group_id, date, day_part, shortage')
+        .eq('group_id', groupId)
+        .eq('date', datum)
+        .then((result) => must(result, 'de genegeerde gaten').map(mapGapDismissal)),
+    ]),
+  );
   const detail = buildGapDetail(snapshot, datum, groupId, dismissals);
   if (!detail) notFound();
   const past = datum < todayInAmsterdam(new Date());

@@ -102,7 +102,15 @@ export interface Database {
         };
         Insert: { employee_id: string; email: string; user_id?: string | null };
         Update: { email?: string; user_id?: string | null };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'employee_accounts_employee_id_fkey';
+            columns: ['employee_id'];
+            isOneToOne: true;
+            referencedRelation: 'employees';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       counter_eligibility: {
         Row: { employee_id: string; group_id: string; has_counter: boolean; created_at: Timestamp };
