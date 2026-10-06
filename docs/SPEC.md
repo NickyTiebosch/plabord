@@ -86,7 +86,7 @@ Doel: een webapp waarin medewerkers inloggen en hun eigen rooster, de roosters v
 - **Verlofoverzicht**: tijdlijn per maand, kwartaal of jaar.
   - Rijen per medewerker, gegroepeerd per groep, met balken voor afwezigheid (aangevraagd gestreept).
   - Per week per vestiging een teller "x van y afwezig".
-- **Agenda**: de persoonlijke agendalink, plus knoppen voor de vestigingsagenda's en de verlofagenda. Met korte uitleg voor iPhone, Outlook en Google Agenda.
+- **Agenda**: de persoonlijke agendalink, plus knoppen voor de vestigingsagenda's en de verlofagenda. Met korte uitleg voor iPhone, Android, Outlook en Google Agenda.
 
 **Voor beheerders**
 - **Overzicht**: "Nog te regelen" (gaten in de komende weken, met voorstellen), openstaande aanvragen en wie er deze week afwezig is.
@@ -130,8 +130,8 @@ Regels voor de import:
   - Content-Type `text/calendar; charset=utf-8`;
   - afwezigheid als hele-dag-event.
 - Minimale inhoud, zoals "Dienst Den Bosch 07:30–18:00", "Invallen Eindhoven" of "Afwezig: Sanne". Geen e-mailadressen.
-- Knop "Toevoegen aan agenda" met een `webcal://`-link (op de iPhone één tik) en de https-link om te kopiëren.
-- Leg in de app uit dat je de link in Google Agenda en Outlook één keer via de computer toevoegt, en dat die apps wijzigingen soms pas na uren tonen.
+- Knop "Toevoegen aan agenda" met een `webcal://`-link (op de iPhone één tik) en de https-link om te kopiëren. Op een Android-telefoon werkt die knop niet; daar is "Kopieer link" de knop (besluit V35).
+- Leg in de app uit dat je de link in Google Agenda en Outlook één keer via de computer toevoegt, en dat die apps wijzigingen soms pas na uren tonen. Google Agenda kan ook op een Android-telefoon: op de website, in Chrome met Desktopsite aan (besluit V35).
 
 ## Vervangingsengine (fase 2)
 De engine werkt voorspelbaar en kan elke keuze uitleggen: dezelfde gegevens geven altijd dezelfde uitkomst. Hij krijgt een momentopname van alle gegevens en levert het berekende rooster, de bezetting, de gaten en de voorstellen.

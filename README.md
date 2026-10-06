@@ -389,10 +389,15 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 ## Agenda koppelen (uitleg voor collega's)
 
 1. Open **Agenda** in Planbord en kies **Link maken** bij de agenda die je wilt.
-2. Tik op **Toevoegen aan agenda**, of kopieer de link:
-   - **iPhone:** Instellingen → Agenda → Accounts → Voeg account toe → Andere → Voeg agenda-abonnement toe → plak de link.
-   - **Google Agenda** (op een computer): naast *Andere agenda's* op **+** → **Via URL** → plak de link.
-   - **Outlook:** Agenda toevoegen → **Abonneren via internet** → plak de link.
+2. Zet de link in je agenda:
+   - **iPhone of iPad:** tik op **Toevoegen aan agenda** en daarna op **Abonneer**. Of kopieer de link: Instellingen → Agenda → Accounts → Voeg account toe → Andere → Voeg agenda-abonnement toe → plak de link.
+   - **Android:** de app Google Agenda kan geen agenda via een link toevoegen, en Toevoegen aan agenda werkt daar niet. Op een Android-telefoon toont Planbord daarom **Kopieer link** als knop (besluit V35). Daarna:
+     1. Open Chrome en ga naar calendar.google.com. Tik op ⋮ en zet **Desktopsite** aan.
+     2. Tik bij *Andere agenda's* op **+** → **Via URL**. Zie je dat niet? Tik dan eerst linksboven op ☰.
+     3. Plak de link en tik op **Agenda toevoegen**.
+     4. Open de app Google Agenda: ☰ → **Instellingen** → de nieuwe agenda (of eerst **Meer weergeven**). Zet **Synchroniseren** aan.
+   - **Google Agenda op een computer:** stap 1 tot en met 3 hierboven, zonder Desktopsite.
+   - **Outlook:** Agenda toevoegen → **Abonneren vanaf internet** → plak de link.
 3. Je ziet de link maar één keer. Kwijt? Maak een nieuwe; de oude werkt dan niet meer.
 
 Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur. Google en Outlook doen het soms pas na uren, tot een dag. Sneller kan niet.
