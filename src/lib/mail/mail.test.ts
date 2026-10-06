@@ -363,7 +363,7 @@ describe('mails: de uitnodiging (V33)', () => {
         'Je bent uitgenodigd voor Planbord, de planning van het verhuurteam. Je ziet er je eigen diensten, het rooster van je vestiging en wie er afwezig is.',
         '',
         'Zo begin je:',
-        '1. Open Planbord op je telefoon: https://planbord.example/',
+        '1. Open Planbord op je telefoon (op Android in Chrome, niet in Samsung Internet): https://planbord.example/',
         '2. Vul je werkmail in: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers.',
         '3. Vul de code in. Een wachtwoord is niet nodig.',
         '4. Zet Planbord op je beginscherm en zet de meldingen aan.',
@@ -390,7 +390,7 @@ describe('mails: de uitnodiging (V33)', () => {
 
   it('werkt ook zonder het adres van de app', () => {
     const plain = composeMail({ kind: 'invite', name: 'Bo', days: [], groups, appUrl: null });
-    expect(plain.text).toContain('1. Open Planbord op je telefoon.');
+    expect(plain.text).toContain('1. Open Planbord op je telefoon (op Android in Chrome, niet in Samsung Internet).');
     expect(plain.text).not.toContain('http');
     expect(plain.html).not.toContain('href');
   });

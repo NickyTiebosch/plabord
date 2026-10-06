@@ -111,8 +111,10 @@ export function guideUrl(appUrl: string): string {
 function composeInvite(name: string, appUrl: string | null): MailContent {
   const { subject, headline } = headings('invite', []);
   const greeting = `Hoi ${firstName(name)},`;
+  // Op Android werken niet alle stappen in Samsung Internet (besluit V36).
+  const where = 'op je telefoon (op Android in Chrome, niet in Samsung Internet)';
   const steps = [
-    appUrl ? `Open Planbord op je telefoon: ${appUrl}` : 'Open Planbord op je telefoon.',
+    appUrl ? `Open Planbord ${where}: ${appUrl}` : `Open Planbord ${where}.`,
     'Vul je werkmail in: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers.',
     'Vul de code in. Een wachtwoord is niet nodig.',
     'Zet Planbord op je beginscherm en zet de meldingen aan.',
@@ -133,7 +135,7 @@ function composeInvite(name: string, appUrl: string | null): MailContent {
   ].join('\n');
 
   const htmlSteps = [
-    appUrl ? `Open <a href="${escapeHtml(appUrl)}">Planbord</a> op je telefoon.` : 'Open Planbord op je telefoon.',
+    appUrl ? `Open <a href="${escapeHtml(appUrl)}">Planbord</a> ${escapeHtml(where)}.` : escapeHtml(`Open Planbord ${where}.`),
     ...steps.slice(1).map((step) => escapeHtml(step)),
   ];
   const html = [

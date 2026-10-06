@@ -20,6 +20,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V33 | Aanvulling: een knop Uitnodiging sturen, per medewerker en voor iedereen tegelijk. De uitnodiging gaat ook als Meldingen versturen uit staat. Zie §13. |
 | V34 | Aanvulling: Nog te regelen toont bovenaan een overzicht per week, en de gaten staan per week. Zie §13. |
 | V35 | Aanvulling: de agenda koppelen op Android. Op de agendapagina, in de uitleg en in de PDF staan eigen stappen voor Android, en op een Android-telefoon is Kopieer link de knop. Zie §14. |
+| V36 | Aanvulling: inloggen bij te veel codes. Een duidelijke melding met de wachttijd, de code die al onderweg is meteen invullen, en een knop Ik heb al een code. Op Android staat overal: Chrome, niet Samsung Internet. Zie §15. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -403,3 +404,30 @@ Een collega met een Android-telefoon kreeg het rooster niet in de agenda. De eig
 - **Uitleg en PDF:** bij Je rooster in je agenda staan de stappen voor iPhone en Android apart. De video blijft die van de iPhone; de stappen voor Android staan er als tekst bij. In de PDF staan ze naast elkaar. De PDF telt daardoor zes pagina's in plaats van vijf.
 - **Opdracht:** in `docs/SPEC.md` staat bij Agenda nu ook Android, met een verwijzing naar dit besluit.
 - Geen nieuwe gegevens, geen migratie en geen handmatige stappen.
+
+---
+
+## 15. Aanvulling: te veel inlogcodes, en Chrome op Android (V36)
+Een collega kreeg bij het inloggen de melding "Te veel pogingen". De eigenaar daarnaast: "Er moet ook staan dat ze moeten openen in chrome want samsung internet werkt het niet".
+
+**Waarom "Te veel pogingen"**
+- Supabase stuurt per mailadres hooguit één code per minuut. Elke nieuwe code maakt de vorige ongeldig.
+- Daarnaast gelden grenzen voor het hele team: een maximum aantal mails per uur, en grenzen per IP-adres. Alle aanvragen komen van de server van Planbord, dus ook die laatste tellen voor het hele team samen.
+- Wie op Android van browser wisselt, moet opnieuw inloggen: Chrome en Samsung Internet onthouden de inlog los van elkaar. Zo vraag je snel een paar codes aan.
+- Planbord toonde in al die gevallen "Te veel pogingen. Wacht even en probeer het dan opnieuw." en bleef bij het invullen van de werkmail. De code die al onderweg was, kon je dan niet invullen.
+
+**Wat er verandert**
+- **Binnen de minuut opnieuw een code aanvragen:** Planbord gaat door naar het invullen van de code, met "Je hebt net al een code gekregen. Vul de code uit de nieuwste mail in. Geen mail? Over 42 seconden kun je een nieuwe aanvragen."
+- **Een grens voor het hele team bereikt:** "Er zijn net te veel inlogcodes aangevraagd. Probeer het over een paar minuten opnieuw." Met een verwijzing naar Ik heb al een code en naar de beheerder. In de logs van Vercel staat welke grens het was, zonder e-mailadres.
+- **Een knop Ik heb al een code**, onder het invullen van de werkmail. Handig als de telefoon het scherm opnieuw laadde terwijl je de mail opzocht. Er gaat dan geen nieuwe code uit.
+- **Bij het controleren van de code:** bij te veel pogingen staat er niet meer dat de code niet klopt, maar dat je een minuut wacht en dezelfde code opnieuw probeert.
+- De uitkomsten staan in een pure functie met tests: `src/lib/auth/login.ts`.
+
+**Chrome op Android**
+- In de stappen voor Android staat nu: Chrome, niet Samsung Internet. Dat geldt voor de agendapagina, de uitleg (beginscherm, inloggen en agenda), de PDF en de README.
+- In de uitnodiging staat: "Open Planbord op je telefoon (op Android in Chrome, niet in Samsung Internet)".
+- De stappen zijn voor Chrome geschreven; in Samsung Internet heten de menu's anders.
+
+**Verder**
+- Geen nieuwe gegevens, geen migratie.
+- Advies in de README: zet in Supabase het aantal mails per uur op bijvoorbeeld 100 (Authentication → Rate Limits). Eerder stond daar 60.
