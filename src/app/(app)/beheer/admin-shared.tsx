@@ -53,6 +53,26 @@ const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: st
     tone: 'warning',
     text: 'Opgeslagen. Er zijn invallen vervallen; zie "Let op" op het overzicht.',
   },
+  // De uitnodiging (V33).
+  'uitnodiging-verstuurd': { tone: 'success', text: 'Uitnodiging verstuurd.' },
+  'uitnodiging-mislukt': {
+    tone: 'warning',
+    text: 'De uitnodiging kon niet worden verstuurd. Planbord probeert het later opnieuw; kijk bij Beheer → Mails.',
+  },
+  'uitnodiging-niet-mogelijk': {
+    tone: 'warning',
+    text: 'Geen uitnodiging verstuurd: deze medewerker is inactief of heeft nog geen inlogaccount.',
+  },
+  'uitnodigingen-verstuurd': { tone: 'success', text: 'De uitnodigingen zijn verstuurd.' },
+  'uitnodigingen-deels': {
+    tone: 'warning',
+    text: 'Niet alle uitnodigingen zijn verstuurd. Planbord probeert het later opnieuw; kijk bij Beheer → Mails.',
+  },
+  'uitnodigingen-mislukt': {
+    tone: 'warning',
+    text: 'De uitnodigingen konden niet worden verstuurd. Planbord probeert het later opnieuw; kijk bij Beheer → Mails.',
+  },
+  'uitnodigingen-niemand': { tone: 'success', text: 'Iedereen die kan inloggen, heeft al een uitnodiging gehad.' },
 };
 
 /** Korte melding na een actie, via ?melding=… in de URL, en (fase 3) hoe het met de mails ging via ?mail=…. */

@@ -15,8 +15,11 @@ import {
 } from '@/lib/admin/forms';
 import { batchShiftOps, planShiftsEnd, planShiftsFrom, weekdayList, type ShiftOp } from '@/lib/admin/shifts';
 import { requireAdmin, type Viewer } from '@/lib/auth/session';
+import { loadEmployeesWithAccounts, loadInvites } from '@/lib/db/admin-queries';
 import { mapRecurringShift } from '@/lib/db/mappers';
 import { formatDate } from '@/lib/engine/format';
+import { inviteNow } from '@/lib/mail/after-action';
+import { canBeInvited, inviteTargets } from '@/lib/mail/invites';
 
 type Supabase = Viewer['supabase'];
 
@@ -158,6 +161,45 @@ export async function retryAccount(formData: FormData): Promise<void> {
   }
   revalidatePath('/beheer/medewerkers', 'layout');
   redirect(`/beheer/medewerkers/${id}?melding=${melding}`);
+}
+
+/** De uitnodiging voor één medewerker (V33). Kan altijd opnieuw, en gaat ook als meldingen uit staan. */
+export async function inviteEmployee(formData: FormData): Promise<void> {
+  const { supabase } = await requireAdmin();
+  const id = String(formData.get('id') ?? '');
+  if (!isUuid(id)) redirect('/beheer/medewerkers');
+  const [person, account] = await Promise.all([
+    supabase.from('employees').select('is_active').eq('id', id).maybeSingle(),
+    supabase.from('employee_accounts').select('user_id').eq('employee_id', id).maybeSingle(),
+  ]);
+  let melding = 'uitnodiging-niet-mogelijk';
+  if (canBeInvited({ id, isActive: Boolean(person.data?.is_active), hasAccount: Boolean(account.data?.user_id) })) {
+    const counts = await inviteNow(supabase, [id]);
+    melding = counts.sent > 0 ? 'uitnodiging-verstuurd' : 'uitnodiging-mislukt';
+  }
+  revalidatePath('/beheer/medewerkers', 'layout');
+  redirect(`/beheer/medewerkers/${id}?melding=${melding}`);
+}
+
+/** "Iedereen uitnodigen" (V33): wie actief is, kan inloggen en nog geen uitnodiging kreeg. Niet jezelf. */
+export async function inviteEveryone(): Promise<void> {
+  const { supabase, employeeId } = await requireAdmin();
+  let melding = 'uitnodigingen-mislukt';
+  try {
+    const [employees, invites] = await Promise.all([loadEmployeesWithAccounts(supabase), loadInvites(supabase)]);
+    const targets = inviteTargets(employees, invites, employeeId);
+    if (targets.length === 0) {
+      melding = 'uitnodigingen-niemand';
+    } else {
+      const counts = await inviteNow(supabase, targets);
+      melding =
+        counts.sent === targets.length ? 'uitnodigingen-verstuurd' : counts.sent > 0 ? 'uitnodigingen-deels' : 'uitnodigingen-mislukt';
+    }
+  } catch (error) {
+    console.error('Iedereen uitnodigen mislukt', error instanceof Error ? error.message : error);
+  }
+  revalidatePath('/beheer/medewerkers', 'layout');
+  redirect(`/beheer/medewerkers?melding=${melding}`);
 }
 
 /** Voert de stappen uit in hoogstens drie bewerkingen: stoppen, aanpassen, toevoegen. */

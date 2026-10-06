@@ -2,6 +2,8 @@ import { attentionItems, buildGapViews, planningWindow, warningTexts, type Atten
 import { eachDay } from '../engine/dates';
 import { reviewSubstitutions } from '../engine/review';
 import type { Employee, IsoDate } from '../engine/types';
+import type { InviteRecord } from '../mail/invites';
+import { MAIL_STATUSES } from '../mail/types';
 import { counterGroupsByEmployee, mapEmployee, mapGapDismissal, mapSubstitution } from './mappers';
 import { loadPlanningSnapshot, loadSettings, must, type DbClient } from './queries';
 
@@ -26,6 +28,16 @@ export async function loadEmployeesWithAccounts(client: DbClient): Promise<Emplo
       email: account?.email ?? null,
       hasAccount: Boolean(account?.user_id),
     };
+  });
+}
+
+/** De uitnodigingen uit de wachtrij (V33), voor de stand bij de medewerkers. Alleen voor beheerders (RLS). */
+export async function loadInvites(client: DbClient, employeeId?: string): Promise<InviteRecord[]> {
+  const query = client.from('mail_queue').select('employee_id, status, created_at, sent_at').eq('kind', 'invite');
+  const rows = must(await (employeeId ? query.eq('employee_id', employeeId) : query), 'de uitnodigingen');
+  return rows.flatMap((row) => {
+    const status = MAIL_STATUSES.find((item) => item === row.status);
+    return status ? [{ employeeId: row.employee_id, status, createdAt: row.created_at, sentAt: row.sent_at }] : [];
   });
 }
 
