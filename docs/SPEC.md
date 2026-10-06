@@ -22,7 +22,7 @@ Doel: een webapp waarin medewerkers inloggen en hun eigen rooster, de roosters v
 ## Techniek
 - Next.js (App Router), TypeScript (strict) en Tailwind CSS, in actuele stabiele versies.
 - Supabase voor Auth, Postgres en Row Level Security, in een EU-regio.
-- Hosting op Netlify, gekoppeld aan deze repo. Niet op Vercel: het gratis plan daar is alleen voor niet-commercieel gebruik.
+- Hosting op Vercel, in het betaalde team van 22labs, gekoppeld aan deze repo, met de server in Frankfurt. Eerder stond hier Netlify, omdat het gratis plan van Vercel alleen voor niet-commercieel gebruik is; met het betaalde team geldt dat niet (gewijzigd op 6 oktober 2026, besluit V32).
 - Code, tabel- en variabelenamen in het Engels; alle tekst in de app in het Nederlands.
 - Tijdzone overal Europe/Amsterdam. Datums als "di 14 okt", tijden 24-uurs.
 - Mobile-first en installeerbaar op het beginscherm (manifest en iconen). Een offline-modus is niet nodig.
@@ -30,7 +30,7 @@ Doel: een webapp waarin medewerkers inloggen en hun eigen rooster, de roosters v
 - Laat pagina's niet indexeren (noindex).
 
 ## Beperkingen van deze ontwikkelomgeving
-- Je werkt in een cloudomgeving zonder toegang tot mijn Supabase-database. Ik test via de previewlink van Netlify.
+- Je werkt in een cloudomgeving zonder toegang tot mijn Supabase-database. Ik test via de previewlink van Vercel.
 - Schrijf databasewijzigingen als migraties in `supabase/migrations/`.
 - Lever per fase ook één gebundeld bestand, bijvoorbeeld `supabase/setup/fase-1.sql`, dat ik in één keer in de SQL-editor kan plakken. Maak de SQL waar mogelijk herhaalbaar (`if not exists`).
 - Geef in de migraties expliciet GRANTs aan `authenticated`, en aan `anon` alleen waar echt nodig. Vertrouw niet op standaardrechten.
@@ -213,7 +213,7 @@ Stap voor stap, voor iemand met alleen een browser:
   - Site URL en redirect-URL's instellen;
   - eigen SMTP instellen (bijvoorbeeld Resend), zodat de inlogmails bij collega's aankomen;
   - de eerste beheerder aanmaken met een SQL-snippet.
-- **Netlify**: repo koppelen, omgevingsvariabelen instellen (zie `.env.example`) en deploy previews voor pull requests.
+- **Vercel**: repo koppelen, omgevingsvariabelen instellen (zie `.env.example`) en previews voor pull requests.
 - Hoe ik een fase test, live zet en de Excel importeer.
 
 ## Niet doen

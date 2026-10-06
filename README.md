@@ -108,13 +108,14 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Een laadscherm.** Na een tik zie je meteen een opzet van de pagina, terwijl de gegevens nog onderweg zijn.
 - **Minder wachten.** Een pagina haalt haar gegevens op terwijl Planbord nog controleert wie er kijkt, in plaats van erna.
 - **Warm houden.** Van 's ochtends vroeg tot 's avonds laat houdt een geplande taak de server wakker. Zo duurt de eerste pagina na een rustige periode geen paar seconden meer.
-- Nog sneller kan met twee instellingen; zie stap 9. Zie ook besluit V31 in het plan van fase 4.
+- **Server in Frankfurt.** Sinds de overstap naar Vercel (besluit V32) draait de server naast de database.
+- Nog iets sneller kan met nieuwe inlogsleutels in Supabase; zie stap 9. Zie ook de besluiten V31 en V32 in het plan van fase 4.
 
 ---
 
 ## Eenmalig: de app in de lucht zetten
 
-Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboards van Supabase en Netlify kunnen iets afwijken van wat hier staat; ze veranderen af en toe.
+Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboards van Supabase en Vercel kunnen iets afwijken van wat hier staat; ze veranderen af en toe.
 
 ### Stap 1. Supabase-project
 
@@ -173,7 +174,7 @@ Open in Supabase **Authentication**.
 4. **Rate Limits:** zet het aantal mails per uur na het instellen van SMTP op een waarde die past bij het team, bijvoorbeeld `60`.
 5. **Sessions:** laat de standaard staan, dus geen *time-box* en geen *inactivity timeout*. Zo blijf je op je eigen telefoon ingelogd.
 6. **URL Configuration:**
-   - **Site URL:** het adres van de app, bijvoorbeeld `https://planbord.netlify.app` (dat weet je na stap 4).
+   - **Site URL:** het adres van de app, bijvoorbeeld `https://planbord.vercel.app` (dat weet je na stap 4).
    - **Redirect URLs:** niet nodig. Planbord gebruikt geen inloglinks.
 
 ### Stap 3. Sleutels opzoeken
@@ -186,33 +187,36 @@ In Supabase onder **Project Settings**:
 
 Heeft je project alleen de oude sleutels (`anon` en `service_role`)? Dat werkt ook: gebruik dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` en `SUPABASE_SERVICE_ROLE_KEY` als namen in stap 4.
 
-### Stap 4. Netlify
+### Stap 4. Vercel
 
-1. Ga naar [app.netlify.com](https://app.netlify.com) → **Add new project → Import an existing project → GitHub** en kies deze repository.
-   - **Branch to deploy:** `main`.
-   - De rest van de build-instellingen staat in [`netlify.toml`](netlify.toml): `npm run build` en Node 22.
-2. Zet vóór de eerste deploy onder **Project configuration → Environment variables**:
+Planbord draait bij Vercel, in het betaalde team van 22labs (besluit V32). Het gratis plan van Vercel mag niet voor een bedrijf.
+
+1. Ga naar [vercel.com](https://vercel.com), kies het team van 22labs en klik op **Add New → Project**. Kies bij **Import Git Repository** deze repository.
+   - Ziet Vercel de repository niet? Geef de GitHub-app van Vercel er dan toegang toe (**Configure GitHub App**).
+   - **Framework Preset:** Next.js. Dat vult Vercel zelf in.
+   - **Project Name:** bijvoorbeeld `planbord`. Het adres wordt dan iets als `https://planbord.vercel.app`.
+   - Laat de build-instellingen staan. De regio (Frankfurt), het bouwcommando en de geplande taken staan in [`vercel.json`](vercel.json), en Node 22 staat in `package.json`.
+2. Zet onder **Environment Variables** de waarden hieronder, voor **Production** en **Preview**. Dat kan vóór de eerste deploy, of later onder **Settings → Environment Variables**.
 
    | Naam | Waarde | Let op |
    |---|---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | de Project URL | |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | de Publishable key | |
-   | `SUPABASE_SECRET_KEY` | de Secret key | vink **Contains secret values** aan |
-   | `SITE_URL` | optioneel: het adres van de gewone app, bijvoorbeeld `https://planbord.netlify.app` | mag voor alle contexten: dan gaan agendalinks en de link in mails ook vanuit een preview naar de gewone app. Leeg = het adres waarop de app draait |
+   | `SUPABASE_SECRET_KEY` | de Secret key | zet **Sensitive** aan |
+   | `SITE_URL` | het adres van de gewone app, bijvoorbeeld `https://planbord.vercel.app` | ook voor Preview: dan gaan agendalinks en de link in mails vanuit een preview naar de gewone app. Leeg = het adres waarop de app draait |
 
-   - Netlify zet de `NEXT_PUBLIC_`-waarden bij het bouwen in de app. Pas je ze aan, start dan een nieuwe deploy.
+   - Vercel zet de `NEXT_PUBLIC_`-waarden bij het bouwen in de app. Pas je een waarde aan, start dan een nieuwe deploy: **Deployments** → de bovenste → **⋯ → Redeploy**.
    - De secret key gebruikt de app alleen op de server:
      - voor accountbeheer: aanmaken, e-mailadres wijzigen en blokkeren bij inactief;
      - om agendafeeds te serveren;
      - voor de geplande taak voor mails;
      - om een medewerker volledig te verwijderen.
    - Voor de mails komen er in stap 7 nog een paar waarden bij.
-3. **Deploy Previews:** controleer onder **Build & deploy → Deploy Previews** dat er een preview komt voor elke pull request. Netlify zet dan een link in de pull request.
-   - Bestond de pull request al vóór je Netlify koppelde? Dan komt de preview bij de volgende wijziging in die pull request.
-4. **Private of public:** een nieuw Netlify-project is eerst *Private*. Je ziet dan onderaan de site een balk met **Make public**, en alleen jij en je Netlify-team kunnen de site openen. Klik op **Make public** zodra collega's erin moeten. Planbord blijft dan nog steeds afgeschermd: zonder inlogcode zie je niets, en zoekmachines mogen niets indexeren.
-5. Wil je een eigen domein? Stel het in onder **Domain management** en pas daarna de **Site URL** in Supabase en `SITE_URL` in Netlify aan.
+3. **Previews.** Vercel maakt bij elke pull request vanzelf een preview en zet de link in de pull request. Een preview open je alleen als je in het team bij Vercel bent ingelogd. De gewone app is voor iedereen bereikbaar; zonder inlogcode zie je er niets, en zoekmachines mogen niets indexeren.
+4. **Geen meetdiensten.** Laat **Analytics** en **Speed Insights** uit. Zet ook de **Vercel Toolbar** uit, onder **Settings** (zoek op "Toolbar"). Planbord blokkeert hem toch.
+5. **Eigen domein?** Stel het in onder **Settings → Domains**. Pas daarna de **Site URL** in Supabase en `SITE_URL` in Vercel aan.
 
-> Previews en productie gebruiken dezelfde Supabase-database, tenzij je per context andere waarden instelt. Vóór de livegang is dat prima. Daarna kun je voor de previews een tweede Supabase-project maken en die sleutels alleen in de context **Deploy Previews** zetten.
+> Previews en productie gebruiken dezelfde Supabase-database, tenzij je per omgeving andere waarden instelt. Vóór de livegang is dat prima. Daarna kun je voor de previews een tweede Supabase-project maken en die sleutels alleen voor **Preview** zetten.
 
 ### Stap 5. De eerste beheerder
 
@@ -269,20 +273,20 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
      $b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
      ```
    - Of op een Mac of Linux: `openssl rand -base64 32`.
-3. **Netlify → Project configuration → Environment variables:**
+3. **Vercel → Settings → Environment Variables**, voor Production en Preview:
 
    | Naam | Waarde | Let op |
    |---|---|---|
    | `SMTP_HOST` | `smtp.gmail.com` | |
    | `SMTP_PORT` | `465` | |
    | `SMTP_USER` | het adres van de mailbox | |
-   | `SMTP_PASSWORD` | het app-wachtwoord | vink **Contains secret values** aan |
+   | `SMTP_PASSWORD` | het app-wachtwoord | zet **Sensitive** aan |
    | `MAIL_FROM` | `Planbord <adres van de mailbox>` | de afzender die collega's zien |
-   | `CRON_SECRET` | het geheim uit stap 2 | vink **Contains secret values** aan |
+   | `CRON_SECRET` | het geheim uit stap 2 | zet **Sensitive** aan. Vercel stuurt het mee als de geplande taak de app aanroept |
 
    - De namen moeten precies zo heten: de app leest alleen deze namen. Bewaar je de waarden ook in een wachtwoordkluis of een secret manager, dan mogen ze daar anders heten.
    - De link in de mail gaat naar `SITE_URL` (stap 4). Zonder `SITE_URL` gaat hij naar het adres waarop de app draait.
-   - Start daarna een nieuwe deploy (**Deploys → Trigger deploy**), zodat de app de nieuwe waarden gebruikt.
+   - Start daarna een nieuwe deploy (**Deployments** → de bovenste → **⋯ → Redeploy**), zodat de app de nieuwe waarden gebruikt.
 4. **Eerst testen**, in Planbord onder **Beheer → Instellingen**:
    1. Klik op **Testmail naar mij**. Die gaat naar je eigen werkmail, ook als mails nog uit staan.
    2. Bekijk het voorbeeld van de herinneringen voor morgen.
@@ -294,8 +298,8 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
      - om 16:00 de herinneringen voor morgen versturen. De app bepaalt zelf wanneer het 16:00 is in Nederland, ook met zomer- en wintertijd;
      - mislukte mails opnieuw proberen;
      - de wachtrij opruimen.
-   - Controleren: Netlify → **Logs & metrics → Functions → herinneringen**. Daar staat elk uur een run, met een eventuele fout.
-   - De taak roept de app aan via het gewone adres. Staat de site nog op **Private** (stap 4), dan komt die aanroep er niet door en gaan er geen herinneringen weg. Zet de site dan op **public**.
+   - Controleren: Vercel → **Settings → Cron Jobs**. Daar staan de taken uit `vercel.json`, met een knop om ze met de hand te starten. Wat er gebeurde, zie je onder **Logs**.
+   - Laat de beveiliging van Vercel (**Deployment Protection**) op de standaard staan. Die beschermt alleen previews; zou ze ook de gewone app afschermen, dan komt de geplande taak er niet door.
 
 ### Stap 8. Pushmeldingen (fase 4)
 
@@ -303,9 +307,9 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
 2. **Sleutels maken:** ga in Planbord naar **Beheer → Instellingen → Sleutels voor pushmeldingen** en klik op **Sleutels maken**.
    - Je eigen browser maakt het sleutelpaar. Het gaat niet naar de server en wordt nergens bewaard.
    - Laad je de pagina opnieuw, dan zijn de sleutels weg. Maak dan gewoon nieuwe.
-3. **Netlify → Project configuration → Environment variables:** zet de drie waarden erin, voor alle contexten.
+3. **Vercel → Settings → Environment Variables:** zet de drie waarden erin, voor Production en Preview.
 
-   | Key | Value | Contains secret values |
+   | Naam | Waarde | Sensitive |
    |---|---|---|
    | `VAPID_PUBLIC_KEY` | de publieke sleutel | nee |
    | `VAPID_PRIVATE_KEY` | de privésleutel | **ja** |
@@ -321,19 +325,14 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
 
 ### Stap 9. Sneller (optioneel)
 
-Het warm houden (V31) werkt vanzelf. Je hoeft er niets voor te doen, zolang de site op **public** staat, net als bij de herinneringen in stap 7. Met twee instellingen wordt Planbord nog sneller.
+De server staat al in Frankfurt, naast de database (V32), en het warm houden (V31) werkt vanzelf. Eén instelling maakt Planbord nog iets sneller:
 
 1. **Nieuwe inlogsleutels in Supabase.** Dit is gratis en mijn aanrader.
    - Ga in Supabase naar **Project Settings → JWT Keys**.
    - Staat bij de huidige sleutel **Legacy JWT secret**? Klik dan op **Migrate JWT secret** en daarna op **Rotate keys**.
    - Staat er al een sleutel van het type ECC of RSA? Dan hoef je niets te doen.
-   - Niemand wordt uitgelogd. In Netlify verandert niets: de publishable key en de secret key blijven hetzelfde.
+   - Niemand wordt uitgelogd. In Vercel verandert niets: de publishable key en de secret key blijven hetzelfde.
    - Daarna controleert Planbord de inlog zelf. Nu vraagt het dat bij elke pagina aan Supabase.
-2. **De server naar Frankfurt.** Hiervoor heb je een betaald abonnement bij Netlify nodig.
-   - Netlify zet de server van de app standaard in de VS; de database staat in Frankfurt. Elke vraag aan de database gaat dus over de oceaan.
-   - Met een betaald abonnement kies je de regio zelf: **Project configuration → Build & deploy → Functions region** → **EU (Frankfurt), eu-central-1**. Zie je die plek niet, zoek dan op "Functions region".
-   - Start daarna een nieuwe deploy.
-   - Lokaal nagebootst gaat een pagina dan van zo'n 0,35 naar 0,05 tot 0,1 seconde.
 
 ---
 
@@ -342,16 +341,16 @@ Het warm houden (V31) werkt vanzelf. Je hoeft er niets voor te doen, zolang de s
 Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en een testlijstje.
 
 1. Heeft de fase een SQL-bestand (`supabase/setup/fase-N.sql`)? Draai dat eerst in de SQL Editor van Supabase.
-2. Open de **deploy preview**: de link staat in de pull request, bijvoorbeeld `https://deploy-preview-1--planbord.netlify.app`.
+2. Open de **preview**: Vercel zet de link in de pull request. Je moet daarvoor in het team bij Vercel zijn ingelogd.
 3. Loop het testlijstje uit de pull request door, het liefst op je telefoon.
-4. Alles goed? **Merge** de pull request. Netlify zet `main` dan automatisch live.
+4. Alles goed? **Merge** de pull request. Vercel zet `main` dan automatisch live.
 5. Iets niet goed? Zet een opmerking in de pull request.
 
 ---
 
 ## De uitleg doorsturen
 
-- **Stuur de link** naar het adres van Planbord met `/uitleg` erachter, bijvoorbeeld `https://planbord-udenhout.netlify.app/uitleg`. Daar staan alle video's en de PDF.
+- **Stuur de link** naar het adres van Planbord met `/uitleg` erachter, bijvoorbeeld `https://planbord.vercel.app/uitleg`. Daar staan alle video's en de PDF.
 - **Liever losse bestanden?** De PDF download je bovenaan die pagina.
 - **De video's in hoge kwaliteit** (1080 × 1920), bijvoorbeeld voor de groepsapp, staan niet in de repo. Je krijgt ze los bij de oplevering. Opnieuw maken kan met [`tools/uitleg-video/`](tools/uitleg-video/README.md) (`node render.mjs`).
 
@@ -433,9 +432,8 @@ npm run dev                  # http://localhost:3000
 
 ### Bekende punten
 
-- **`middleware.ts` in plaats van `proxy.ts`.** Next.js 16 noemt `middleware` verouderd en toont daarover een waarschuwing bij de build. Die is te verwachten. Netlify kan een `proxy.ts` nu niet verpakken (opennextjs-netlify #3171, #3562 en #3575); zie §16 van het plan.
 - **Tijdvelden** tonen de tijd zoals het toestel is ingesteld. Op een Nederlands ingesteld toestel is dat 24-uurs.
-- **Herinneringen alleen op de gewone app.** Netlify draait de geplande taak niet op een deploy preview. In een preview test je met de testmail en het voorbeeld; de echte herinnering zie je pas na de merge.
+- **Herinneringen alleen op de gewone app.** Vercel draait de geplande taken niet op een preview. In een preview test je met de testmail en het voorbeeld; de echte herinnering zie je pas na de merge.
 - **Spam.** Belandt een mail van Planbord toch in de spam, laat collega's het adres dan aan hun contacten toevoegen.
 - **Pushmeldingen.**
   - Op een iPhone werken ze alleen vanaf het beginscherm, en Apple kan een abonnement zonder melding laten verlopen. Opent iemand Mijn rooster, dan werkt Planbord het abonnement van dat toestel bij.
