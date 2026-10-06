@@ -32,6 +32,7 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 
 **Voor beheerders**
 - **Nog te regelen** op het overzicht: elk gat per vestiging en dagdeel.
+  - Bovenaan staat een overzicht per week: hoeveel gaten en op welke dagen, ook voor weken met niets te regelen. Een tik springt naar die week (V34).
   - Je ziet de drie beste invallers, met de reden in gewone taal.
   - Met **Inzetten** wijs je iemand toe. Planbord wijst nooit zelf iemand toe.
   - Een gat kun je **negeren**. Het komt terug als het tekort groter wordt.
@@ -102,6 +103,23 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Waar de link staat:** op de inlogpagina ("Nieuw hier? Bekijk de uitleg") en in de kop van de app ("Uitleg").
 - De video's tonen een verzonnen team en hebben geen geluid. Ze staan bij de app zelf, niet op YouTube, dus er komen geen trackers mee.
 - Zie besluit V30 in het plan van fase 4. De bron van de video's staat in [`tools/uitleg-video/`](tools/uitleg-video/README.md).
+
+### Collega's uitnodigen
+
+- **Iedereen tegelijk:** Beheer → Medewerkers → **Iedereen uitnodigen**.
+  - Dat gaat naar iedereen die actief is, een inlogaccount heeft en nog geen uitnodiging kreeg.
+  - Jijzelf krijgt er geen. Je bevestigt eerst, met het aantal erbij.
+- **Eén collega:** Beheer → Medewerkers → de naam → blok Inloggen → **Uitnodiging sturen**.
+  - Daarna zie je "Uitgenodigd op …" en kun je hem opnieuw sturen.
+  - De lijst toont het label *uitgenodigd*.
+- **De mail:**
+  - alleen naar de eigen werkmail, met de voornaam;
+  - een link naar Planbord en naar de uitleg;
+  - hoe inloggen gaat: met de code uit de mail, zonder wachtwoord.
+  - Er staat geen inloglink in en er zitten geen plaatjes of trackers in.
+- **Ook als Meldingen versturen uit staat.** Zo kun je iedereen uitnodigen voordat herinneringen en meldingen aan gaan.
+- **Mislukt het versturen,** dan probeert Planbord het elk uur opnieuw. Elke uitnodiging staat onder Beheer → Mails.
+- Zie besluit V33 in het plan van fase 4.
 
 ### Snelheid
 
@@ -290,7 +308,8 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
 4. **Eerst testen**, in Planbord onder **Beheer → Instellingen**:
    1. Klik op **Testmail naar mij**. Die gaat naar je eigen werkmail, ook als mails nog uit staan.
    2. Bekijk het voorbeeld van de herinneringen voor morgen.
-   3. Zet daarna pas **Meldingen versturen** aan (tot fase 4 heette die schakelaar **Mails versturen**).
+   3. Werkt de testmail, dan kun je je collega's uitnodigen: Beheer → Medewerkers → **Iedereen uitnodigen**. Dat kan al voordat je **Meldingen versturen** aanzet.
+   4. Zet daarna pas **Meldingen versturen** aan (tot fase 4 heette die schakelaar **Mails versturen**).
 
    Previews en de gewone app delen één database. Staat de schakelaar aan, dan gaan ook mails van acties in een preview echt naar collega's.
 5. **De geplande taak** draait elk uur, alleen op de gepubliceerde site en niet op een preview.
@@ -304,6 +323,7 @@ Planbord mailt via de Google Workspace-mailbox die ook de inlogcodes verstuurt (
 ### Stap 8. Pushmeldingen (fase 4)
 
 1. **Supabase:** draai [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql) in de SQL Editor, na fase 1 tot en met 3.
+   - Komt er later iets bij in dit bestand, zoals de uitnodiging (V33), draai het dan opnieuw. Dat is veilig: bestaande gegevens blijven staan.
 2. **Sleutels maken:** ga in Planbord naar **Beheer → Instellingen → Sleutels voor pushmeldingen** en klik op **Sleutels maken**.
    - Je eigen browser maakt het sleutelpaar. Het gaat niet naar de server en wordt nergens bewaard.
    - Laad je de pagina opnieuw, dan zijn de sleutels weg. Maak dan gewoon nieuwe.
@@ -351,6 +371,7 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 ## De uitleg doorsturen
 
 - **Stuur de link** naar het adres van Planbord met `/uitleg` erachter, nu `https://planbord-ten.vercel.app/uitleg`. Daar staan alle video's en de PDF.
+- **Of laat Planbord het doen:** de uitnodiging (Beheer → Medewerkers → **Iedereen uitnodigen**) bevat de link naar de app en naar de uitleg. Zie [Collega's uitnodigen](#collegas-uitnodigen).
 - **Liever losse bestanden?** De PDF download je bovenaan die pagina.
 - **De video's in hoge kwaliteit** (1080 × 1920), bijvoorbeeld voor de groepsapp, staan niet in de repo. Je krijgt ze los bij de oplevering. Opnieuw maken kan met [`tools/uitleg-video/`](tools/uitleg-video/README.md) (`node render.mjs`).
 
