@@ -43,12 +43,20 @@ export function SubmitButton({
 }
 
 /** Kopieert tekst naar het klembord en laat kort zien dat het gelukt is. */
-export function CopyButton({ text, label = 'Kopieer link' }: { text: string; label?: string }) {
+export function CopyButton({
+  text,
+  label = 'Kopieer link',
+  variant = 'secondary',
+}: {
+  text: string;
+  label?: string;
+  variant?: 'primary' | 'secondary';
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
-      className={buttonClass('secondary', 'md')}
+      className={buttonClass(variant, 'md')}
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(text);

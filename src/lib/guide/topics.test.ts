@@ -39,6 +39,18 @@ describe('uitleg voor collega’s', () => {
     expect(steps.filter((step) => step.includes('planbord.voorbeeld.nl'))).toHaveLength(2);
   });
 
+  it('legt de agenda uit voor iPhone én Android', () => {
+    const agenda = topics.find((topic) => topic.id === 'agenda');
+    const iphone = agenda?.steps.find((group) => group.device === 'iPhone')?.steps.join(' ') ?? '';
+    const android = agenda?.steps.find((group) => group.device === 'Android')?.steps.join(' ') ?? '';
+    expect(iphone).toContain('Toevoegen aan agenda');
+    // Op Android werkt die knop niet: daar kopieer je de link en gaat het via de website van Google.
+    expect(android).not.toContain('Toevoegen aan agenda');
+    expect(android).toContain('Kopieer link');
+    expect(android).toContain('calendar.google.com');
+    expect(android).toContain('Synchroniseren');
+  });
+
   it('noemt geen e-mailadressen en geen redenen van afwezigheid', () => {
     const text = JSON.stringify(topics);
     expect(text).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.]+/);

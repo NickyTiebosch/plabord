@@ -147,19 +147,32 @@ export function guideTopics(address: string): GuideTopic[] {
       id: 'agenda',
       title: 'Je rooster in je agenda',
       summary: 'Zet je diensten in de agenda van je telefoon. Die werkt zichzelf bij.',
+      // Eén video, van de iPhone. Op Android kan de app Google Agenda geen agenda via een link
+      // toevoegen; dat gaat via de website (besluit V35). Die stappen staan er als tekst bij.
       videos: [{ file: 'agenda', device: 'iPhone', seconds: 26 }],
       steps: [
         {
+          device: 'iPhone',
           steps: [
             'Tik onderin op Agenda.',
             'Tik bij Mijn rooster op Link maken.',
-            'iPhone: tik op Toevoegen aan agenda, dan op Abonneer en Voeg toe.',
-            'Je ziet de link maar één keer. Kwijt? Maak een nieuwe; de oude werkt dan niet meer.',
+            'Tik op Toevoegen aan agenda, dan op Abonneer en Voeg toe.',
+          ],
+        },
+        {
+          device: 'Android',
+          steps: [
+            'Tik onderin op Agenda, bij Mijn rooster op Link maken en dan op Kopieer link.',
+            'Open Chrome en ga naar calendar.google.com. Tik op ⋮ en zet Desktopsite aan.',
+            'Tik bij Andere agenda’s op + en kies Via URL. Zie je dat niet? Tik dan eerst linksboven op ☰.',
+            'Plak de link en tik op Agenda toevoegen.',
+            'Open de app Google Agenda: ☰ → Instellingen → de nieuwe agenda (of eerst Meer weergeven). Zet Synchroniseren aan.',
           ],
         },
       ],
       notes: [
-        'Google Agenda: doe dit op een computer. Kopieer de link, ga naar calendar.google.com, klik bij Andere agenda’s op + → Via URL en plak de link.',
+        'Je ziet de link maar één keer. Kwijt? Maak een nieuwe; de oude werkt dan niet meer.',
+        'Op een computer gaat Google Agenda net zo, zonder Desktopsite.',
         'Outlook: kopieer de link, kies Agenda toevoegen → Abonneren vanaf internet en plak de link.',
         'Google en Outlook halen wijzigingen zelf op, soms pas na een paar uur. In Planbord zie je altijd de actuele stand.',
       ],

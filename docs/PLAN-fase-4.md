@@ -19,6 +19,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V32 | Aanvulling: overstap van Netlify naar Vercel, in het betaalde team van 22labs, met de server in Frankfurt. Geen eigen domein: het adres is `planbord-ten.vercel.app`. Zie §12. |
 | V33 | Aanvulling: een knop Uitnodiging sturen, per medewerker en voor iedereen tegelijk. De uitnodiging gaat ook als Meldingen versturen uit staat. Zie §13. |
 | V34 | Aanvulling: Nog te regelen toont bovenaan een overzicht per week, en de gaten staan per week. Zie §13. |
+| V35 | Aanvulling: de agenda koppelen op Android. Op de agendapagina, in de uitleg en in de PDF staan eigen stappen voor Android, en op een Android-telefoon is Kopieer link de knop. Zie §14. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -379,3 +380,26 @@ De eigenaar vroeg: "Maak die knop Uitnodiging sturen maar. En kan ik ook in een 
 - Bovenaan staat per week in de periode één regel, bijvoorbeeld "Week 42 · 12–18 okt · 3 gaten · di 13 · do 15 · vr 16". Weken zonder gat staan er ook, als "niets te regelen".
 - Een tik op een week springt naar die week. Daaronder staan de gaten per week, met de week als kopje.
 - Het indelen per week is een pure functie met tests (`gapWeeks` in `src/lib/admin/planning.ts`).
+
+---
+
+## 14. Aanvulling: de agenda koppelen op Android (V35)
+Een collega met een Android-telefoon kreeg het rooster niet in de agenda. De eigenaar: "ik zie ook niks over hoe het werkt op android. alleen op iphones en ipads". Op het voorstel: "ja maak het zo".
+
+**Waarom het niet werkte**
+- De knop Toevoegen aan agenda is een webcal-link. Een iPhone opent daarmee de app Agenda; op Android opent zo'n link niets.
+- De app Google Agenda kan geen agenda via een link toevoegen. Dat kan alleen op de website calendar.google.com: op een computer, of op de telefoon in Chrome met Desktopsite aan. Daarna zet je de agenda in de app aan bij Synchroniseren.
+
+**Wat er verandert**
+- **Agendapagina:** een eigen blok Android (Google Agenda) met de stappen. Het vervangt het blok Google Agenda, met een regel voor wie het liever op een computer doet.
+- **Op een Android-telefoon:**
+  - staat dat blok bovenaan en is het open;
+  - is bij een nieuwe link Kopieer link de grote knop, zonder Toevoegen aan agenda, met een verwijzing naar de stappen.
+- **Herkennen:**
+  - De server kijkt naar de kopteksten van het verzoek: `Sec-CH-UA-Platform` (Chrome en Samsung Internet) en de user-agent (ook Firefox).
+  - Een pure functie met tests: `isAndroid` in `src/lib/feeds/device.ts`.
+  - Planbord bewaart daar niets van.
+  - Herkent Planbord een Android-telefoon niet, bijvoorbeeld met Desktopsite aan, dan staat het blok Android er gewoon, alleen dicht.
+- **Uitleg en PDF:** bij Je rooster in je agenda staan de stappen voor iPhone en Android apart. De video blijft die van de iPhone; de stappen voor Android staan er als tekst bij. In de PDF staan ze naast elkaar. De PDF telt daardoor zes pagina's in plaats van vijf.
+- **Opdracht:** in `docs/SPEC.md` staat bij Agenda nu ook Android, met een verwijzing naar dit besluit.
+- Geen nieuwe gegevens, geen migratie en geen handmatige stappen.
