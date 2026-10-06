@@ -10,6 +10,9 @@
 import { tl, buildStage, localBox, tap, highlight, caption, camera, intro, outro, loadBoxes, ready, el, css, mid, appFrame, switchPage } from '../lib/ui.js';
 import { iosAlert, subscribeSheet, calendarList } from '../lib/ios.js';
 
+// Het adres van Planbord komt van render.mjs of pdf.mjs (UITLEG_ADRES).
+if (!window.UITLEG_ADRES) throw new Error('UITLEG_ADRES ontbreekt');
+const FEED = `webcal://${window.UITLEG_ADRES}/feed/…`;
 const boxes = await loadBoxes();
 const s = buildStage({ title: 'Je rooster in je agenda', chip: 'iPhone' });
 const cam = camera(s);
@@ -18,11 +21,11 @@ const { mijn, agenda } = frame.pages;
 const withLink = frame.pages['agenda-link'];
 const alert = iosAlert(s.screen, {
   title: 'Abonneer op agenda?',
-  message: 'webcal://planbord-udenhout.netlify.app/feed/…',
+  message: FEED,
   cancel: 'Annuleer',
   confirm: 'Abonneer',
 });
-const sheet = subscribeSheet(s.screen, { name: 'Planbord – Mijn rooster', url: 'webcal://planbord-udenhout.netlify.app/feed/…' });
+const sheet = subscribeSheet(s.screen, { name: 'Planbord – Mijn rooster', url: FEED });
 const calendar = calendarList(s.screen, [
   { day: 'Vandaag · maandag 5 oktober', today: true, title: 'Dienst Den Bosch 07:30–18:00', sub: '07:30 – 18:00' },
   { day: 'dinsdag 6 oktober', title: 'Dienst Den Bosch 07:30–18:00', sub: '07:30 – 18:00' },

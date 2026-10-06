@@ -1,12 +1,14 @@
 // Rendert een uitlegvideo beeld voor beeld naar MP4 (H.264, 1080 x 1920, 30 beelden per seconde).
 //   node render.mjs <naam>                      hele video naar out/<naam>.mp4 en een poster out/<naam>.jpg
 //   node render.mjs <naam> --frames=1.5,6,12    alleen losse beelden naar out/<naam>-<t>.png (om te bekijken)
+// Een video die het adres van Planbord toont, heeft UITLEG_ADRES nodig (zie address.mjs).
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { once } from 'node:events';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
+import { guideAddress } from './address.mjs';
 
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
@@ -28,12 +30,14 @@ const port = server.address().port;
 
 const [name, ...args] = process.argv.slice(2);
 const framesArg = args.find((arg) => arg.startsWith('--frames='));
+const address = fs.readFileSync(path.join(ROOT, 'videos', `${name}.html`), 'utf8').includes('UITLEG_ADRES') ? guideAddress() : null;
 fs.mkdirSync(path.join(ROOT, 'out'), { recursive: true });
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2 });
 page.on('console', (msg) => msg.type() === 'error' && console.error('console:', msg.text()));
 page.on('pageerror', (error) => console.error('pageerror:', error.message));
+if (address) await page.addInitScript((value) => { window.UITLEG_ADRES = value; }, address);
 await page.goto(`http://127.0.0.1:${port}/videos/${name}.html`);
 await page.waitForFunction(() => window.ready === true, null, { timeout: 30000 });
 const duration = await page.evaluate(() => window.timeline.duration);
