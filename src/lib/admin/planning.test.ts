@@ -6,6 +6,7 @@ import {
   buildGapDetail,
   buildGapViews,
   dayPartsLabel,
+  gapWeeks,
   impactLines,
   planningWindow,
   reviewSummary,
@@ -21,6 +22,32 @@ const lotteAway = teamSnapshot({ absences: [absence('a1', 'lotte', MON)] });
 describe('Nog te regelen', () => {
   it('kijkt vanaf vandaag zoveel weken vooruit als ingesteld', () => {
     expect(planningWindow('2026-10-01', 8)).toEqual({ from: '2026-10-01', to: '2026-11-25' });
+  });
+
+  it('deelt de gaten in per week, ook de weken zonder gat (V34)', () => {
+    // Woensdag 7 oktober t/m dinsdag 20 oktober: drie (delen van) weken.
+    const gaps = [
+      { date: '2026-10-08', id: 'a' },
+      { date: '2026-10-08', id: 'b' },
+      { date: '2026-10-10', id: 'c' },
+      { date: '2026-10-20', id: 'd' },
+    ];
+    const weeks = gapWeeks(gaps, { from: '2026-10-07', to: '2026-10-20' });
+    expect(weeks.map((week) => [week.key, week.week, week.from, week.to, week.rangeLabel])).toEqual([
+      ['2026-W41', 41, '2026-10-07', '2026-10-11', '7–11 okt'],
+      ['2026-W42', 42, '2026-10-12', '2026-10-18', '12–18 okt'],
+      ['2026-W43', 43, '2026-10-19', '2026-10-20', '19–20 okt'],
+    ]);
+    expect(weeks.map((week) => week.gaps.map((gap) => gap.id))).toEqual([['a', 'b', 'c'], [], ['d']]);
+    expect(weeks.map((week) => week.dayLabels)).toEqual([['do 8', 'za 10'], [], ['di 20']]);
+  });
+
+  it('telt de weken over de jaarwisseling goed', () => {
+    const weeks = gapWeeks([{ date: '2027-01-02' }], { from: '2026-12-28', to: '2027-01-10' });
+    expect(weeks.map((week) => [week.key, week.rangeLabel, week.gaps.length])).toEqual([
+      ['2026-W53', '28 dec 2026 – 3 jan 2027', 1],
+      ['2027-W01', '4–10 jan', 0],
+    ]);
   });
 
   it('toont per gat het tekort, de eerste drie voorstellen en een link naar alle keuzes', () => {
