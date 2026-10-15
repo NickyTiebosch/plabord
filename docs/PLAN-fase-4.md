@@ -556,7 +556,7 @@ Op de vragen koos de eigenaar: "Toch inzetten, dan door" en "Knop Zelf inspringe
 
 **Wanneer het niet kan**
 - Zelf inspringen kan niet als je in een dagdeel van het gat afwezig bent (ook aangevraagd), als je die dag al ergens invalt (trek die inval dan eerst in), of als je daar al aan de balie staat. De reden staat er dan, zonder knop.
-- Wie niet mag invallen in die vestiging (Mag invallen in), staat ook niet onder Schuiven.
+- Wie niet inzetbaar is aan de balie van die vestiging (bij de medewerker: Inzetbaar aan de balie in), staat ook niet onder Schuiven.
 - Op een voorbije dag staan er geen knoppen voor schuiven of zelf inspringen.
 - Is een gat in de vestiging waar je vandaan schuift ooit genegeerd, met hetzelfde of een groter tekort, dan staat het nieuwe gat daar als genegeerd. Je ziet dat op de pagina, met de knop Terugzetten.
 
