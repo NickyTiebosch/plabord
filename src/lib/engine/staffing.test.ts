@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { absence, staffingNorms, substitution, teamSnapshot } from './__fixtures__/team';
 import { createScheduleContext } from './schedule';
-import { counterLocations, createNormLookup, staffingOf } from './staffing';
-import type { PlanningSnapshot } from './types';
+import { counterLocations, createNormLookup, shortfallWithout, staffingOf } from './staffing';
+import type { DayPart, PlanningSnapshot } from './types';
 
 // Week 42 van 2026: ma 12 t/m za 17 oktober.
 const MON = '2026-10-12';
@@ -72,5 +72,30 @@ describe('bezetting tegen de norm', () => {
       'breda',
     ]);
     expect(staffingNorms).toHaveLength(36);
+  });
+});
+
+describe('wie kan er weg zonder dat de vestiging onder de norm zakt (V40)', () => {
+  function without(snapshot: PlanningSnapshot, date: string, groupId: string, employeeId: string, dayParts: DayPart[] = ['morning', 'afternoon']) {
+    const context = createScheduleContext(snapshot);
+    return shortfallWithout(context.entriesOn(date), createNormLookup(snapshot.staffingNorms), date, groupId, employeeId, dayParts);
+  }
+
+  it('geeft de dagdelen waarin de vestiging zonder hem onder de norm zakt, met de bezetting van dan', () => {
+    // Maandag, Joris afwezig: Den Bosch heeft Sanne en Bram. Zonder Sanne blijft er 1 over.
+    const snapshot = teamSnapshot({ absences: [absence('a1', 'joris', MON)] });
+    expect(without(snapshot, MON, 'den_bosch', 'sanne')).toEqual([
+      { dayPart: 'morning', count: 1, norm: 2, shortage: 1 },
+      { dayPart: 'afternoon', count: 1, norm: 2, shortage: 1 },
+    ]);
+    expect(without(snapshot, MON, 'den_bosch', 'sanne', ['afternoon'])).toEqual([
+      { dayPart: 'afternoon', count: 1, norm: 2, shortage: 1 },
+    ]);
+  });
+
+  it('is leeg als de vestiging op de norm blijft, of als hij daar niet aan de balie telt', () => {
+    expect(without(teamSnapshot(), MON, 'den_bosch', 'sanne')).toEqual([]);
+    // Ingrid is hiker/buitendienst en telt niet mee.
+    expect(without(teamSnapshot({ absences: [absence('a1', 'joris', MON)] }), MON, 'den_bosch', 'ingrid')).toEqual([]);
   });
 });
