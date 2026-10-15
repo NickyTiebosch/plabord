@@ -64,7 +64,7 @@ const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: st
   },
   'zelf-ingesprongen': {
     tone: 'success',
-    text: 'Je staat die dag nu zelf aan de balie. In het rooster staat het als gewijzigd; terugdraaien kan via je naam in het rooster.',
+    text: 'Je staat die dag nu zelf aan de balie. In het rooster staat het als gewijzigd; via je naam in het rooster zet je de dag terug naar je vaste dienst.',
   },
   'zelf-ingesprongen-nieuw-gat': {
     tone: 'warning',
