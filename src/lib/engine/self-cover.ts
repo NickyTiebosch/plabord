@@ -63,7 +63,7 @@ export interface SelfCoverRefusal {
   code: SelfCoverCode;
   /** De dagdelen waar het om gaat: waarin je afwezig bent, al daar staat, of die geen tijden hebben. */
   dayParts: DayPart[];
-  /** Bij `substituting`: waar je die dag al invalt. */
+  /** Bij `substituting`: waar je die dag al invalt. Bij `already_there`: de vestiging van het gat. */
   groupId: string | null;
 }
 
@@ -104,7 +104,7 @@ export function planSelfCover(
   if (lent) return refuse('substituting', [], lent.groupId);
 
   const alreadyThere = dayParts.filter((part) => countersAt(entries, groupId, part).includes(employeeId));
-  if (alreadyThere.length > 0) return refuse('already_there', alreadyThere);
+  if (alreadyThere.length > 0) return refuse('already_there', alreadyThere, groupId);
 
   const weekday = weekdayOf(date);
   const gapTimes = shiftTimesForDayParts(context.settings, weekday, dayParts);

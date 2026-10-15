@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { absence, substitution, teamSnapshot } from '../engine/__fixtures__/team';
+import { absence, override, substitution, teamSnapshot } from '../engine/__fixtures__/team';
 import { absenceImpact } from '../engine/impact';
+import { reviewSubstitutions } from '../engine/review';
 import {
   attentionItems,
   buildGapDetail,
   buildGapViews,
   dayPartsLabel,
+  gapPath,
   gapWeeks,
   impactLines,
   planningWindow,
@@ -14,9 +16,11 @@ import {
   substitutionItems,
   warningTexts,
   withNotice,
+  withSelfCover,
 } from './planning';
 
 const MON = '2026-10-12';
+const TUE = '2026-10-13';
 const lotteAway = teamSnapshot({ absences: [absence('a1', 'lotte', MON)] });
 
 describe('Nog te regelen', () => {
@@ -96,6 +100,150 @@ describe('Nog te regelen', () => {
 
   it('heeft geen keuzes als er geen tekort is', () => {
     expect(buildGapDetail(teamSnapshot(), MON, 'eindhoven', [])?.options).toEqual([]);
+  });
+});
+
+describe('schuiven en zelf inspringen (V40)', () => {
+  // Maandag: Lotte, Joris, Danique, Hans en Yara afwezig. Eindhoven heeft alleen Daan;
+  // Den Bosch (Sanne en Bram) en Breda (Eva en Thijs) zitten precies op de norm.
+  const tightAbsences = ['lotte', 'joris', 'danique', 'hans', 'yara'].map((id, index) => absence(`t${index}`, id, MON));
+  const tight = teamSnapshot({ absences: tightAbsences });
+  // Wouter (Overig, ma/wo/vr) speelt de beheerder die kijkt.
+  const wouter = { employeeId: 'wouter', today: MON };
+
+  it('zet wie alleen op de norm van de eigen vestiging afvalt onder Schuiven, met de vraag vooraf', () => {
+    const option = buildGapDetail(tight, MON, 'eindhoven', [])?.options[0];
+    expect(option?.candidates).toEqual([]);
+    expect(option?.shortfall.map((item) => [item.candidate.name, item.key])).toEqual([
+      ['Sanne', 'den_bosch|morning:1/2,afternoon:1/2'],
+      ['Thijs', 'breda|morning:1/2,afternoon:1/2'],
+    ]);
+    expect(option?.shortfall[0]?.confirm).toBe(
+      'Sanne valt dan op ma 12 okt in bij Eindhoven (ochtend en middag). Den Bosch zakt daardoor onder de norm: ochtend 1/2, middag 1/2. Daarna kies je wie er in Den Bosch komt. Doorgaan?',
+    );
+    // Bij "Wie kan niet" staan ze dan niet meer.
+    expect(option?.excluded.map((item) => item.name)).toEqual(['Daan', 'Danique', 'Hans', 'Lotte', 'Milan', 'Zoë']);
+    // Zonder kijker geen Zelf inspringen.
+    expect(option?.selfCover).toBeNull();
+  });
+
+  it('telt op de kaart in Nog te regelen wie onder Schuiven staat', () => {
+    const { gaps } = buildGapViews(tight, { from: MON, to: MON }, []);
+    expect(gaps.map((gap) => [gap.groupId, gap.candidateCount, gap.shortfallCount, gap.selfCover])).toEqual([
+      ['eindhoven', 0, 2, null],
+    ]);
+  });
+
+  it('toont Zelf inspringen met wat er met je eigen dienst gebeurt', () => {
+    const options = buildGapDetail(lotteAway, MON, 'eindhoven', [], wouter)?.options;
+    expect(options?.[0]?.selfCover).toEqual({
+      kind: 'possible',
+      text: 'Jij: aan de balie in Eindhoven, 07:30–18:00. Je dienst van die dag (overig, 07:30–18:00) vervalt.',
+      hint: null,
+      confirm:
+        'Jij staat dan op ma 12 okt aan de balie in Eindhoven, 07:30–18:00. Je dienst van die dag (overig, 07:30–18:00) vervalt. Doorgaan?',
+      dayParts: ['morning', 'afternoon'],
+      key: 'replace|other:none:07:30-18:00|eindhoven|morning+afternoon|07:30-18:00|-',
+    });
+    expect(options?.[2]?.selfCover).toMatchObject({
+      text: 'Jij: aan de balie in Eindhoven, 13:00–18:00. Je dienst van die dag (overig, 07:30–18:00) vervalt.',
+    });
+  });
+
+  it('zegt het als je die dag nog niet ingeroosterd bent, of op geen dienst stond', () => {
+    const tuesday = teamSnapshot({ absences: [absence('a1', 'lotte', TUE), absence('a2', 'milan', TUE)] });
+    expect(buildGapDetail(tuesday, TUE, 'eindhoven', [], { employeeId: 'wouter', today: TUE })?.options[0]?.selfCover).toMatchObject({
+      text: 'Jij: aan de balie in Eindhoven, 07:30–18:00. Je staat die dag nog niet ingeroosterd.',
+      confirm: 'Jij staat dan op di 13 okt aan de balie in Eindhoven, 07:30–18:00. Doorgaan?',
+    });
+    const off = teamSnapshot({ absences: [absence('a1', 'lotte', MON)], shiftOverrides: [override('o1', 'wouter', MON, { kind: 'off' })] });
+    expect(buildGapDetail(off, MON, 'eindhoven', [], wouter)?.options[0]?.selfCover).toMatchObject({
+      text: 'Jij: aan de balie in Eindhoven, 07:30–18:00. Je stond die dag op geen dienst; dat vervalt.',
+      confirm: 'Jij staat dan op ma 12 okt aan de balie in Eindhoven, 07:30–18:00. Je stond die dag op geen dienst; dat vervalt. Doorgaan?',
+    });
+  });
+
+  it('maakt je dienst langer als je al aan dezelfde balie staat', () => {
+    const snapshot = teamSnapshot({
+      absences: [absence('a1', 'bram', MON, MON, { dayPart: 'afternoon' })],
+      shiftOverrides: [override('o1', 'joris', MON, { kind: 'shift', groupId: 'den_bosch', role: 'counter', startTime: '07:30', endTime: '13:00' })],
+    });
+    expect(buildGapDetail(snapshot, MON, 'den_bosch', [], { employeeId: 'joris', today: MON })?.options[0]?.selfCover).toMatchObject({
+      text: 'Jij: aan de balie in Den Bosch, 07:30–18:00. Je dienst daar wordt langer (was 07:30–13:00).',
+      confirm: 'Jij staat dan op ma 12 okt aan de balie in Den Bosch, 07:30–18:00. Dat is in plaats van 07:30–13:00. Doorgaan?',
+    });
+  });
+
+  it('zegt erbij als je ook gewoon kunt invallen, zodat de rest van je dienst blijft', () => {
+    // Hans (Overig) mag in Eindhoven invallen en staat in de lijst.
+    expect(buildGapDetail(lotteAway, MON, 'eindhoven', [], { employeeId: 'hans', today: MON })?.options[0]?.selfCover).toMatchObject({
+      kind: 'possible',
+      hint: 'Je staat ook in de lijst om in te vallen; dan blijft de rest van je dienst staan.',
+    });
+  });
+
+  it('noemt de balie waar je vandaan komt, en of die onder de norm zakt', () => {
+    const bram = { employeeId: 'bram', today: MON };
+    expect(buildGapDetail(tight, MON, 'eindhoven', [], bram)?.options[0]?.selfCover).toMatchObject({
+      text: 'Jij: aan de balie in Eindhoven, 07:30–18:00. Je dienst van die dag (balie Den Bosch, 07:30–18:00) vervalt, en Den Bosch zakt dan onder de norm: ochtend 1/2, middag 1/2.',
+      confirm:
+        'Jij staat dan op ma 12 okt aan de balie in Eindhoven, 07:30–18:00. Je dienst van die dag (balie Den Bosch, 07:30–18:00) vervalt, en Den Bosch zakt daardoor onder de norm: ochtend 1/2, middag 1/2. Daarna kies je wie er in Den Bosch komt. Doorgaan?',
+    });
+    expect(buildGapDetail(lotteAway, MON, 'eindhoven', [], bram)?.options[0]?.selfCover).toMatchObject({
+      text: 'Jij: aan de balie in Eindhoven, 07:30–18:00. Je dienst van die dag (balie Den Bosch, 07:30–18:00) vervalt; Den Bosch blijft op de norm.',
+    });
+  });
+
+  it('zegt waarom zelf inspringen niet kan, en toont niets op een voorbije dag', () => {
+    const self = (snapshot: typeof lotteAway, employeeId: string, today = MON) =>
+      buildGapDetail(snapshot, MON, 'eindhoven', [], { employeeId, today })?.options[0]?.selfCover;
+    expect(self(teamSnapshot({ absences: [absence('a1', 'lotte', MON), absence('a2', 'wouter', MON)] }), 'wouter')).toEqual({
+      kind: 'blocked',
+      text: 'Zelf inspringen kan niet: je bent die dag afwezig (ochtend en middag).',
+    });
+    expect(self(teamSnapshot({ absences: [absence('a1', 'lotte', MON)], substitutions: [substitution('s1', 'danique', MON, 'breda', ['morning'])] }), 'danique')).toEqual({
+      kind: 'blocked',
+      text: 'Zelf inspringen kan niet: je valt die dag al in bij Breda. Trek die inval eerst in bij Beheer → Invallen.',
+    });
+    expect(self(lotteAway, 'daan')).toEqual({
+      kind: 'blocked',
+      text: 'Zelf inspringen kan niet: je staat die dag (ochtend en middag) al aan de balie in Eindhoven.',
+    });
+    expect(self(lotteAway, 'wouter', TUE)).toBeNull();
+  });
+
+  it('zet Zelf inspringen op de kaarten, alleen als het kan', () => {
+    const { gaps } = buildGapViews(lotteAway, { from: MON, to: MON }, []);
+    expect(withSelfCover(lotteAway, gaps, wouter)[0]?.selfCover).toMatchObject({ kind: 'possible', dayParts: ['morning', 'afternoon'] });
+    expect(withSelfCover(lotteAway, gaps, { employeeId: 'daan', today: MON })[0]?.selfCover).toBeNull();
+    // De kaart zelf blijft verder gelijk.
+    expect(withSelfCover(lotteAway, gaps, wouter)[0]).toMatchObject({ key: gaps[0]?.key, proposals: gaps[0]?.proposals });
+  });
+
+  it('heeft een pad naar de pagina van een gat, dat ook als terugweg mag', () => {
+    expect(gapPath('den_bosch', MON)).toBe('/beheer/regelen/den-bosch/2026-10-12');
+    expect(safeReturnPath(gapPath('den_bosch', MON), '/beheer')).toBe('/beheer/regelen/den-bosch/2026-10-12');
+  });
+
+  it('lost een schuif op: Sanne toch naar Eindhoven, en Wouter springt zelf in in Den Bosch', () => {
+    // 1. Sanne staat onder Schuiven.
+    expect(buildGapDetail(tight, MON, 'eindhoven', [])?.options[0]?.shortfall[0]?.candidate.employeeId).toBe('sanne');
+    // 2. Na Toch inzetten heeft Den Bosch een gat. Petra kan invallen, Daan staat onder Schuiven, en Wouter kan zelf inspringen.
+    const moved = [substitution('s1', 'sanne', MON, 'eindhoven')];
+    const afterMove = teamSnapshot({ absences: tightAbsences, substitutions: moved });
+    const denBosch = buildGapDetail(afterMove, MON, 'den_bosch', [], wouter);
+    expect(denBosch?.shortParts).toEqual(['morning', 'afternoon']);
+    expect(denBosch?.options[0]?.candidates.map((item) => item.name)).toEqual(['Petra']);
+    expect(denBosch?.options[0]?.shortfall.map((item) => item.candidate.name)).toEqual(['Daan']);
+    expect(denBosch?.options[0]?.selfCover).toMatchObject({ kind: 'possible' });
+    // 3. Met de roosterwijziging van Wouter is er die dag nergens meer een gat, en vervalt er geen inval.
+    const done = teamSnapshot({
+      absences: tightAbsences,
+      substitutions: moved,
+      shiftOverrides: [override('o1', 'wouter', MON, { kind: 'shift', groupId: 'den_bosch', role: 'counter' })],
+    });
+    expect(buildGapViews(done, { from: MON, to: MON }, []).gaps).toEqual([]);
+    expect(reviewSubstitutions(done, [MON], MON)).toEqual([]);
   });
 });
 

@@ -104,7 +104,7 @@ describe('zelf inspringen (V40)', () => {
       ok: false,
       code: 'already_there',
       dayParts: ['afternoon'],
-      groupId: null,
+      groupId: 'den_bosch',
     });
   });
 
