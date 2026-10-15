@@ -24,6 +24,7 @@ Alle voorstellen uit §1 (V23–V29) zijn aangenomen:
 | V37 | Aanvulling: de uitnodiging legt ook uit hoe je Planbord op je beginscherm zet (iPhone en Android) en vraagt om de meldingen aan te zetten. Zie §16. |
 | V38 | Aanvulling: beheerders zien wie er is ingelogd (met datum en tijd van de laatste keer) en wie meldingen aan heeft. Planbord slaat daar niets extra voor op. Zie §17. |
 | V39 | Aanvulling: een mislukte uitnodiging heet ook zo. Iedereen uitnodigen neemt die collega's opnieuw mee, zonder dat iemand hem twee keer krijgt. De testmail zegt wat er mis is. Zie §18. |
+| V40 | Aanvulling: schuiven bij een gat. Wie alleen afvalt omdat de eigen vestiging dan onder de norm zakt, zet je met Toch inzetten toch in; daarna regel je meteen het nieuwe gat. Bij elk gat staat ook Zelf inspringen: een roosterwijziging voor jezelf, geen inval. Zie §19. |
 
 De keuzes in §2 gelden zoals ze er staan, met twee uitwerkingen tijdens de bouw:
 - **Sleutels maken.** Je maakt het sleutelpaar in Planbord zelf, onder Beheer → Instellingen, in plaats van met PowerShell. Je browser maakt het, en het wordt nergens bewaard. Je kopieert het daarna naar Netlify.
@@ -519,3 +520,48 @@ De eigenaar op het voorstel om dat te verbeteren: "ja bouw maar".
 **Geen nieuwe gegevens**
 - Geen migratie en geen handmatige stappen. De wachtrij had alles al: de stand, het aantal pogingen en een korte oorzaak.
 - Een uitnodiging verandert geen gegevens, dus er komt niets in het logboek, zoals bij V33.
+
+---
+
+## 19. Aanvulling: schuiven en zelf inspringen (V40)
+De eigenaar: "Ik zie dat als er iemand vast ingepland staat in Den Bosch en ik heb in Den Bosch een gat, dat ik niet iemand van de vaste dienst kan afhalen want dan staat diegene als niet beschikbaar en dan kan ik alleen uit namen kiezen welke wel beschikbaar zijn. Maar soms wil ik kunnen schuiven dus iemand vanuit Den Bosch bijvoorbeeld naar Eindhoven en ikzelf bijvoorbeeld mezelf indelen in den bosch."
+
+**Waarom dat niet ging**
+- Een kandidaat uit een andere vestiging valt af als die vestiging zonder hem onder de norm zakt (spec, vervangingsengine regel 2). Dan staat er bijvoorbeeld "Den Bosch zakt dan onder de norm".
+- Zet je die collega eerst op Geen dienst deze dag, dan valt hij af met "werkt die dag niet".
+- Jezelf eerst in Den Bosch zetten kon ook niet: daar was nog geen gat, en zonder dienst die dag sta je niet in de lijst.
+
+Op de vragen koos de eigenaar: "Toch inzetten, dan door" en "Knop Zelf inspringen".
+
+**Toch inzetten**
+- Op de pagina van een gat staat per keuze een blok **Schuiven: dan komt er elders een gat**. Daarin staat wie alléén afvalt omdat de eigen vestiging dan onder de norm zakt. Is er verder niemand, dan staat het blok open.
+- Per collega staat de uitleg, bijvoorbeeld "Sanne (balie Den Bosch): werkt die dag en mag in Eindhoven invallen, maar Den Bosch zakt dan onder de norm (ochtend en middag); 0× ingevallen in 90 dagen.", met de knop **Toch inzetten**.
+- Eerst volgt een vraag, bijvoorbeeld: "Sanne valt dan op ma 12 okt in bij Eindhoven (ochtend en middag). Den Bosch zakt daardoor onder de norm: ochtend 1/2, middag 1/2. Daarna kies je wie er in Den Bosch komt. Doorgaan?"
+- Het is een gewone inval: *ingeleend* in Eindhoven, *valt elders in* in Den Bosch, telt mee in de 90 dagen, en Sanne krijgt de mail.
+- Daarna ga je meteen naar het nieuwe gat in Den Bosch, op dezelfde dag. Tot je dat regelt, staat het gewoon bij Nog te regelen.
+- De drie voorstellen, de impactcheck en de inval-check blijven zoals ze zijn. Schuiven is altijd een bewuste keuze, nooit een voorstel.
+
+**Zelf inspringen**
+- Bij elk gat staat de knop **Zelf inspringen**: op de kaart in Nog te regelen, en op de pagina van het gat per keuze (het hele gat, of één dagdeel).
+- Je staat dan die dag aan de balie van die vestiging, voor de dagdelen van het gat, met de standaardtijden (bijvoorbeeld 13:00–18:00 voor de middag). Dat werkt ook als je die dag niet ingeroosterd bent.
+- Het is een roosterwijziging voor één dag voor jezelf, geen inval. In het rooster sta je als *gewijzigd*; terugdraaien gaat zoals bij elke roosterwijziging, via je naam in het rooster.
+- De vraag vooraf zegt wat er gebeurt, bijvoorbeeld: "Jij staat dan op ma 12 okt aan de balie in Den Bosch, 13:00–18:00. Je dienst van die dag (overig, 07:30–18:00) vervalt. Doorgaan?"
+
+**Keuzes**
+- **Werk je die dag al aan de balie van dezelfde vestiging,** bijvoorbeeld 07:30–13:00, en spring je in voor de middag? Dan wordt je dienst langer (07:30–18:00). Je raakt je ochtend niet kwijt.
+- **Werk je die dag elders,** bijvoorbeeld in Overig? Dan vervalt die dienst voor die dag; je staat alleen aan de balie in de dagdelen van het gat. Er bestaat één dienst per dag. Kun je ook gewoon invallen, dan zegt Planbord dat erbij: met **Inzetten** blijft de rest van je dienst staan.
+- **Stond je zelf aan een andere balie** en zakt die daardoor onder de norm? Dan staat dat in de vraag vooraf, en ga je daarna door naar dat gat, net als bij Toch inzetten.
+- **Geen mail aan jezelf** na Zelf inspringen: je deed het zelf. Invallers van wie de inval daardoor vervalt, krijgen wel een mail. De herinnering van 16:00 voor een gewijzigde dag komt gewoon.
+- **Je akkoord hoort bij wat je zag.** Is de bezetting of je eigen rooster intussen veranderd, dan slaat Planbord niets op en vraagt het je opnieuw te kijken. Een gewone klik op Inzetten schuift nooit.
+
+**Wanneer het niet kan**
+- Zelf inspringen kan niet als je in een dagdeel van het gat afwezig bent (ook aangevraagd), als je die dag al ergens invalt (trek die inval dan eerst in), of als je daar al aan de balie staat. De reden staat er dan, zonder knop.
+- Wie niet mag invallen in die vestiging (Mag invallen in), staat ook niet onder Schuiven.
+- Op een voorbije dag staan er geen knoppen voor schuiven of zelf inspringen.
+- Is een gat in de vestiging waar je vandaan schuift ooit genegeerd, met hetzelfde of een groter tekort, dan staat het nieuwe gat daar als genegeerd. Je ziet dat op de pagina, met de knop Terugzetten.
+
+**Verder**
+- Het logboek legt beide stappen vast: de inval, en je roosterwijziging met jezelf als degene die het deed.
+- `CLAUDE.md` blijft gelijk: Planbord wijst nog steeds nooit zelf iemand toe.
+- In `docs/SPEC.md` staat bij de vervangingsengine een verwijzing naar dit besluit.
+- Geen nieuwe gegevens, geen migratie en geen handmatige stappen.
