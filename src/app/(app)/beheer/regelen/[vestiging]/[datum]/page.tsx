@@ -11,7 +11,7 @@ import { isIsoDate, isoWeekKey, todayInAmsterdam } from '@/lib/engine/dates';
 import { groupSlug } from '@/lib/views/tabs';
 import { Flash } from '../../../admin-shared';
 import { ignoreGap, unignoreGap } from '../../actions';
-import { CandidateRow } from '../../gap-card';
+import { CandidateRow, SelfCoverRow, ShortfallRow } from '../../gap-card';
 
 export const metadata: Metadata = { title: 'Regelen' };
 
@@ -25,7 +25,7 @@ export default async function GapDetailPage({
   const [{ vestiging, datum }, { melding, mail }] = await Promise.all([params, searchParams]);
   if (!isIsoDate(datum) || !/^[a-z-]{1,40}$/.test(vestiging)) notFound();
   const groupId = vestiging.replace(/-/g, '_');
-  const [, [snapshot, dismissals]] = await requireAdminWith((supabase) =>
+  const [viewer, [snapshot, dismissals]] = await requireAdminWith((supabase) =>
     Promise.all([
       loadPlanningSnapshot(supabase, { from: datum, to: datum }),
       supabase
@@ -36,9 +36,10 @@ export default async function GapDetailPage({
         .then((result) => must(result, 'de genegeerde gaten').map(mapGapDismissal)),
     ]),
   );
-  const detail = buildGapDetail(snapshot, datum, groupId, dismissals);
+  const today = todayInAmsterdam(new Date());
+  const detail = buildGapDetail(snapshot, datum, groupId, dismissals, { employeeId: viewer.employeeId, today });
   if (!detail) notFound();
-  const past = datum < todayInAmsterdam(new Date());
+  const past = datum < today;
   const here = `/beheer/regelen/${groupSlug(groupId)}/${datum}`;
 
   return (
@@ -92,7 +93,9 @@ export default async function GapDetailPage({
               <SectionTitle className="mb-2">Inval voor de {option.label}</SectionTitle>
               <Card className="px-4">
                 {option.candidates.length === 0 ? (
-                  <p className="py-3 text-sm text-slate-600">Niemand kan invallen.</p>
+                  <p className="py-3 text-sm text-slate-600">
+                    {option.shortfall.length > 0 ? 'Niemand kan invallen zonder te schuiven.' : 'Niemand kan invallen.'}
+                  </p>
                 ) : (
                   <ul className="divide-y divide-slate-100">
                     {option.candidates.map((candidate, index) => (
@@ -108,6 +111,30 @@ export default async function GapDetailPage({
                     ))}
                   </ul>
                 )}
+                {option.selfCover ? <SelfCoverRow view={option.selfCover} groupId={groupId} date={datum} returnTo={here} /> : null}
+                {option.shortfall.length > 0 ? (
+                  <details className="border-t border-slate-100 py-3" open={option.candidates.length === 0}>
+                    <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                      Schuiven: dan komt er elders een gat ({option.shortfall.length})
+                    </summary>
+                    <p className="mt-2 text-sm text-slate-600">
+                      Zet je iemand toch in, dan ga je daarna meteen naar het gat dat daardoor ontstaat.
+                    </p>
+                    <ul className="mt-1 divide-y divide-slate-100">
+                      {option.shortfall.map((item) => (
+                        <ShortfallRow
+                          key={item.candidate.employeeId}
+                          option={item}
+                          groupId={groupId}
+                          date={datum}
+                          dayParts={option.dayParts}
+                          returnTo={here}
+                          canAssign={!past}
+                        />
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
                 {option.excluded.length > 0 ? (
                   <details className="border-t border-slate-100 py-3">
                     <summary className="cursor-pointer text-sm font-medium text-slate-700">

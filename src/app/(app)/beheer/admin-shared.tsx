@@ -53,6 +53,38 @@ const MESSAGES: Record<string, { tone: 'success' | 'warning' | 'error'; text: st
     tone: 'warning',
     text: 'Opgeslagen. Er zijn invallen vervallen; zie "Let op" op het overzicht.',
   },
+  // Schuiven en zelf inspringen (V40).
+  'ingezet-nieuw-gat': {
+    tone: 'warning',
+    text: 'Inval ingezet. Daardoor is hier nu een gat: kies hieronder wie er komt, of spring zelf in. Tot dan staat het bij Nog te regelen.',
+  },
+  'schuiven-veranderd': {
+    tone: 'warning',
+    text: 'De bezetting is intussen veranderd. Kijk opnieuw voordat je deze collega toch inzet.',
+  },
+  'zelf-ingesprongen': {
+    tone: 'success',
+    text: 'Je staat die dag nu zelf aan de balie. In het rooster staat het als gewijzigd; terugdraaien kan via je naam in het rooster.',
+  },
+  'zelf-ingesprongen-nieuw-gat': {
+    tone: 'warning',
+    text: 'Je bent zelf ingesprongen. Daardoor is hier nu een gat: kies hieronder wie er komt. Tot dan staat het bij Nog te regelen.',
+  },
+  'zelf-verleden': { tone: 'error', text: 'Deze dag is voorbij; zelf inspringen kan niet meer.' },
+  'zelf-afwezig': {
+    tone: 'warning',
+    text: 'Zelf inspringen kan niet: je bent in een dagdeel van het gat afwezig (ook aangevraagd telt).',
+  },
+  'zelf-al-inval': {
+    tone: 'warning',
+    text: 'Zelf inspringen kan niet: je valt die dag al ergens in. Trek die inval eerst in bij Beheer → Invallen.',
+  },
+  'zelf-al-daar': { tone: 'warning', text: 'Je staat die dag al aan deze balie.' },
+  'zelf-veranderd': {
+    tone: 'warning',
+    text: 'Je rooster of de bezetting is intussen veranderd. Kijk opnieuw voordat je zelf inspringt.',
+  },
+  'zelf-niet-mogelijk': { tone: 'warning', text: 'Zelf inspringen kan hier niet. Op de pagina van het gat staat waarom.' },
   // De uitnodiging (V33).
   'uitnodiging-verstuurd': { tone: 'success', text: 'Uitnodiging verstuurd.' },
   'uitnodiging-mislukt': {

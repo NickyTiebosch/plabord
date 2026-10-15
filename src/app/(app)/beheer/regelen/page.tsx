@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, EmptyState, PageHeader, SectionTitle } from '@/components/ui';
-import { gapWeeks, type GapView, type GapWeek } from '@/lib/admin/planning';
+import { gapWeeks, withSelfCover, type GapView, type GapWeek } from '@/lib/admin/planning';
 import { requireAdminWith } from '@/lib/auth/session';
 import { loadPlanningOverview } from '@/lib/db/admin-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
@@ -56,8 +56,10 @@ function WeekOverview({ weeks }: { weeks: readonly GapWeek<GapView>[] }) {
 export default async function GapsPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
   const { melding, mail } = await searchParams;
   const today = todayInAmsterdam(new Date());
-  const [, planning] = await requireAdminWith((supabase) => loadPlanningOverview(supabase, today));
-  const weeks = gapWeeks(planning.gaps, planning.window);
+  const [viewer, planning] = await requireAdminWith((supabase) => loadPlanningOverview(supabase, today));
+  // Zelf inspringen (V40): pas na de controle wie er kijkt (V31).
+  const gaps = withSelfCover(planning.snapshot, planning.gaps, { employeeId: viewer.employeeId, today });
+  const weeks = gapWeeks(gaps, planning.window);
 
   return (
     <>

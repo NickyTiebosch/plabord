@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
+import { withSelfCover } from '@/lib/admin/planning';
 import { requireAdminWith } from '@/lib/auth/session';
 import { loadEmployeesWithAccounts, loadPlanningOverview } from '@/lib/db/admin-queries';
 import { mapAbsence } from '@/lib/db/mappers';
@@ -26,7 +27,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
   const monday = startOfIsoWeek(today);
   const saturday = addDays(monday, 5);
 
-  const [, [planning, employees, requested, thisWeek]] = await requireAdminWith((supabase) =>
+  const [viewer, [planning, employees, requested, thisWeek]] = await requireAdminWith((supabase) =>
     Promise.all([
       loadPlanningOverview(supabase, today),
       loadEmployeesWithAccounts(supabase),
@@ -44,6 +45,8 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         .then((result) => must(result, 'de afwezigheid').map(mapAbsence)),
     ]),
   );
+  // Zelf inspringen (V40) alleen op de kaarten die hier staan; de kijker is pas nu bekend (V31).
+  const shownGaps = withSelfCover(planning.snapshot, planning.gaps.slice(0, GAPS_ON_OVERVIEW), { employeeId: viewer.employeeId, today });
   const names = new Map(employees.map((employee) => [employee.id, employee.name]));
   const absentThisWeek = listAbsencesInRange(employees, thisWeek, monday, saturday);
   const withoutEmail = employees.filter((employee) => employee.isActive && !employee.email).length;
@@ -84,7 +87,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
           <EmptyState title="Niets te regelen">Alle vestigingen zitten op de norm.</EmptyState>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
-            {planning.gaps.slice(0, GAPS_ON_OVERVIEW).map((gap) => (
+            {shownGaps.map((gap) => (
               <GapCard key={gap.key} gap={gap} returnTo="/beheer" />
             ))}
           </div>
