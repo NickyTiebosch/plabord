@@ -129,6 +129,11 @@ export function clipToDayParts(times: ShiftTimes, parts: readonly DayPart[], bou
   return { start: fromMinutes(clippedStart), end: fromMinutes(clippedEnd) };
 }
 
+/** De standaarddienst van een weekdag, ingekort tot de dagdelen; `null` als er niets overblijft (V40). */
+export function shiftTimesForDayParts(settings: Settings, weekday: Weekday, dayParts: readonly DayPart[]): ShiftTimes | null {
+  return clipToDayParts(standardShiftFor(settings, weekday), dayParts, settings.dayPartBoundary);
+}
+
 /** De vaste dienst die op een datum geldt, of `null`. */
 export function findRecurringShift(shifts: readonly RecurringShift[], date: IsoDate): RecurringShift | null {
   const weekday = weekdayOf(date);

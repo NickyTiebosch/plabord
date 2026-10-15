@@ -140,7 +140,7 @@ De engine werkt voorspelbaar en kan elke keuze uitleggen: dezelfde gegevens geve
    - inzetbaar aan de balie in die vestiging;
    - die dag de hele dag ingeroosterd, niet (ook niet half) afwezig en nog niet ergens ingeleend;
    - nooit rol poets;
-   - komt hij uit een andere vestiging, dan moet die vestiging zonder hem nog aan de norm voldoen in de dagdelen van de inval.
+   - komt hij uit een andere vestiging, dan moet die vestiging zonder hem nog aan de norm voldoen in de dagdelen van de inval. Valt hij alleen daarop af, dan kan de beheerder hem toch inzetten (zie 5, besluit V40).
 
    Voor de volgorde en de normcheck tellen de groep en rol van die dag, uit de vaste dienst.
 3. **Volgorde**, per groep instelbaar. Standaard zoals het team nu werkt:
@@ -153,7 +153,9 @@ De engine werkt voorspelbaar en kan elke keuze uitleggen: dezelfde gegevens geve
 4. **Voorstel**: de top-3 kandidaten, elk met een Nederlandse uitlegregel. Bijvoorbeeld: "Danique (backoffice): werkt die dag en mag in Eindhoven invallen; 1× ingevallen in 90 dagen."
 5. **Stroom**:
    1. De beheerder kiest een voorstel of een andere geldige kandidaat, of negeert het gat.
-   2. De inval staat daarna meteen in beide roosters.
+   2. **Schuiven** (besluit V40): hij kan ook iemand toch inzetten die alleen afvalt omdat de eigen vestiging dan onder de norm zakt. Daarna regelt hij meteen het nieuwe gat dat daardoor ontstaat.
+   3. **Zelf inspringen** (besluit V40): hij kan zichzelf die dag aan de balie van het gat zetten. Dat is een roosterwijziging voor één dag, geen inval.
+   4. De inval of de wijziging staat daarna meteen in de roosters.
 
    Wijs nooit toe zonder akkoord van de beheerder.
 6. **Impactcheck**: bij het invoeren of wijzigen van afwezigheid draait de engine vóór het opslaan. Hij toont welke dagdelen onder de norm zakken en of er een voorstel is. Opslaan mag altijd.

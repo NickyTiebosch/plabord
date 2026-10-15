@@ -2,15 +2,25 @@
  * "Nog te regelen" en "Let op" (fase 2): de gaten in de komende weken met voorstellen, en de
  * invallen die aandacht nodig hebben. Puur en los te testen; de pagina's tonen alleen wat hier staat.
  */
-import { evaluateCandidates, PROPOSAL_COUNT, type Candidate, type Exclusion } from '../engine/candidates';
+import {
+  dayGroupLabel,
+  evaluateCandidates,
+  PROPOSAL_COUNT,
+  shortfallKey,
+  type Candidate,
+  type Exclusion,
+  type ShortfallCandidate,
+} from '../engine/candidates';
 import { addDays, dayOfMonth, isoWeekKey, isoWeekOf, maxDate, minDate, startOfIsoWeek, weekdayOf } from '../engine/dates';
 import { formatDateRange, formatDayShort, weekdayShort } from '../engine/format';
 import { findGaps, type Gap } from '../engine/gaps';
 import { DAY_PART_LABELS } from '../engine/labels';
 import type { AbsenceImpact } from '../engine/impact';
 import type { ReviewChange } from '../engine/review';
-import { createScheduleContext, type ScheduleContext } from '../engine/schedule';
-import { createNormLookup, staffingOf, type NormLookup } from '../engine/staffing';
+import { createScheduleContext, type ScheduleContext, type ShiftEntry } from '../engine/schedule';
+import { planSelfCover, type SelfCoverPlan, type SelfCoverRefusal } from '../engine/self-cover';
+import { createNormLookup, staffingOf, type NormLookup, type PartStaffing } from '../engine/staffing';
+import { formatTimeRange } from '../engine/time';
 import type { DayPart, GapDismissal, IsoDate, PlanningSnapshot, Substitution } from '../engine/types';
 import { groupSlug } from '../views/tabs';
 
@@ -22,6 +32,105 @@ export function planningWindow(today: IsoDate, lookaheadWeeks: number): { from: 
 /** "ochtend", "middag" of "ochtend en middag". */
 export function dayPartsLabel(parts: readonly DayPart[]): string {
   return parts.map((part) => DAY_PART_LABELS[part]).join(' en ');
+}
+
+/** De pagina van één gat, bijvoorbeeld '/beheer/regelen/den-bosch/2026-10-12'. */
+export function gapPath(groupId: string, date: IsoDate): string {
+  return `/beheer/regelen/${groupSlug(groupId)}/${date}`;
+}
+
+/** "ochtend 1/2, middag 1/2" */
+function staffingLabel(parts: readonly PartStaffing[]): string {
+  return parts.map((part) => `${DAY_PART_LABELS[part.dayPart]} ${part.count}/${part.norm}`).join(', ');
+}
+
+/** Wie er kijkt, voor Zelf inspringen (V40). Pas bekend na de controle van de sessie. */
+export interface SelfRef {
+  employeeId: string;
+  today: IsoDate;
+}
+
+/** Iemand onder Schuiven (V40), met de sleutel voor het formulier en de vraag vooraf. */
+export interface ShortfallOption {
+  candidate: ShortfallCandidate;
+  key: string;
+  confirm: string;
+}
+
+/** Zelf inspringen (V40): wat er gebeurt, met de vraag vooraf; of waarom het niet kan. */
+export type SelfCoverView =
+  | { kind: 'possible'; text: string; hint: string | null; confirm: string; dayParts: DayPart[]; key: string }
+  | { kind: 'blocked'; text: string };
+
+function groupNameOf(context: ScheduleContext, groupId: string): string {
+  return context.groupsById.get(groupId)?.name ?? groupId;
+}
+
+function shortfallOption(context: ScheduleContext, candidate: ShortfallCandidate, date: IsoDate, groupId: string, dayParts: readonly DayPart[]): ShortfallOption {
+  const source = groupNameOf(context, candidate.sourceGroupId);
+  return {
+    candidate,
+    key: shortfallKey(candidate),
+    confirm:
+      `${candidate.name} valt dan op ${formatDayShort(date)} in bij ${groupNameOf(context, groupId)} (${dayPartsLabel(dayParts)}). ` +
+      `${source} zakt daardoor onder de norm: ${staffingLabel(candidate.shortfall)}. Daarna kies je wie er in ${source} komt. Doorgaan?`,
+  };
+}
+
+/**
+ * De teksten bij Zelf inspringen. `null` als er niets te tonen is: voorbij, geen gat of geen vestiging.
+ * `hint`: je kunt hier ook gewoon invallen, dan blijft de rest van je dienst staan.
+ */
+export function selfCoverView(
+  context: ScheduleContext,
+  date: IsoDate,
+  result: SelfCoverPlan | SelfCoverRefusal,
+  hint: boolean,
+): SelfCoverView | null {
+  if (!result.ok) {
+    const parts = dayPartsLabel(result.dayParts);
+    const group = result.groupId ? groupNameOf(context, result.groupId) : '';
+    const reasons: Partial<Record<SelfCoverRefusal['code'], string>> = {
+      absent: `je bent die dag afwezig (${parts}).`,
+      substituting: `je valt die dag al in bij ${group}. Trek die inval eerst in bij Beheer → Invallen.`,
+      already_there: `je staat die dag (${parts}) al aan de balie in ${group}.`,
+      no_times: `de standaarddienst van die dag valt niet in de ${parts}.`,
+    };
+    const reason = reasons[result.code];
+    return reason ? { kind: 'blocked', text: `Zelf inspringen kan niet: ${reason}` } : null;
+  }
+
+  const where = `aan de balie in ${groupNameOf(context, result.groupId)}, ${formatTimeRange(result.times.start, result.times.end)}`;
+  const { current, source } = result;
+  let note = '';
+  let question = '';
+  if (current.kind === 'shift' && result.mode === 'extend') {
+    const was = formatTimeRange(current.times.start, current.times.end);
+    note = ` Je dienst daar wordt langer (was ${was}).`;
+    question = ` Dat is in plaats van ${was}.`;
+  } else if (current.kind === 'shift') {
+    const label = `${dayGroupLabel(context.groupsById.get(current.groupId), current.role)}, ${formatTimeRange(current.times.start, current.times.end)}`;
+    const sourceName = source ? groupNameOf(context, source.groupId) : '';
+    const falls = source && source.shortfall.length > 0 ? staffingLabel(source.shortfall) : null;
+    const tail = falls ? null : source ? `; ${sourceName} blijft op de norm.` : '.';
+    note = ` Je dienst van die dag (${label}) vervalt${tail ?? `, en ${sourceName} zakt dan onder de norm: ${falls}.`}`;
+    question = ` Je dienst van die dag (${label}) vervalt${
+      tail ?? `, en ${sourceName} zakt daardoor onder de norm: ${falls}. Daarna kies je wie er in ${sourceName} komt.`
+    }`;
+  } else if (current.kind === 'off') {
+    note = ' Je stond die dag op geen dienst; dat vervalt.';
+    question = note;
+  } else {
+    note = ' Je staat die dag nog niet ingeroosterd.';
+  }
+  return {
+    kind: 'possible',
+    text: `Jij: ${where}.${note}`,
+    hint: hint && result.mode === 'replace' ? 'Je staat ook in de lijst om in te vallen; dan blijft de rest van je dienst staan.' : null,
+    confirm: `Jij staat dan op ${formatDayShort(date)} ${where}.${question} Doorgaan?`,
+    dayParts: result.dayParts,
+    key: result.key,
+  };
 }
 
 export interface GapView {
@@ -36,13 +145,21 @@ export interface GapView {
   /** De eerste drie kandidaten voor alle dagdelen met een tekort. */
   proposals: Candidate[];
   candidateCount: number;
+  /** Hoeveel collega's alleen via schuiven kunnen (V40). */
+  shortfallCount: number;
+  /** Zelf inspringen voor het hele gat, als dat kan (V40). Komt uit `withSelfCover`. */
+  selfCover: SelfCoverView | null;
   /** De pagina met alle keuzes voor dit gat. */
   href: string;
 }
 
 function gapView(context: ScheduleContext, normOf: NormLookup, substitutions: readonly Substitution[], gap: Gap): GapView {
   const dayParts = gap.parts.map((part) => part.dayPart);
-  const candidates = evaluateCandidates(context, normOf, substitutions, { date: gap.date, groupId: gap.groupId, dayParts }).candidates;
+  const { candidates, shortfallCandidates } = evaluateCandidates(context, normOf, substitutions, {
+    date: gap.date,
+    groupId: gap.groupId,
+    dayParts,
+  });
   return {
     key: `${gap.groupId}|${gap.date}`,
     date: gap.date,
@@ -57,7 +174,9 @@ function gapView(context: ScheduleContext, normOf: NormLookup, substitutions: re
     dayParts,
     proposals: candidates.slice(0, PROPOSAL_COUNT),
     candidateCount: candidates.length,
-    href: `/beheer/regelen/${groupSlug(gap.groupId)}/${gap.date}`,
+    shortfallCount: shortfallCandidates.length,
+    selfCover: null,
+    href: gapPath(gap.groupId, gap.date),
   };
 }
 
@@ -74,6 +193,24 @@ export function buildGapViews(
     gaps: scan.gaps.map((gap) => gapView(context, normOf, snapshot.substitutions, gap)),
     ignored: scan.ignored.map((gap) => gapView(context, normOf, snapshot.substitutions, gap)),
   };
+}
+
+/**
+ * Zelf inspringen op de kaarten van Nog te regelen (V40), voor wie er kijkt. Apart van
+ * `buildGapViews`, omdat de kijker pas na het laden bekend is (V31). Kan het niet, dan geen knop.
+ */
+export function withSelfCover(snapshot: PlanningSnapshot, gaps: readonly GapView[], self: SelfRef): GapView[] {
+  if (gaps.length === 0) return [];
+  const context = createScheduleContext(snapshot);
+  const normOf = createNormLookup(snapshot.staffingNorms);
+  const entriesByDate = new Map<IsoDate, ShiftEntry[]>();
+  return gaps.map((gap) => {
+    const entries = entriesByDate.get(gap.date) ?? context.entriesOn(gap.date);
+    entriesByDate.set(gap.date, entries);
+    const request = { ...self, date: gap.date, groupId: gap.groupId, dayParts: gap.dayParts };
+    const view = selfCoverView(context, gap.date, planSelfCover(context, normOf, request, entries), false);
+    return { ...gap, selfCover: view?.kind === 'possible' ? view : null };
+  });
 }
 
 /** Eén week in het overzicht van Nog te regelen (V34). */
@@ -119,7 +256,12 @@ export interface GapOption {
   dayParts: DayPart[];
   label: string;
   candidates: Candidate[];
+  /** Wie echt niet kan. Wie alleen via schuiven kan, staat in `shortfall`. */
   excluded: Exclusion[];
+  /** Schuiven (V40): kan alleen invallen als de eigen vestiging dan onder de norm zakt. */
+  shortfall: ShortfallOption[];
+  /** Zelf inspringen (V40), alleen met een kijker. */
+  selfCover: SelfCoverView | null;
 }
 
 export interface GapDetail {
@@ -138,12 +280,16 @@ export interface GapDetail {
   options: GapOption[];
 }
 
-/** Alles voor de pagina van één gat: bezetting, keuzes per dagdeel en wie waarom afvalt. */
+/**
+ * Alles voor de pagina van één gat: bezetting, keuzes per dagdeel, wie waarom afvalt, wie via
+ * schuiven kan, en met een kijker ook Zelf inspringen (V40).
+ */
 export function buildGapDetail(
   snapshot: PlanningSnapshot,
   date: IsoDate,
   groupId: string,
   dismissals: readonly GapDismissal[],
+  self: SelfRef | null = null,
 ): GapDetail | null {
   const context = createScheduleContext(snapshot);
   const group = context.groupsById.get(groupId);
@@ -173,7 +319,25 @@ export function buildGapDetail(
     ),
     options: choices.map((dayParts) => {
       const result = evaluateCandidates(context, normOf, snapshot.substitutions, { date, groupId, dayParts }, entries);
-      return { dayParts, label: dayPartsLabel(dayParts), candidates: result.candidates, excluded: result.excluded };
+      const shortfallIds = new Set(result.shortfallCandidates.map((item) => item.employeeId));
+      const listed = (employeeId: string) =>
+        result.candidates.some((item) => item.employeeId === employeeId) || shortfallIds.has(employeeId);
+      const selfCover = self
+        ? selfCoverView(
+            context,
+            date,
+            planSelfCover(context, normOf, { ...self, date, groupId, dayParts }, entries),
+            listed(self.employeeId),
+          )
+        : null;
+      return {
+        dayParts,
+        label: dayPartsLabel(dayParts),
+        candidates: result.candidates,
+        excluded: result.excluded.filter((item) => !shortfallIds.has(item.employeeId)),
+        shortfall: result.shortfallCandidates.map((item) => shortfallOption(context, item, date, groupId, dayParts)),
+        selfCover,
+      };
     }),
   };
 }

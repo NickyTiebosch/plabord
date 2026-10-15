@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { absence, employees, override, substitution, teamSnapshot } from './__fixtures__/team';
-import { evaluateCandidates, PROPOSAL_COUNT } from './candidates';
+import { assignmentDecision, evaluateCandidates, PROPOSAL_COUNT, shortfallKey } from './candidates';
 import { createScheduleContext } from './schedule';
 import { createNormLookup } from './staffing';
 import type { DayPart, PlanningSnapshot } from './types';
@@ -124,5 +124,82 @@ describe('kandidaten voor een inval', () => {
 
   it('heeft niemand als de eigen groep gesloten is', () => {
     expect(evaluate(teamSnapshot(), '2026-04-27', 'eindhoven').candidates).toEqual([]);
+  });
+});
+
+describe('schuiven: wie alleen afvalt op de norm van de eigen vestiging (V40)', () => {
+  // Maandag: Lotte, Joris, Danique, Hans en Yara afwezig. Eindhoven heeft alleen Daan;
+  // Den Bosch (Sanne en Bram) en Breda (Eva en Thijs) zitten precies op de norm.
+  const tight = teamSnapshot({
+    absences: ['lotte', 'joris', 'danique', 'hans', 'yara'].map((id, index) => absence(`a${index}`, id, MON)),
+  });
+
+  it('staan apart, met de vestiging die dan onder de norm zakt en een uitleg', () => {
+    const result = evaluate(tight, MON, 'eindhoven');
+    expect(result.candidates).toEqual([]);
+    expect(result.shortfallCandidates.map((item) => [item.name, item.sourceGroupId])).toEqual([
+      ['Sanne', 'den_bosch'],
+      ['Thijs', 'breda'],
+    ]);
+    expect(result.shortfallCandidates[0]?.shortfall).toEqual([
+      { dayPart: 'morning', count: 1, norm: 2, shortage: 1 },
+      { dayPart: 'afternoon', count: 1, norm: 2, shortage: 1 },
+    ]);
+    expect(result.shortfallCandidates[0]?.explanation).toBe(
+      'Sanne (balie Den Bosch): werkt die dag en mag in Eindhoven invallen, maar Den Bosch zakt dan onder de norm (ochtend en middag); 0× ingevallen in 90 dagen.',
+    );
+    // Ze staan ook nog bij wie afvalt, met dezelfde reden als altijd.
+    expect(result.excluded.find((item) => item.name === 'Sanne')?.reason).toBe('Den Bosch zakt dan onder de norm (ochtend en middag)');
+  });
+
+  it('neemt alleen de dagdelen van de inval mee', () => {
+    const sanne = evaluate(tight, MON, 'eindhoven', ['afternoon']).shortfallCandidates.find((item) => item.name === 'Sanne');
+    expect(sanne?.shortfall).toEqual([{ dayPart: 'afternoon', count: 1, norm: 2, shortage: 1 }]);
+    expect(sanne?.explanation).toContain('Den Bosch zakt dan onder de norm (middag)');
+  });
+
+  it('laat wie om een andere reden afvalt erbuiten', () => {
+    const ids = evaluate(tight, MON, 'eindhoven').shortfallCandidates.map((item) => item.employeeId);
+    // Danique en Hans zijn afwezig, Daan werkt al in Eindhoven, Zoë werkt die dag niet.
+    for (const id of ['danique', 'hans', 'daan', 'zoe']) expect(ids).not.toContain(id);
+  });
+
+  it('heeft een sleutel met de vestiging en de bezetting zonder hem', () => {
+    const sanne = evaluate(tight, MON, 'eindhoven').shortfallCandidates[0];
+    expect(sanne && shortfallKey(sanne)).toBe('den_bosch|morning:1/2,afternoon:1/2');
+  });
+});
+
+describe('mag deze inval worden opgeslagen (V40)', () => {
+  const tight = teamSnapshot({
+    absences: ['lotte', 'joris', 'danique', 'hans', 'yara'].map((id, index) => absence(`a${index}`, id, MON)),
+  });
+
+  it('een gewone kandidaat altijd, ook met een sleutel', () => {
+    const result = evaluate(teamSnapshot({ absences: lotteAway }), MON, 'eindhoven');
+    expect(assignmentDecision(result, 'danique', null)).toEqual({ kind: 'candidate' });
+    // Was Sanne onder Schuiven, maar blijft Den Bosch intussen op de norm, dan is het een gewone inval.
+    expect(assignmentDecision(result, 'sanne', 'den_bosch|morning:1/2,afternoon:1/2')).toEqual({ kind: 'candidate' });
+  });
+
+  it('iemand onder Schuiven alleen met de sleutel van wat de beheerder zag', () => {
+    const result = evaluate(tight, MON, 'eindhoven');
+    expect(assignmentDecision(result, 'sanne', 'den_bosch|morning:1/2,afternoon:1/2')).toEqual({
+      kind: 'move',
+      sourceGroupId: 'den_bosch',
+      shortfall: [
+        { dayPart: 'morning', count: 1, norm: 2, shortage: 1 },
+        { dayPart: 'afternoon', count: 1, norm: 2, shortage: 1 },
+      ],
+    });
+    expect(assignmentDecision(result, 'sanne', null)).toEqual({ kind: 'invalid' });
+    expect(assignmentDecision(result, 'sanne', 'den_bosch|morning:0/2,afternoon:0/2')).toEqual({ kind: 'invalid' });
+    expect(assignmentDecision(result, 'sanne', 'breda|morning:1/2,afternoon:1/2')).toEqual({ kind: 'invalid' });
+  });
+
+  it('nooit iemand die om een andere reden afvalt', () => {
+    const result = evaluate(tight, MON, 'eindhoven');
+    expect(assignmentDecision(result, 'hans', 'den_bosch|morning:1/2,afternoon:1/2')).toEqual({ kind: 'invalid' });
+    expect(assignmentDecision(result, 'daan', null)).toEqual({ kind: 'invalid' });
   });
 });

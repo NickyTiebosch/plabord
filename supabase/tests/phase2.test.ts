@@ -154,6 +154,20 @@ describe('fase 2: invallen, roosterwijzigingen en genegeerde gaten', () => {
       ]);
     });
 
+    it('laat een beheerder zichzelf aan een balie zetten, met hem als degene die het deed (zelf inspringen, V40)', async () => {
+      await withSession(db, session(admin), async () => {
+        await db.query(`select public.set_shift_override($1, '2026-10-16', 'shift', 'den_bosch', 'counter', '13:00', '18:00')`, [
+          admin.employeeId,
+        ]);
+      });
+      const rows = await db.query(
+        `select employee_id, actor_employee_id from public.audit_log
+          where entity = 'shift_overrides' and employee_id = $1 order by id desc limit 1`,
+        [admin.employeeId],
+      );
+      expect(rows.rows).toEqual([{ employee_id: admin.employeeId, actor_employee_id: admin.employeeId }]);
+    });
+
     it('laat een medewerker niets wijzigen, maar wel alles zien', async () => {
       await withSession(db, session(bas), async () => {
         await expectError(

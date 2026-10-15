@@ -9,6 +9,7 @@ import {
   entryState,
   groupDay,
   overlappedDayParts,
+  shiftTimesForDayParts,
   type ShiftEntry,
 } from './schedule';
 import type { PlanningSnapshot, Substitution } from './types';
@@ -134,6 +135,23 @@ describe('dagdelen', () => {
     expect(clipToDayParts(times, ['afternoon'], '13:00')).toEqual({ start: '13:00', end: '18:00' });
     expect(clipToDayParts(times, ['morning'], '13:00')).toEqual({ start: '07:30', end: '13:00' });
     expect(clipToDayParts(times, [], '13:00')).toBeNull();
+  });
+});
+
+describe('standaardtijden voor dagdelen (zelf inspringen, V40)', () => {
+  it('geeft de standaarddienst, ingekort tot de dagdelen', () => {
+    expect(shiftTimesForDayParts(settings, 1, ['morning', 'afternoon'])).toEqual({ start: '07:30', end: '18:00' });
+    expect(shiftTimesForDayParts(settings, 1, ['morning'])).toEqual({ start: '07:30', end: '13:00' });
+    expect(shiftTimesForDayParts(settings, 1, ['afternoon'])).toEqual({ start: '13:00', end: '18:00' });
+    expect(shiftTimesForDayParts(settings, 1, [])).toBeNull();
+  });
+
+  it('gebruikt op zaterdag de zaterdagdienst en volgt de dagdeelgrens', () => {
+    const custom = { ...settings, saturdayShift: { start: '09:00', end: '17:00' }, dayPartBoundary: '12:30' };
+    expect(shiftTimesForDayParts(custom, 6, ['morning'])).toEqual({ start: '09:00', end: '12:30' });
+    expect(shiftTimesForDayParts(custom, 1, ['afternoon'])).toEqual({ start: '12:30', end: '18:00' });
+    // Begint de zaterdagdienst pas na de grens, dan is er geen ochtend.
+    expect(shiftTimesForDayParts({ ...settings, saturdayShift: { start: '13:30', end: '18:00' } }, 6, ['morning'])).toBeNull();
   });
 });
 

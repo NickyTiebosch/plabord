@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Card } from '@/components/ui';
-import type { GapView } from '@/lib/admin/planning';
+import type { GapView, SelfCoverView, ShortfallOption } from '@/lib/admin/planning';
 import type { Candidate } from '@/lib/engine/candidates';
 import type { DayPart } from '@/lib/engine/types';
-import { assignSubstitution, ignoreGap } from './actions';
+import { assignSubstitution, coverGapMyself, ignoreGap } from './actions';
 
 /** Knop "Inzetten" voor één kandidaat. De server controleert vlak voor het opslaan opnieuw. */
 export function AssignButton({
@@ -69,7 +69,90 @@ export function CandidateRow({
   );
 }
 
-/** Een gat in "Nog te regelen": tekort, de eerste drie voorstellen, en verder naar alle keuzes of negeren. */
+/**
+ * Iemand onder Schuiven (V40): de uitleg, en Toch inzetten met de vraag vooraf. De sleutel gaat mee,
+ * zodat de server alleen opslaat wat de beheerder zag.
+ */
+export function ShortfallRow({
+  option,
+  groupId,
+  date,
+  dayParts,
+  returnTo,
+  canAssign,
+}: {
+  option: ShortfallOption;
+  groupId: string;
+  date: string;
+  dayParts: readonly DayPart[];
+  returnTo: string;
+  canAssign: boolean;
+}) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 py-2">
+      <p className="min-w-0 flex-1 text-sm text-slate-700">{option.candidate.explanation}</p>
+      {canAssign ? (
+        <form action={assignSubstitution}>
+          <input type="hidden" name="employeeId" value={option.candidate.employeeId} />
+          <input type="hidden" name="groupId" value={groupId} />
+          <input type="hidden" name="date" value={date} />
+          {dayParts.map((part) => (
+            <input key={part} type="hidden" name="dayPart" value={part} />
+          ))}
+          <input type="hidden" name="schuiven" value={option.key} />
+          <input type="hidden" name="terug" value={returnTo} />
+          <SubmitButton size="sm" variant="secondary" confirm={option.confirm}>
+            Toch inzetten
+          </SubmitButton>
+        </form>
+      ) : null}
+    </li>
+  );
+}
+
+/** Knop "Zelf inspringen" (V40), met de vraag vooraf. Wie het is, weet de server uit de sessie. */
+export function SelfCoverButton({
+  view,
+  groupId,
+  date,
+  returnTo,
+}: {
+  view: Extract<SelfCoverView, { kind: 'possible' }>;
+  groupId: string;
+  date: string;
+  returnTo: string;
+}) {
+  return (
+    <form action={coverGapMyself}>
+      <input type="hidden" name="groupId" value={groupId} />
+      <input type="hidden" name="date" value={date} />
+      {view.dayParts.map((part) => (
+        <input key={part} type="hidden" name="dayPart" value={part} />
+      ))}
+      <input type="hidden" name="bevestigd" value={view.key} />
+      <input type="hidden" name="terug" value={returnTo} />
+      <SubmitButton size="sm" variant="secondary" confirm={view.confirm}>
+        Zelf inspringen
+      </SubmitButton>
+    </form>
+  );
+}
+
+/** Zelf inspringen op de pagina van een gat: wat er gebeurt en de knop, of waarom het niet kan. */
+export function SelfCoverRow({ view, groupId, date, returnTo }: { view: SelfCoverView; groupId: string; date: string; returnTo: string }) {
+  if (view.kind === 'blocked') return <p className="border-t border-slate-100 py-3 text-sm text-slate-500">{view.text}</p>;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 py-2">
+      <div className="min-w-0 flex-1 text-sm text-slate-700">
+        <p>{view.text}</p>
+        {view.hint ? <p className="mt-0.5 text-slate-500">{view.hint}</p> : null}
+      </div>
+      <SelfCoverButton view={view} groupId={groupId} date={date} returnTo={returnTo} />
+    </div>
+  );
+}
+
+/** Een gat in "Nog te regelen": tekort, de eerste drie voorstellen, en verder naar alle keuzes, zelf inspringen of negeren. */
 export function GapCard({ gap, returnTo }: { gap: GapView; returnTo: string }) {
   return (
     <Card className="p-4">
@@ -89,7 +172,11 @@ export function GapCard({ gap, returnTo }: { gap: GapView; returnTo: string }) {
         </p>
       </div>
       {gap.proposals.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-600">Niemand kan invallen voor het hele gat. Bekijk de keuzes per dagdeel.</p>
+        <p className="mt-2 text-sm text-slate-600">
+          {gap.shortfallCount > 0
+            ? 'Niemand kan invallen voor het hele gat zonder te schuiven. Bekijk de keuzes.'
+            : 'Niemand kan invallen voor het hele gat. Bekijk de keuzes per dagdeel.'}
+        </p>
       ) : (
         <ul className="mt-1 divide-y divide-slate-100">
           {gap.proposals.map((candidate, index) => (
@@ -109,14 +196,19 @@ export function GapCard({ gap, returnTo }: { gap: GapView; returnTo: string }) {
         <Link href={gap.href} className="text-sm font-medium text-brand-800 underline underline-offset-2">
           {gap.candidateCount > gap.proposals.length ? `Alle ${gap.candidateCount} keuzes` : 'Meer keuze en uitleg'}
         </Link>
-        <form action={ignoreGap} className="ml-auto">
-          <input type="hidden" name="groupId" value={gap.groupId} />
-          <input type="hidden" name="date" value={gap.date} />
-          <input type="hidden" name="terug" value={returnTo} />
-          <SubmitButton size="sm" variant="ghost" confirm="Dit gat negeren? Het komt terug als het tekort groter wordt.">
-            Negeren
-          </SubmitButton>
-        </form>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {gap.selfCover?.kind === 'possible' ? (
+            <SelfCoverButton view={gap.selfCover} groupId={gap.groupId} date={gap.date} returnTo={returnTo} />
+          ) : null}
+          <form action={ignoreGap}>
+            <input type="hidden" name="groupId" value={gap.groupId} />
+            <input type="hidden" name="date" value={gap.date} />
+            <input type="hidden" name="terug" value={returnTo} />
+            <SubmitButton size="sm" variant="ghost" confirm="Dit gat negeren? Het komt terug als het tekort groter wordt.">
+              Negeren
+            </SubmitButton>
+          </form>
+        </div>
       </div>
     </Card>
   );

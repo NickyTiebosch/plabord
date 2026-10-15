@@ -47,6 +47,27 @@ export function countersAt(entries: readonly ShiftEntry[], groupId: string, dayP
   return [...ids];
 }
 
+/**
+ * De dagdelen waarin een vestiging zonder deze medewerker onder de norm zakt, met de bezetting van
+ * dan (V40). Alleen dagdelen waarin hij daar nu aan de balie telt, ochtend vóór middag.
+ */
+export function shortfallWithout(
+  entries: readonly ShiftEntry[],
+  normOf: NormLookup,
+  date: IsoDate,
+  groupId: string,
+  employeeId: string,
+  dayParts: readonly DayPart[],
+): PartStaffing[] {
+  return DAY_PARTS.filter((part) => dayParts.includes(part)).flatMap((dayPart) => {
+    const ids = countersAt(entries, groupId, dayPart);
+    if (!ids.includes(employeeId)) return [];
+    const count = ids.length - 1;
+    const norm = normOf(groupId, date, dayPart);
+    return count < norm ? [{ dayPart, count, norm, shortage: norm - count }] : [];
+  });
+}
+
 /** De bezetting van één vestiging op één dag. Geef `entries` mee als je ze al hebt. */
 export function staffingOf(
   context: ScheduleContext,

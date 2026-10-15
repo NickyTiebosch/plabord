@@ -35,6 +35,8 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - Bovenaan staat een overzicht per week: hoeveel gaten en op welke dagen, ook voor weken met niets te regelen. Een tik springt naar die week (V34).
   - Je ziet de drie beste invallers, met de reden in gewone taal.
   - Met **Inzetten** wijs je iemand toe. Planbord wijst nooit zelf iemand toe.
+  - **Schuiven** (V40): valt iemand alleen af omdat de eigen vestiging dan onder de norm zakt, dan staat die op de pagina van het gat onder *Schuiven*. Met **Toch inzetten** zet je die collega toch in en ga je meteen naar het nieuwe gat. Wie niet mag invallen in die vestiging, staat er niet bij: zet dat bij de medewerker onder *Inzetbaar aan de balie in*.
+  - **Zelf inspringen** (V40): bij elk gat zet je jezelf die dag aan de balie, voor de dagdelen van het gat. Dat is een roosterwijziging voor jezelf. Werk je die dag elders, dan vervalt die dienst voor die dag; de vraag vooraf zegt precies wat er gebeurt.
   - Een gat kun je **negeren**. Het komt terug als het tekort groter wordt.
 - **Impactcheck:** bij nieuwe of gewijzigde afwezigheid zie je eerst welke gaten ontstaan en welke invallen vervallen. Opslaan mag altijd.
 - **Let op:** invallen die niet meer nodig zijn, of opnieuw geregeld moeten worden omdat de invaller zelf afwezig is. Ze blijven staan tot je op **Afgehandeld** klikt. Na een wijziging van een vaste dienst of sluitingsdag toont het overzicht welke invallen niet meer kloppen; met **Invallen bijwerken** pas je ze aan.
