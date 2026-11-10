@@ -1,6 +1,18 @@
 # Plan fase 5: fundament voor registraties, en de uitleen
 
-**Status: voorstel van 10 november 2026, nog niet goedgekeurd.** Er wordt geen code geschreven tot je akkoord geeft. Dit plan bouwt voort op fase 1 tot en met 4. Het geheel staat in `docs/ROUTEKAART.md`; de vaste afspraken in `CLAUDE.md`.
+**Status: goedgekeurd op 10 november 2026** ("verder akkoord"), met de aanpassingen hieronder. Dit plan bouwt voort op fase 1 tot en met 4. Het geheel staat in `docs/ROUTEKAART.md`; de vaste afspraken in `CLAUDE.md`.
+
+## Besluiten
+Alle voorstellen uit §1 (V41–V51) zijn aangenomen. Vier zijn aangevuld of aangepast:
+
+| Vraag | Besluit |
+|---|---|
+| V42 | De eigenaar maakt het testproject zelf aan, in het Supabase-account van Planbord. Het moet gratis blijven: het gratis plan staat een tweede actief project toe als er in dat account nog plaats is. Supabase toont de prijs vóór het aanmaken. |
+| V43 | De teamleider mag ook in het rooster helpen: afwezigheid invoeren, wijzigen en goedkeuren, en gaten regelen onder Nog te regelen. Vaste diensten, medewerkers en instellingen blijven bij de beheerder. |
+| V45 | Bevestigd: verhuur geeft de auto's mee en registreert zelf. De werkplaats en Mobiliteit krijgen geen account. |
+| V48 | Den Bosch, Eindhoven en Breda geven alle drie dagelijks auto's mee aan Mobiliteit. De 2 is een ondergrens voor de controle, geen maximum: verhuur kan altijd meer auto's aanmelden. De werkplaats krijgt voor spoedjes op zaterdag ook meerdere auto's mee. |
+
+De tekst hieronder is op deze besluiten aangepast.
 
 Fase 5 levert vier dingen:
 1. een **aparte testomgeving**, zodat het live Planbord niet verandert tot jij akkoord geeft;
@@ -10,7 +22,7 @@ Fase 5 levert vier dingen:
 
 Wat niet in fase 5 komt:
 - binnenvallers, meldingen en de invulcontrole per vestiging (fase 6);
-- rapporten, signalen en KPI's (fase 7, 9 en 10);
+- rapporten, signalen, de Uitloop en KPI's (fase 7 en 9 tot en met 11);
 - accounts voor de werkplaats of voor Mobiliteit.
 
 ---
@@ -33,8 +45,8 @@ De nummering loopt door vanaf fase 4 (V23–V40). Bij elke vraag staat een voors
   - de sleutels van dat project staan in Vercel alleen bij **Preview**. Production blijft wijzen naar de live database;
   - de testdatabase krijgt een verzonnen team (`supabase/setup/testdata.sql`), plus jouw eigen account als beheerder. Geen echte collega's;
   - de database-opzet van fase 5 draai je eerst alleen op de testdatabase. Pas bij de livegang draai je hem op live. De bundel voegt alleen toe, dus de huidige app merkt er niets van.
-- Een tweede project kan geld kosten, afhankelijk van je abonnement bij Supabase. Dat zie je bij het aanmaken.
-- Er is in deze sessie een koppeling met Supabase beschikbaar. Als je wilt, maak ik het testproject voor je aan en draai ik de opzet. Zeg het erbij; anders staat het als handmatige stap in §8.
+- **Gratis houden.** Het gratis plan van Supabase staat een tweede actief project toe als er in het account van Planbord nog plaats is. Supabase toont de prijs vóór het aanmaken. Een gratis project pauzeert na ongeveer een week zonder gebruik; je zet het met één klik weer aan.
+- Het aanmaken is een handmatige stap voor jou (§8).
 
 ### V43. De rol Teamleider
 - Nu bestaat alleen beheerder ja of nee. Een beheerder mag alles.
@@ -44,10 +56,13 @@ De nummering loopt door vanaf fase 4 (V23–V40). Bij elke vraag staat een voors
   |---|---|
   | de controle zien, voor alle vestigingen | medewerkers, accounts en rechten beheren |
   | het archief en de export van de registraties | instellingen wijzigen |
-  | een registratie van een collega corrigeren of verwijderen (komt in het logboek) | vaste diensten, afwezigheid, invallen en sluitingsdagen wijzigen |
-  | vanaf fase 7: de rapporten zien | import, mails en logboek openen |
+  | een registratie van een collega corrigeren of verwijderen (komt in het logboek) | vaste diensten en sluitingsdagen wijzigen |
+  | afwezigheid invoeren, wijzigen en goedkeuren | import, export van de planning, mails en logboek openen |
+  | gaten regelen onder Nog te regelen: een invaller toewijzen, schuiven, zelf inspringen, een gat negeren | |
+  | vanaf fase 7: de rapporten zien | |
 
-- Voor het rooster en het verlof blijft een teamleider een gewone medewerker. Wil je dat hij daar ook iets mag, bijvoorbeeld afwezigheid invoeren, zeg het dan.
+- De regel "nooit toewijzen zonder akkoord van een beheerder" wordt: zonder akkoord van een beheerder of teamleider.
+- De teamleider ziet daarvoor een beperkt Beheer: Overzicht, Afwezigheid en Invallen.
 - Alleen een beheerder kan iemand teamleider maken.
 
 ### V44. De navigatie
@@ -81,6 +96,7 @@ Dit zijn de kolommen uit je omschrijving voor Copilot, met twee aanvullingen: he
 | Reden / opmerking | vrij invullen, kort, mag leeg blijven |
 
 - **Opnieuw uitgeven.** Boven het formulier staan de auto's die de afgelopen 14 dagen door jouw vestiging zijn uitgeleend. Een tik vult kenteken, model, bestemming en "meegegeven aan" in. Voor de twee dagelijkse auto's van Mobiliteit is aanmelden dan twee tikken per auto.
+- **Meerdere auto's.** Er is geen maximum. Na het opslaan staat er **Nog een auto aanmelden**: bestemming en "meegegeven aan" blijven dan ingevuld. Zo meld je op vrijdag in één keer de auto's aan die de werkplaats voor spoedjes op zaterdag meekrijgt.
 - **Dubbel.** Een kenteken dat nog uitgeleend staat, kun je niet nog een keer aanmelden. De app zegt bij wie de auto staat.
 
 ### V47. Retour melden, ook als de auto niet is ingezet
@@ -94,10 +110,10 @@ Dit zijn de kolommen uit je omschrijving voor Copilot, met twee aanvullingen: he
 ### V48. De controle op de uitleen
 Voor beheerder en teamleider, onder Meer → Controle.
 - **Voorstel:**
-  - per vestiging stel je in hoeveel auto's Mobiliteit per werkdag krijgt. Standaard 0: dan is er geen controle. Zet je het op 2, dan toont de controle per werkdag "2 van 2 uitgegeven" in groen, of "1 van 2" in rood;
+  - per vestiging stel je in hoeveel auto's Mobiliteit per werkdag minstens krijgt. Dat staat voor Den Bosch, Eindhoven en Breda op 2. Het is een ondergrens: "1 uitgegeven, minstens 2" is rood, 2 of meer is groen. Zet je het op 0, dan is er geen controle;
+  - voor de werkplaats in het weekend geldt geen ondergrens: het aantal auto's wisselt;
   - een auto staat **te lang uit** als hij aan het eind van de eerstvolgende werkdag nog niet retour is gemeld. Voor Mobiliteit is dat de volgende werkdag, voor de werkplaats de maandag na het weekend. Sluitingsdagen tellen niet als werkdag;
   - de controle toont de laatste twee weken per vestiging, en bovenaan wat nu openstaat.
-- **Vraag:** welke vestigingen geven dagelijks auto's mee aan Mobiliteit, en is het altijd 2?
 
 ### V49. Hoe lang bewaren?
 - **Voorstel:** een uitleenregistratie blijft 24 maanden bewaard en wordt daarna automatisch verwijderd. Zo kun je een jaar met het jaar ervoor vergelijken. Het logboek blijft op 12 maanden.
@@ -130,7 +146,7 @@ Geen bedrijfsregels, wel goed om te weten. Zeg het als je iets anders wilt.
 - **Iedereen ziet alle uitgeleende auto's**, van alle vestigingen. Je eigen vestiging staat bovenaan.
 - **Geen meldingen.** Fase 5 stuurt geen mail of push over de uitleen. De herinneringen komen in fase 6.
 - **Logboek.** Aanmelden, retour en elke correctie komen in het logboek, zoals alles. Het logboek bewaart geen vrije tekst: niet de naam bij "meegegeven aan" en niet de opmerking.
-- **De rol Teamleider raakt het rooster niet.** Alle bestaande controles op beheerder blijven zoals ze zijn. Er komt een tweede controle bij ("beheerder of teamleider") die alleen de nieuwe onderdelen gebruiken.
+- **De rol Teamleider.** Er komt een tweede controle bij, "beheerder of teamleider". Die geldt voor de nieuwe onderdelen en voor afwezigheid en invallen (V43). Alle andere controles op beheerder blijven zoals ze zijn.
 
 ---
 
@@ -140,7 +156,7 @@ Nieuwe migraties, gebundeld als `supabase/setup/fase-5.sql`. Alles is toevoegen;
 - **`employees.is_team_lead`** (boolean, standaard nee).
   - Alleen een beheerder mag de kolom zetten.
   - Nieuwe hulpfunctie `private.is_lead()`: beheerder of teamleider.
-- **`groups.mobility_loans_per_day`** (klein getal, standaard 0, 0 tot 20). Alleen voor vestigingen met een balie; alleen een beheerder wijzigt het.
+- **`groups.mobility_loans_per_day`** (klein getal, standaard 0, 0 tot 20): de ondergrens voor de controle. De seed zet Den Bosch, Eindhoven en Breda op 2. Alleen een beheerder wijzigt het.
 - **`vehicle_loans`**, één rij per uitleen:
 
   | Kolom | Inhoud |
@@ -167,6 +183,7 @@ Nieuwe migraties, gebundeld als `supabase/setup/fase-5.sql`. Alles is toevoegen;
   - retour melden: iedere actieve medewerker, via een functie die alleen de retourvelden zet op een open uitleen;
   - retour ongedaan maken of aanpassen: wie retour meldde, dezelfde dag; anders teamleider of beheerder;
   - overige correcties en verwijderen: teamleider of beheerder.
+- **Rechten van de teamleider in het rooster (V43):** de policies voor schrijven op afwezigheid, invallen, roosterwijzigingen voor één dag en genegeerde gaten gaan van "beheerder" naar "beheerder of teamleider". Dat geldt ook voor de functies die bij Nog te regelen horen. De policies op medewerkers, accounts, vaste diensten, sluitingsdagen, instellingen en normen blijven alleen voor beheerders.
 - **Logboek:** een trigger op `vehicle_loans` en de nieuwe kolommen bij `employees` en `groups`.
 - **Opruimen:** registraties ouder dan 24 maanden verdwijnen in dezelfde opruimstap als het logboek.
 
@@ -180,7 +197,7 @@ Nieuwe migraties, gebundeld als `supabase/setup/fase-5.sql`. Alles is toevoegen;
   - de dagcontrole per vestiging;
   - de lijst voor Opnieuw uitgeven;
   - de rijen van de export.
-- **`src/lib/auth/session.ts`**: `Viewer.isTeamLead`, en `requireLead()` en `requireLeadWith()` naast de bestaande functies.
+- **`src/lib/auth/session.ts`**: `Viewer.isTeamLead`, en `requireLead()` en `requireLeadWith()` naast de bestaande functies. De pagina's en actions van Afwezigheid, Invallen en Nog te regelen gaan van `requireAdmin` naar `requireLead`; de rest van Beheer blijft `requireAdmin`.
 - **`src/lib/db/`**: queries voor de uitleen en de controle; de typen bijgewerkt.
 - **`src/lib/export/`**: het Excel-bestand van de uitleen.
 - **Server actions** voor aanmelden, retour, ongedaan maken, corrigeren en verwijderen. Rechten twee keer gecontroleerd: in de action en via RLS.
@@ -203,6 +220,7 @@ Eerst ontworpen voor de telefoon, met grote knoppen.
 - **Meer** (`/meer`): Agenda, Uitleg, en voor wie het mag Controle en Beheer.
 - **Controle** (`/controle`), voor teamleider en beheerder: de uitleen per vestiging per werkdag (V48).
 - **Beheer**
+  - voor de teamleider alleen Overzicht, Afwezigheid en Invallen;
   - Medewerkers: het vinkje Teamleider;
   - Instellingen: per vestiging het aantal auto's voor Mobiliteit per werkdag;
   - Export: Uitleen downloaden.
@@ -219,7 +237,8 @@ Eerst ontworpen voor de telefoon, met grote knoppen.
   - de export heeft de afgesproken tabbladen en kolommen.
 - **Databasetests** op PGlite:
   - RLS en grants van `vehicle_loans`, voor medewerker, teamleider, beheerder en niet-ingelogd;
-  - een teamleider kan geen medewerkers, instellingen of vaste diensten wijzigen;
+  - een teamleider kan afwezigheid invoeren en een invaller toewijzen, maar geen medewerkers, accounts, instellingen, normen, sluitingsdagen of vaste diensten wijzigen;
+  - een gewone medewerker kan nog steeds niets wijzigen in het rooster;
   - één open uitleen per kenteken;
   - de bundel `fase-5.sql` kan twee keer achter elkaar draaien;
   - de bestaande tests van fase 1 tot en met 4 blijven slagen.
@@ -230,7 +249,7 @@ Eerst ontworpen voor de telefoon, met grote knoppen.
 ## 7. Bouwvolgorde (kleine commits)
 1. Spec, `CLAUDE.md` en README bijwerken (V41, V42).
 2. `testdata.sql` met het verzonnen team.
-3. Migratie en tests voor de rol Teamleider; het vinkje in Beheer.
+3. Migratie en tests voor de rol Teamleider, met de rechten in het rooster (V43); het vinkje en het beperkte Beheer.
 4. Navigatie: tabbalk en Meer.
 5. Migratie en tests voor `vehicle_loans`.
 6. `src/lib/loans/` met tests.
@@ -245,7 +264,7 @@ Eerst ontworpen voor de telefoon, met grote knoppen.
 
 ## 8. Oplevering: handmatige stappen voor jou
 Vóórdat je de testlink opent:
-1. **Supabase:** een tweede project **Planbord test** aanmaken in dezelfde EU-regio. De Auth-instellingen overnemen van live: registratie uit, inloggen met e-mailcode, het e-mailsjabloon en de SMTP-gegevens.
+1. **Supabase:** een tweede project **Planbord test** aanmaken, in het account waar Planbord staat en in dezelfde EU-regio. Kies het gratis plan. De Auth-instellingen overnemen van live: registratie uit, inloggen met e-mailcode, het e-mailsjabloon en de SMTP-gegevens.
 2. **SQL-editor van het testproject:** `fase-1.sql` tot en met `fase-5.sql` draaien, daarna `testdata.sql`.
 3. **Jezelf beheerder maken** in het testproject, zoals in stap 5 van de README.
 4. **Vercel → Environment Variables:** de drie Supabase-waarden van het testproject invullen bij **Preview**. Production niet aanraken.
@@ -260,6 +279,7 @@ Bij de livegang, pas na jouw akkoord:
 
 ## 9. Risico's en aandachtspunten
 - **Tot stap 4 van §8 wijzen testlinks nog naar live.** Open tot die tijd geen testlink om iets in te voeren.
+- **De rol Teamleider raakt bestaande rechten.** De policies op afwezigheid en invallen worden vervangen. De bestaande tests van fase 1 tot en met 4 moeten blijven slagen, en er komen tests bij die bewijzen dat een gewone medewerker niets extra mag.
 - **De navigatie verandert voor iedereen** bij de livegang (V44). Een korte mededeling aan het team volstaat.
 - **Vrije tekst.** "Meegegeven aan" en de opmerking zijn vrije velden. De app kan niet tegenhouden dat iemand er iets in zet wat er niet hoort; de hint bij het veld en de bewaartermijn beperken dat.
 - **Twee databases bijhouden.** Elke volgende fase draai je eerst op test en later op live. De pull request noemt steeds beide.

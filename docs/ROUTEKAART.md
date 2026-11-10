@@ -1,6 +1,6 @@
 # Routekaart: van Planbord naar één systeem voor verhuur
 
-**Status: voorstel van 10 november 2026, nog niet goedgekeurd.** Dit document beschrijft het geheel. Per fase komt er een eigen plan (`docs/PLAN-fase-N.md`) dat je apart goedkeurt. Het plan van fase 5 is al uitgeschreven.
+**Status: volgorde goedgekeurd op 10 november 2026.** Dit document beschrijft het geheel. Per fase komt er een eigen plan (`docs/PLAN-fase-N.md`) dat je apart goedkeurt. Het plan van fase 5 is goedgekeurd.
 
 ## Waar we naartoe gaan
 Planbord is nu de rooster- en verlofapp. Het wordt de plek waar het verhuurteam ook zijn dagelijkse registraties bijhoudt, en waar jij en de teamleider de cijfers en de controle zien. De losse Excel-bestanden verdwijnen één voor één.
@@ -12,9 +12,9 @@ Planbord is nu de rooster- en verlofapp. Het wordt de plek waar het verhuurteam 
 | WPL meldingen dagregistratie | Meldingen per vestiging, met doorbelastlijst | 6 |
 | Dashboards in die twee bestanden | Rapport per werkplaats, signalen | 7 |
 | Locatie huurauto's Den Bosch | Parkeerplekken, zoeken op kenteken | 8 |
-| (bestaat niet) | Lekkagecontroles op de Rentwise-export | 9 |
-| (bestaat niet) | KPI's per medewerker en per vestiging | 10 |
-| Uitloop werklijst | Blijft voorlopig Excel | later |
+| Uitloop werklijst | Uitloop, gevoed door de Rentwise-export | 9 |
+| (bestaat niet) | Lekkagecontroles op de Rentwise-export | 10 |
+| (bestaat niet) | KPI's per medewerker en per vestiging | 11 |
 
 ## Uitgangspunten
 Deze gelden voor elke fase.
@@ -74,9 +74,23 @@ Vragen die in het plan van fase 6 terugkomen:
 - **Zoeken op kenteken.** Eén zoekveld dat toont wat Planbord zelf over die auto weet: plek, uitleen en meldingen. Geen wagenkaart en geen kopie van Rentwise.
 - **Overdracht per vestiging.** Een korte notitie voor de collega van morgen, die na een week vanzelf verdwijnt. Zonder klantgegevens.
 
-### Fase 9: lekkagecontroles op de Rentwise-export
-Dit is het eerste deel van de opdracht van de directeur: welke kosten zijn blijven liggen.
-- **Export uploaden.** Een beheerder of teamleider uploadt de export uit Rentwise. Planbord bewaart alleen de kolommen die de controles nodig hebben. Klantnamen en andere klantgegevens worden bij het inlezen weggelaten en nergens opgeslagen.
+### Fase 9: de Rentwise-export inlezen, en de Uitloop
+De Uitloop komt niet eerder, om drie redenen: het is het ingewikkeldste bestand, het team werkt er pas sinds eind oktober mee, en het hangt aan de export uit Rentwise. Het inlezen van die export wordt hier één keer gebouwd en is daarna ook de basis voor fase 10.
+- **Export uploaden.** Een beheerder of teamleider uploadt de export van de overeenkomsten uit Rentwise. Planbord bewaart alleen de kolommen die nodig zijn. Namen van particuliere klanten worden nergens opgeslagen.
+- **Uitloop.** De werklijst uit het huidige bestand:
+  - per auto: kenteken, prio, uitloopdatum, model, waar de auto nu is, retourdatum, bestemming, wie hem oppakt, status, afspraak en datum;
+  - de lijst van Frank met nieuwe auto's lees je in, aangevuld vanuit de Rentwise-export;
+  - **Verdelen**: de auto's eerlijk verdelen over wie meedoet, zoals het script nu doet;
+  - **Mijn auto's**: iedereen ziet de eigen auto's, en krijgt een melding bij een nieuwe toewijzing;
+  - een auto met de status Uit vloot gaat naar het archief;
+  - het overzicht: prio hoog, normaal en laag, retour bij klant verlopen, nog niemand opgepakt, en terug maar nog niet afgemeld.
+- **Historie inlezen.** De werklijst en het archief uit het Excel-bestand worden één keer ingelezen.
+- **Export** in de opbouw van het huidige bestand.
+
+Een vraag voor het plan van fase 9: in de kolom "Waar nu" staan bedrijfsnamen van klanten. Blijft dat zo, en geldt de regel "geen klantnamen" dus alleen voor particulieren?
+
+### Fase 10: lekkagecontroles op de Rentwise-export
+Dit is het eerste deel van de opdracht van de directeur: welke kosten zijn blijven liggen. Het gebruikt de upload uit fase 9.
 - **Vaste controles.** Welke er komen hangt af van de kolommen in de export. Kandidaten:
   - brandstof doorbelast zonder aftankkosten;
   - meer gereden dan de vrije kilometers, zonder meerkilometers;
@@ -87,11 +101,11 @@ Dit is het eerste deel van de opdracht van de directeur: welke kosten zijn blijv
 - **Bevindingen.** Elke afwijking wordt een bevinding met bedrag in hele euro's, contractnummer, kenteken, medewerker en status: open, hersteld of terecht. Een bevinding handel je af met één tik en een korte reden.
 - **Dagelijks of wekelijks.** Als Rentwise een geplande export kan mailen, kan die later automatisch worden ingelezen. Tot dan is het uploaden met de hand.
 
-Nodig voordat dit plan geschreven kan worden:
+Nodig voordat de plannen van fase 9 en 10 geschreven kunnen worden:
 - een voorbeeldexport uit Rentwise, zonder klantnamen;
 - per controle de regel zoals jullie hem hanteren, bijvoorbeeld het aantal vrije kilometers en wanneer aftankkosten gelden.
 
-### Fase 10: KPI's per medewerker en per vestiging
+### Fase 11: KPI's per medewerker en per vestiging
 Het tweede deel van de opdracht van de directeur.
 - **Per week, maand en jaar**, met dezelfde periodekiezer als in fase 7.
 - **Per medewerker en per vestiging:** aantal contracten, aantal bevindingen, het bedrag dat is blijven liggen, het bedrag dat is hersteld, en de registraties uit fase 5 en 6. Het aantal contracten staat ernaast, zodat iemand met veel contracten eerlijk wordt vergeleken.
@@ -101,7 +115,6 @@ Het tweede deel van de opdracht van de directeur.
 Een keuze die bij jou ligt en die ik hier alleen noteer: cijfers per medewerker bijhouden is iets waar HR en een eventuele ondernemingsraad doorgaans bij betrokken worden. De app dwingt daar niets in af.
 
 ### Later of niet
-- **Uitloop werklijst.** Blijft Excel. Het bestand is net ingevoerd en hangt aan de export uit Rentwise en het verdeelscript. Na fase 8 kijken we opnieuw.
 - **Foto's van schade.** Vraagt opslag en bewaartermijnen. Niet gepland.
 - **Wagenkaart per kenteken.** Geschrapt: de gegevens veranderen de hele dag in Rentwise.
 - **Formulier zonder inloggen.** Niet: Planbord toont geen gegevens zonder inloggen.
