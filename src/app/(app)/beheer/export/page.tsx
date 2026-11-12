@@ -40,6 +40,17 @@ export default async function ExportPage() {
         </p>
         <RosterExportForm from={monday} />
       </Card>
+      <Card className="mt-4 space-y-3 p-4">
+        <SectionTitle>Uitleen exporteren</SectionTitle>
+        <p className="text-sm text-slate-700">
+          Alle registraties van de uitleen, in de opbouw van het oude Excel-bestand: Registratie (wat nu uit staat) en Archief (wat
+          retour is, ingezet en niet ingezet). Zonder werkmails. Een teamleider kan dit ook, bij het archief van de uitleen. Elke export
+          komt in het logboek.
+        </p>
+        <a href="/registraties/uitleen/export" download className={buttonClass('secondary')}>
+          Uitleen downloaden
+        </a>
+      </Card>
     </>
   );
 }

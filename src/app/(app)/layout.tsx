@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <Link href="/" className="text-lg font-semibold tracking-tight text-brand-800">
             Planbord
           </Link>
-          <NavBar isAdmin={viewer.isAdmin} variant="top" />
+          <NavBar isLead={viewer.isLead} variant="top" />
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/uitleg" className="text-sm font-medium text-brand-700 hover:underline">
               Uitleg
@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-5">{children}</main>
-      <NavBar isAdmin={viewer.isAdmin} variant="bottom" />
+      <NavBar isLead={viewer.isLead} variant="bottom" />
     </div>
   );
 }

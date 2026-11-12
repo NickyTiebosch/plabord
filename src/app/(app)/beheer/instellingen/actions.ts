@@ -67,6 +67,22 @@ export async function saveRanks(_previous: ActionState, formData: FormData): Pro
   return { ok: true, message: 'Invalvolgorde opgeslagen.' };
 }
 
+/** Uitleen (fase 5, V48): per vestiging het minimale aantal auto's voor Mobiliteit per werkdag. Velden "mobility:{groep}". */
+export async function saveMobility(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase } = await requireAdmin();
+  const parsed = parseNumberFields(formData, 'mobility', 0, 20);
+  if (!parsed.ok) return { error: parsed.error };
+  const current = must(await supabase.from('groups').select('id, has_counter, mobility_loans_per_day'), 'de groepen');
+  for (const group of current) {
+    const value = parsed.values.get(group.id);
+    if (!group.has_counter || value === undefined || value === group.mobility_loans_per_day) continue;
+    const saved = await supabase.from('groups').update({ mobility_loans_per_day: value }).eq('id', group.id);
+    if (saved.error) return { error: dbErrorMessage(saved.error) };
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true, message: 'Uitleen opgeslagen.' };
+}
+
 /** Meldingen (mail en push) aan of uit (fase 3, V18; fase 4, V27). Staat in het logboek. */
 export async function setMailEnabled(formData: FormData): Promise<void> {
   const { supabase } = await requireAdmin();

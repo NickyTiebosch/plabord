@@ -20,6 +20,13 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   calendar_feeds_active_key: 'Er is al een actieve link voor deze agenda.',
   settings_standard_shift_order: 'De standaarddienst moet eindigen na het begin.',
   settings_saturday_shift_order: 'De zaterdagdienst moet eindigen na het begin.',
+  // Fase 5: de uitleen.
+  vehicle_loans_one_open_per_plate: 'Deze auto staat nog uitgeleend. Meld hem eerst retour.',
+  vehicle_loans_plate_format: 'Vul een kenteken in: 2 tot 10 letters en cijfers.',
+  vehicle_loans_odometer_order: 'De kilometerstand bij retour is lager dan bij het meegeven.',
+  vehicle_loans_return_order: 'Retour kan niet vóór het meegeven liggen.',
+  vehicle_loans_group_fkey: 'Kies een vestiging met een balie.',
+  groups_mobility_loans_range: 'Vul een aantal in van 0 tot en met 20.',
 };
 
 export function dbErrorMessage(error: DbError | null | undefined, fallback = 'Opslaan is mislukt. Probeer het opnieuw.'): string {

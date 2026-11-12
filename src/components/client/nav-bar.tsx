@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { IconCalendar, IconGrid, IconHome, IconSettings, IconTimeline } from '../icons';
+import { IconCalendar, IconCheck, IconClipboard, IconGrid, IconHome, IconMore, IconSettings, IconTimeline } from '../icons';
 import { cx } from '../ui';
 
 interface NavItem {
@@ -13,29 +13,43 @@ interface NavItem {
   match: (path: string) => boolean;
 }
 
-const ITEMS: NavItem[] = [
-  { href: '/', label: 'Mijn rooster', icon: <IconHome />, match: (path) => path === '/' },
-  { href: '/rooster/den-bosch', label: 'Rooster', icon: <IconGrid />, match: (path) => path.startsWith('/rooster') },
-  { href: '/verlof', label: 'Verlof', icon: <IconTimeline />, match: (path) => path.startsWith('/verlof') },
-  { href: '/agenda', label: 'Agenda', icon: <IconCalendar />, match: (path) => path.startsWith('/agenda') },
-];
-
-const ADMIN_ITEM: NavItem = {
-  href: '/beheer',
-  label: 'Beheer',
-  icon: <IconSettings />,
-  match: (path) => path.startsWith('/beheer'),
+const HOME: NavItem = { href: '/', label: 'Mijn rooster', icon: <IconHome />, match: (path) => path === '/' };
+const ROSTER: NavItem = { href: '/rooster/den-bosch', label: 'Rooster', icon: <IconGrid />, match: (path) => path.startsWith('/rooster') };
+const LEAVE: NavItem = { href: '/verlof', label: 'Verlof', icon: <IconTimeline />, match: (path) => path.startsWith('/verlof') };
+const REGISTRATIONS: NavItem = {
+  href: '/registraties/uitleen',
+  label: 'Registraties',
+  icon: <IconClipboard />,
+  match: (path) => path.startsWith('/registraties'),
+};
+const AGENDA: NavItem = { href: '/agenda', label: 'Agenda', icon: <IconCalendar />, match: (path) => path.startsWith('/agenda') };
+const CHECK: NavItem = { href: '/controle', label: 'Controle', icon: <IconCheck />, match: (path) => path.startsWith('/controle') };
+const ADMIN: NavItem = { href: '/beheer', label: 'Beheer', icon: <IconSettings />, match: (path) => path.startsWith('/beheer') };
+/** Op de telefoon staan Agenda, Uitleg, Controle en Beheer onder Meer (fase 5, V44). */
+const MORE: NavItem = {
+  href: '/meer',
+  label: 'Meer',
+  icon: <IconMore />,
+  match: (path) => ['/meer', '/agenda', '/controle', '/beheer'].some((prefix) => path.startsWith(prefix)),
 };
 
-/** Tabbalk onderaan op de telefoon, navigatie in de kop op grotere schermen. */
-export function NavBar({ isAdmin, variant }: { isAdmin: boolean; variant: 'top' | 'bottom' }) {
+/**
+ * Tabbalk onderaan op de telefoon, navigatie in de kop op grotere schermen. Op de telefoon passen
+ * vijf tabs; de rest staat onder Meer. In de kop is ruimte voor alles.
+ */
+export function NavBar({ isLead, variant }: { isLead: boolean; variant: 'top' | 'bottom' }) {
   const path = usePathname();
-  const items = isAdmin ? [...ITEMS, ADMIN_ITEM] : ITEMS;
 
   if (variant === 'top') {
+    // Op een smal scherm (tablet) staat de rest onder Meer; vanaf een breed scherm alles los.
+    const items: { item: NavItem; show: string }[] = [
+      ...[HOME, ROSTER, LEAVE, REGISTRATIONS].map((item) => ({ item, show: 'inline-flex' })),
+      ...[AGENDA, ...(isLead ? [CHECK, ADMIN] : [])].map((item) => ({ item, show: 'hidden lg:inline-flex' })),
+      { item: MORE, show: 'inline-flex lg:hidden' },
+    ];
     return (
       <nav aria-label="Hoofdmenu" className="hidden items-center gap-1 sm:flex">
-        {items.map((item) => {
+        {items.map(({ item, show }) => {
           const active = item.match(path);
           return (
             <Link
@@ -43,6 +57,7 @@ export function NavBar({ isAdmin, variant }: { isAdmin: boolean; variant: 'top' 
               href={item.href}
               aria-current={active ? 'page' : undefined}
               className={cx(
+                show,
                 'rounded-lg px-3 py-2 text-sm font-medium',
                 active ? 'bg-brand-50 text-brand-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
               )}
@@ -55,6 +70,7 @@ export function NavBar({ isAdmin, variant }: { isAdmin: boolean; variant: 'top' 
     );
   }
 
+  const items = [HOME, ROSTER, LEAVE, REGISTRATIONS, MORE];
   return (
     <nav
       aria-label="Hoofdmenu"

@@ -143,6 +143,7 @@ describe('gegevens van één medewerker (V20)', () => {
       'Agendalinks',
       'Mails',
       'Meldingen',
+      'Uitleen',
       'Logboek',
     ]);
     expect(sheets[0]?.rows).toEqual([
@@ -152,6 +153,7 @@ describe('gegevens van één medewerker (V20)', () => {
       ['Standaardrol', 'balie'],
       ['Inzetbaar aan de balie in', 'Den Bosch, Eindhoven'],
       ['Beheerder', 'nee'],
+      ['Teamleider', 'nee'],
       ['Actief', 'ja'],
       ['Inlogaccount', 'ja'],
       ['Laatst ingelogd', '6-10-2026 14:05'],
@@ -164,7 +166,8 @@ describe('gegevens van één medewerker (V20)', () => {
       ['Toestel 1', '2-10-2026 15:00', '3-10-2026 16:00'],
       ['Toestel 2', '5-10-2026 10:00', ''],
     ]);
-    expect(sheets[8]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
+    expect(sheets[8]?.rows).toEqual([]);
+    expect(sheets[9]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
   });
 
   it('noemt geen collega’s', () => {
