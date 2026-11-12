@@ -1,6 +1,6 @@
 # Plan fase 5: fundament voor registraties, en de uitleen
 
-**Status: goedgekeurd op 10 november 2026** ("verder akkoord"), met de aanpassingen hieronder. Dit plan bouwt voort op fase 1 tot en met 4. Het geheel staat in `docs/ROUTEKAART.md`; de vaste afspraken in `CLAUDE.md`.
+**Status: goedgekeurd op 10 november 2026** ("verder akkoord"), met de aanpassingen hieronder. Gebouwd op 12 november 2026; zie de pull request. Dit plan bouwt voort op fase 1 tot en met 4. Het geheel staat in `docs/ROUTEKAART.md`; de vaste afspraken in `CLAUDE.md`.
 
 ## Besluiten
 Alle voorstellen uit §1 (V41–V51) zijn aangenomen. Vier zijn aangevuld of aangepast:
@@ -13,6 +13,22 @@ Alle voorstellen uit §1 (V41–V51) zijn aangenomen. Vier zijn aangevuld of aan
 | V48 | Den Bosch, Eindhoven en Breda geven alle drie dagelijks auto's mee aan Mobiliteit. De 2 is een ondergrens voor de controle, geen maximum: verhuur kan altijd meer auto's aanmelden. De werkplaats krijgt voor spoedjes op zaterdag ook meerdere auto's mee. |
 
 De tekst hieronder is op deze besluiten aangepast.
+
+### Uitwerkingen tijdens de bouw (12 november 2026)
+Keuzes die tijdens het bouwen zijn gemaakt, naast het plan:
+- **Retour: tijdstip aanpasbaar.** Bij Retour · ingezet staan datum en tijd op nu, maar je kunt ze aanpassen, net als bij aanmelden. Retour · niet ingezet blijft één tik, met nu als tijdstip.
+- **Opmerking bij retour apart.** De database bewaart de opmerking bij het meegeven (`note`) en die bij retour (`return_note`) los. In de export staan ze samen in de kolom Reden / opmerking.
+- **Mails na een actie van een teamleider** verstuurt de server met de secret key. Een teamleider mag de werkmails en toestellen van collega's niet lezen, maar de collega moet wel de mail en de push krijgen. De actie zelf gaat met de sessie van de teamleider. `CLAUDE.md` noemt deze uitzondering.
+- **Bij Let op** ziet de teamleider, net als de beheerder, of de mail over een vervallen inval nog wacht of mislukte. Daarvoor mag hij de mailwachtrij lezen; die bewaart geen adressen en geen tekst. De pagina Mails blijft voor de beheerder.
+- **Roosterwijziging voor één dag** kan de teamleider ook via de naam in het rooster, zoals de beheerder. Dat hoort bij gaten regelen.
+- **De controle telt pas vanaf de eerste uitleen** van een vestiging in Planbord. Dagen daarvoor staan als streepje, niet als rood. Zo staat bij de start niet alles rood.
+- **De controle zet vandaag vooraan**, zodat op de telefoon zonder scrollen in beeld staat wat er nu speelt.
+- **Corrigeren slaat alleen op wat echt verandert.** Een tijdstip zonder seconden geldt als ongewijzigd. Zo staat in het logboek alleen wat de teamleider aanpaste.
+- **In het archief** kan de teamleider een retour ook ongedaan maken, bijvoorbeeld als een auto per ongeluk retour is gemeld.
+- **Op een tablet** (smal scherm) staat in de kop, net als op de telefoon, Meer in plaats van Agenda (en voor de teamleider en beheerder ook Controle en Beheer). Op een breed scherm staat alles los.
+- **De gegevensexport van een medewerker** (inzageverzoek) heeft een tabblad Uitleen: wat die medewerker meegaf of retour meldde, zonder aan wie en zonder opmerkingen. En een regel Teamleider.
+- **De uitleg** heeft een onderwerp Een auto uitlenen, met alleen stappen. De PDF is niet opnieuw gemaakt; daar staat het nog niet in.
+- **Open punt voor de test:** een collega die een verkeerd kenteken aanmeldt, kan dat niet zelf herstellen; dat doet de teamleider. Blijkt dat in de praktijk lastig, dan kunnen we degene die aanmeldde dat op dezelfde dag zelf laten corrigeren.
 
 Fase 5 levert vier dingen:
 1. een **aparte testomgeving**, zodat het live Planbord niet verandert tot jij akkoord geeft;
