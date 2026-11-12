@@ -45,7 +45,7 @@ export default async function GroupRosterPage({
   const title = `Week ${isoWeekOf(monday).week} · ${formatDateRange(monday, addDays(monday, 5))}`;
   // Beheerders tikken op een naam voor een roosterwijziging, of op "Regelen" bij een tekort.
   const changeHref = (employeeId: string, date: string) =>
-    viewer.isAdmin ? `/beheer/rooster/${employeeId}/${date}` : undefined;
+    viewer.isLead ? `/beheer/rooster/${employeeId}/${date}` : undefined;
 
   return (
     <>
@@ -96,7 +96,7 @@ export default async function GroupRosterPage({
                       {section.shortage ? (
                         <div className="flex flex-wrap items-center justify-between gap-2 py-1.5">
                           <ShortageNotice text={section.shortage} />
-                          {viewer.isAdmin ? (
+                          {viewer.isLead ? (
                             <Link
                               href={`/beheer/regelen/${groupSlug(section.groupId)}/${day.date}`}
                               className={buttonClass('primary', 'sm')}

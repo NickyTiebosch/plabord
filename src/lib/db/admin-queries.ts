@@ -11,6 +11,8 @@ import { loadPlanningSnapshot, loadSettings, must, type DbClient } from './queri
 export interface EmployeeWithAccount extends Employee {
   email: string | null;
   hasAccount: boolean;
+  /** Teamleider (fase 5, V43). */
+  isTeamLead: boolean;
 }
 
 /** Alle medewerkers met e-mail en accountstatus. Alleen zinvol voor beheerders (RLS). */
@@ -28,6 +30,7 @@ export async function loadEmployeesWithAccounts(client: DbClient): Promise<Emplo
       ...mapEmployee(row, counters.get(row.id) ?? []),
       email: account?.email ?? null,
       hasAccount: Boolean(account?.user_id),
+      isTeamLead: row.is_team_lead,
     };
   });
 }

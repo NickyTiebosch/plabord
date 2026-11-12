@@ -118,6 +118,8 @@ const employeeSchema = z.object({
   defaultRole: z.enum(ROLES, { error: 'Kies een rol.' }),
   counterGroupIds: z.array(z.string()),
   isAdmin: z.boolean(),
+  /** Teamleider (fase 5, V43). */
+  isTeamLead: z.boolean(),
   isActive: z.boolean(),
 });
 
@@ -131,6 +133,7 @@ export function parseEmployeeForm(form: FormData): Parsed<EmployeeInput> {
     defaultRole: text(form, 'defaultRole') || 'none',
     counterGroupIds: form.getAll('counterGroupIds').filter((value): value is string => typeof value === 'string'),
     isAdmin: form.get('isAdmin') === 'on',
+    isTeamLead: form.get('isTeamLead') === 'on',
     // Een nieuw formulier heeft geen veld "actief": dan is iemand actief.
     isActive: form.has('isActivePresent') ? form.get('isActive') === 'on' : true,
   });

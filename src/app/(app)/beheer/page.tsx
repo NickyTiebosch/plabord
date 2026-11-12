@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
 import { withSelfCover } from '@/lib/admin/planning';
-import { requireAdminWith } from '@/lib/auth/session';
+import { requireLeadWith } from '@/lib/auth/session';
 import { loadEmployeesWithAccounts, loadPlanningOverview } from '@/lib/db/admin-queries';
 import { mapAbsence } from '@/lib/db/mappers';
 import { must } from '@/lib/db/queries';
@@ -27,7 +27,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
   const monday = startOfIsoWeek(today);
   const saturday = addDays(monday, 5);
 
-  const [viewer, [planning, employees, requested, thisWeek]] = await requireAdminWith((supabase) =>
+  const [viewer, [planning, employees, requested, thisWeek]] = await requireLeadWith((supabase) =>
     Promise.all([
       loadPlanningOverview(supabase, today),
       loadEmployeesWithAccounts(supabase),
@@ -61,7 +61,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
             <LinkButton href="/beheer/afwezigheid" variant="primary">
               Afwezigheid invoeren
             </LinkButton>
-            <LinkButton href="/beheer/medewerkers/nieuw">Medewerker toevoegen</LinkButton>
+            {viewer.isAdmin ? <LinkButton href="/beheer/medewerkers/nieuw">Medewerker toevoegen</LinkButton> : null}
           </>
         }
       />
@@ -186,7 +186,8 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         </section>
       </div>
 
-      {withoutEmail + withoutAccount > 0 ? (
+      {/* Werkmails en accounts ziet alleen een beheerder (RLS); een teamleider krijgt dit blok niet. */}
+      {viewer.isAdmin && withoutEmail + withoutAccount > 0 ? (
         <p className="mt-6 text-sm text-slate-600">
           {withoutEmail > 0 ? `${withoutEmail} actieve medewerker(s) zonder e-mailadres. ` : ''}
           {withoutAccount > 0 ? `${withoutAccount} met e-mailadres maar nog zonder inlogaccount. ` : ''}

@@ -16,6 +16,7 @@ export interface Database {
           has_counter: boolean;
           sort_order: number;
           substitution_rank: number;
+          mobility_loans_per_day: number;
           updated_at: Timestamp;
         };
         Insert: {
@@ -25,7 +26,7 @@ export interface Database {
           sort_order?: number;
           substitution_rank?: number;
         };
-        Update: { substitution_rank?: number };
+        Update: { substitution_rank?: number; mobility_loans_per_day?: number };
         Relationships: [];
       };
       settings: {
@@ -72,6 +73,7 @@ export interface Database {
           group_id: string;
           default_role: string;
           is_admin: boolean;
+          is_team_lead: boolean;
           is_active: boolean;
           created_at: Timestamp;
           updated_at: Timestamp;
@@ -81,6 +83,7 @@ export interface Database {
           group_id: string;
           default_role?: string;
           is_admin?: boolean;
+          is_team_lead?: boolean;
           is_active?: boolean;
         };
         Update: {
@@ -88,6 +91,7 @@ export interface Database {
           group_id?: string;
           default_role?: string;
           is_admin?: boolean;
+          is_team_lead?: boolean;
           is_active?: boolean;
         };
         Relationships: [];
@@ -307,6 +311,53 @@ export interface Database {
         Update: { revoked_at?: Timestamp | null };
         Relationships: [];
       };
+      vehicle_loans: {
+        Row: {
+          id: string;
+          group_id: string;
+          has_counter: boolean;
+          license_plate: string;
+          model: string;
+          destination: string;
+          handed_to: string;
+          handed_out_by: string | null;
+          handed_out_at: Timestamp;
+          odometer_out: number | null;
+          returned_at: Timestamp | null;
+          returned_by: string | null;
+          odometer_in: number | null;
+          was_used: boolean | null;
+          note: string | null;
+          return_note: string | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          group_id: string;
+          license_plate: string;
+          model: string;
+          destination: string;
+          handed_to: string;
+          handed_out_at?: Timestamp;
+          odometer_out?: number | null;
+          note?: string | null;
+        };
+        Update: {
+          group_id?: string;
+          license_plate?: string;
+          model?: string;
+          destination?: string;
+          handed_to?: string;
+          handed_out_at?: Timestamp;
+          odometer_out?: number | null;
+          note?: string | null;
+          returned_at?: Timestamp | null;
+          odometer_in?: number | null;
+          was_used?: boolean | null;
+          return_note?: string | null;
+        };
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           id: number;
@@ -359,6 +410,17 @@ export interface Database {
       employee_sign_ins: { Args: { p_employee_id?: string }; Returns: Json };
       log_export: { Args: { p_kind: string; p_employee_id: string | null }; Returns: undefined };
       register_push_subscription: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string }; Returns: undefined };
+      return_vehicle_loan: {
+        Args: {
+          p_id: string;
+          p_was_used: boolean;
+          p_odometer_in?: number | null;
+          p_note?: string | null;
+          p_returned_at?: string | null;
+        };
+        Returns: number;
+      };
+      undo_vehicle_loan_return: { Args: { p_id: string }; Returns: number };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

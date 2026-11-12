@@ -69,6 +69,7 @@ function EmployeeRow({
         </span>
         <span className="flex flex-wrap gap-1">
           {employee.isAdmin ? <Badge tone="brand">beheerder</Badge> : null}
+          {employee.isTeamLead ? <Badge tone="brand">teamleider</Badge> : null}
           {onboardingBadges(employee, { invite, lastSignInAt, devices }).map((badge) => (
             <Badge key={badge.label} tone={badge.tone}>
               {badge.label}

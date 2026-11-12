@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, PageHeader, SectionTitle, buttonClass } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
-import { requireAdminWith } from '@/lib/auth/session';
+import { requireLeadWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { mapAbsence, mapEmployee } from '@/lib/db/mappers';
 import { loadGroups, must } from '@/lib/db/queries';
@@ -59,7 +59,7 @@ export default async function AbsenceAdminPage({
   const since = addDays(today, -60);
   const employeeFilter = isUuid(params.medewerker) ? params.medewerker : '';
 
-  const [, [groups, employees, names, absences]] = await requireAdminWith((supabase) => {
+  const [, [groups, employees, names, absences]] = await requireLeadWith((supabase) => {
     let query = supabase.from('absences').select('*').gte('end_date', since).order('start_date').order('end_date');
     if (employeeFilter) query = query.eq('employee_id', employeeFilter);
     return Promise.all([

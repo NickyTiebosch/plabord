@@ -52,6 +52,7 @@ function employeeValues(input: EmployeeInput) {
     group_id: input.groupId,
     default_role: input.defaultRole,
     is_admin: input.isAdmin,
+    is_team_lead: input.isTeamLead,
     is_active: input.isActive,
   };
 }

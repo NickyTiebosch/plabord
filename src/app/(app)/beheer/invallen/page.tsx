@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, PageHeader, SectionTitle } from '@/components/ui';
 import { substitutionItems, type SubstitutionItem } from '@/lib/admin/planning';
-import { requireAdminWith } from '@/lib/auth/session';
+import { requireLeadWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { mapSubstitution } from '@/lib/db/mappers';
 import { loadGroups, must } from '@/lib/db/queries';
@@ -51,7 +51,7 @@ function ItemRow({ item }: { item: SubstitutionItem }) {
 export default async function SubstitutionsPage({ searchParams }: { searchParams: Promise<{ melding?: string; mail?: string }> }) {
   const { melding, mail } = await searchParams;
   const today = todayInAmsterdam(new Date());
-  const [, [names, groups, rows]] = await requireAdminWith((supabase) =>
+  const [, [names, groups, rows]] = await requireLeadWith((supabase) =>
     Promise.all([
       loadEmployeeNames(supabase),
       loadGroups(supabase),

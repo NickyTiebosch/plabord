@@ -78,6 +78,7 @@ describe('formulier medewerker', () => {
         defaultRole: 'counter',
         counterGroupIds: ['den_bosch', 'breda'],
         isAdmin: 'on',
+        isTeamLead: 'on',
       }),
     );
     expect(result).toEqual({
@@ -89,6 +90,7 @@ describe('formulier medewerker', () => {
         defaultRole: 'counter',
         counterGroupIds: ['den_bosch', 'breda'],
         isAdmin: true,
+        isTeamLead: true,
         isActive: true,
       },
     });
