@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Badge, Card, EmptyState, PageHeader, SectionTitle, cx } from '@/components/ui';
 import { requireLeadWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
-import { loadClosures, loadCurrentLoans, loadEndOfDay, loadLoanGroups } from '@/lib/db/loan-queries';
+import { loadClosures, loadCurrentLoans, loadEndOfDay, loadFirstLoanDates, loadLoanGroups } from '@/lib/db/loan-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDayShort } from '@/lib/engine/format';
 import { parseTime } from '@/lib/engine/time';
@@ -21,6 +21,7 @@ const CELL: Record<DayCheckState, { className: string; text: (count: number) => 
   short: { className: 'bg-rose-50 font-semibold text-rose-700', text: (count) => String(count), label: 'te weinig' },
   pending: { className: 'bg-amber-50 text-amber-800', text: (count) => String(count), label: 'vandaag nog open' },
   closed: { className: 'bg-slate-50 text-slate-400', text: () => 'dicht', label: 'gesloten' },
+  before: { className: 'text-slate-300', text: () => '–', label: 'nog niet in Planbord' },
 };
 
 /**
@@ -30,8 +31,9 @@ const CELL: Record<DayCheckState, { className: string; text: (count: number) => 
 export default async function CheckPage() {
   const now = new Date();
   const today = todayInAmsterdam(now);
-  const days = recentWeekdays(today, DAYS);
-  const first = days[0] ?? today;
+  // Vandaag vooraan: op de telefoon staat dan zonder scrollen in beeld wat er nu speelt.
+  const days = recentWeekdays(today, DAYS).reverse();
+  const first = days.at(-1) ?? today;
   const [viewer, [groups, loans, closures, endOfDay, names]] = await requireLeadWith((supabase) =>
     Promise.all([
       loadLoanGroups(supabase),
@@ -48,7 +50,8 @@ export default async function CheckPage() {
     null,
   );
   const overdue = open.filter((loan) => isOverdue(loan, now, closures, end));
-  const rows = mobilityDayCheck(loans, groups, days, today, closures);
+  const firstDates = await loadFirstLoanDates(viewer.supabase, groups.map((group) => group.id));
+  const rows = mobilityDayCheck(loans, groups, days, today, closures, firstDates);
 
   return (
     <>
@@ -113,7 +116,8 @@ export default async function CheckPage() {
       <section>
         <SectionTitle className="mb-1">Mobiliteit per werkdag</SectionTitle>
         <p className="mb-2 text-sm text-slate-600">
-          Hoeveel auto’s elke vestiging per werkdag aan Mobiliteit meegaf. Rood: minder dan de ondergrens. Meer mag altijd.
+          Hoeveel auto’s elke vestiging per werkdag aan Mobiliteit meegaf. Rood: minder dan de ondergrens. Meer mag altijd. Een streepje:
+          die vestiging registreerde toen nog niet in Planbord.
         </p>
         {rows.length === 0 ? (
           <EmptyState title="Er is geen ondergrens ingesteld.">
@@ -126,7 +130,8 @@ export default async function CheckPage() {
             )}
           </EmptyState>
         ) : (
-          <Card className="overflow-x-auto">
+          // relative: de verborgen teksten (sr-only) in de cellen blijven zo binnen het scrollvak, anders wordt de hele pagina breder.
+          <Card className="relative overflow-x-auto">
             <table className="w-full min-w-max text-sm">
               <caption className="sr-only">Auto’s aan Mobiliteit per vestiging per werkdag</caption>
               <thead>

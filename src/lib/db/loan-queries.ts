@@ -5,7 +5,7 @@
 import { createClosureResolver, type ClosureResolver } from '../engine/closures';
 import { addDays } from '../engine/dates';
 import type { IsoDate } from '../engine/types';
-import { endOfLocalDay, startOfLocalDay } from '../loans/time';
+import { endOfLocalDay, localMoment, startOfLocalDay } from '../loans/time';
 import { isDestination, type Destination, type LoanGroup, type VehicleLoan } from '../loans/types';
 import type { Tables } from './database.types';
 import { mapClosure } from './mappers';
@@ -94,6 +94,25 @@ export async function loadArchive(client: DbClient, filter: ArchiveFilter): Prom
   if (filter.plate) query = query.ilike('license_plate', `%${filter.plate}%`);
   const rows = must(await query, 'het archief').map(mapVehicleLoan);
   return { loans: rows.slice(0, ARCHIVE_LIMIT), more: rows.length > ARCHIVE_LIMIT };
+}
+
+/**
+ * Per vestiging de dag van de eerste uitleen in Planbord: de controle telt de dagen daarvoor niet mee.
+ * Een vestiging zonder uitleen staat er niet in.
+ */
+export async function loadFirstLoanDates(client: DbClient, groupIds: readonly string[]): Promise<Map<string, IsoDate>> {
+  const results = await Promise.all(
+    groupIds.map((groupId) =>
+      client.from('vehicle_loans').select('handed_out_at').eq('group_id', groupId).order('handed_out_at').limit(1),
+    ),
+  );
+  const dates = new Map<string, IsoDate>();
+  results.forEach((result, index) => {
+    const first = must(result, 'de eerste uitleen')[0];
+    const groupId = groupIds[index];
+    if (first && groupId) dates.set(groupId, localMoment(new Date(first.handed_out_at).toISOString()).date);
+  });
+  return dates;
 }
 
 /** Alles, voor de export (V50). */

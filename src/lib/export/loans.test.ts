@@ -101,7 +101,7 @@ describe('export van de uitleen (V50)', () => {
     expect(row[0]).toBe('KPK-66-J');
     expect(row[2]).toBe(60120);
     expect(row[3]).toBeInstanceOf(Date);
-    expect((row[3] as Date).toISOString().slice(0, 10)).toBe('2026-11-06');
+    expect((row[3] as unknown as Date).toISOString().slice(0, 10)).toBe('2026-11-06');
     expect(row[4]).toBe('17:30');
     expect(row[8]).toBe('Ja');
     // De open uitleen heeft lege retourkolommen.

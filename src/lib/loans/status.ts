@@ -102,7 +102,8 @@ export function reissueOptions(
   return options;
 }
 
-export type DayCheckState = 'ok' | 'short' | 'pending' | 'closed';
+/** `before`: de vestiging registreerde toen nog niet in Planbord (vóór de eerste uitleen). */
+export type DayCheckState = 'ok' | 'short' | 'pending' | 'closed' | 'before';
 
 export interface DayCheckCell {
   date: IsoDate;
@@ -131,7 +132,8 @@ export function recentWeekdays(today: IsoDate, count: number): IsoDate[] {
 /**
  * De controle op Mobiliteit (V48): per vestiging met een ondergrens, per werkdag hoeveel auto's er
  * aan Mobiliteit zijn meegegeven. Genoeg = in orde; te weinig = rood; vandaag nog te weinig = nog
- * open; een sluitingsdag telt niet.
+ * open; een sluitingsdag telt niet. Dagen vóór de eerste uitleen van een vestiging in Planbord
+ * (`firstDates`) tellen ook niet: anders staat alles rood zodra een vestiging begint.
  */
 export function mobilityDayCheck(
   loans: readonly VehicleLoan[],
@@ -139,6 +141,7 @@ export function mobilityDayCheck(
   days: readonly IsoDate[],
   today: IsoDate,
   closures: ClosureResolver,
+  firstDates: ReadonlyMap<string, IsoDate>,
 ): DayCheckRow[] {
   const counts = new Map<string, number>();
   for (const loan of loans) {
@@ -154,7 +157,10 @@ export function mobilityDayCheck(
       required: group.mobilityPerDay,
       cells: days.map((date) => {
         const count = counts.get(`${group.id}|${date}`) ?? 0;
-        const state: DayCheckState = closures(date, group.id).closed
+        const first = firstDates.get(group.id);
+        const state: DayCheckState = !first || date < first
+          ? 'before'
+          : closures(date, group.id).closed
           ? 'closed'
           : count >= group.mobilityPerDay
             ? 'ok'

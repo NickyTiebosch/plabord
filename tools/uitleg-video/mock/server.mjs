@@ -34,7 +34,9 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
 
 const db = await PGlite.create({ extensions: { btree_gist } });
 await db.exec(MOCK_SQL);
-for (const phase of ['fase-1', 'fase-2', 'fase-3', 'fase-4']) await db.exec(fs.readFileSync(new URL(`../../../supabase/setup/${phase}.sql`, import.meta.url), 'utf8'));
+// Alle fases uit phases.json, op volgorde, zoals de eigenaar ze in de SQL-editor draait.
+const phases = Object.keys(JSON.parse(fs.readFileSync(new URL('../../../supabase/setup/phases.json', import.meta.url), 'utf8')));
+for (const phase of phases) await db.exec(fs.readFileSync(new URL(`../../../supabase/setup/${phase}.sql`, import.meta.url), 'utf8'));
 await db.exec(fs.readFileSync(process.env.MOCK_SEED ?? new URL('./seed.sql', import.meta.url), 'utf8'));
 
 // ---------- JWT ----------

@@ -7,7 +7,7 @@ import { isUuid, type ActionState } from '@/lib/admin/forms';
 import { requireLead, requireViewer, type Viewer } from '@/lib/auth/session';
 import { loadLoan, loadLoanGroups } from '@/lib/db/loan-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
-import { parseCorrectionForm, parseHandOutForm, parseReturnForm } from '@/lib/loans/forms';
+import { correctionChanges, parseCorrectionForm, parseHandOutForm, parseReturnForm } from '@/lib/loans/forms';
 import { formatPlate } from '@/lib/loans/plates';
 import { formatLoanMoment } from '@/lib/loans/status';
 
@@ -45,7 +45,7 @@ export async function handOutVehicle(_previous: ActionState, formData: FormData)
   const input = parsed.data;
 
   const stillOut = await stillOutMessage(viewer, input.plate, null);
-  if (stillOut) return { error: stillOut, fieldErrors: { plate: 'Staat nog uitgeleend.' } };
+  if (stillOut) return { error: stillOut };
 
   const saved = await viewer.supabase.from('vehicle_loans').insert({
     group_id: input.groupId,
@@ -136,30 +136,12 @@ export async function correctLoan(_previous: ActionState, formData: FormData): P
   const input = parsed.data;
   if (!input.return) {
     const stillOut = await stillOutMessage(viewer, input.plate, id);
-    if (stillOut) return { error: stillOut, fieldErrors: { plate: 'Staat al uitgeleend.' } };
+    if (stillOut) return { error: stillOut };
   }
-  const saved = await viewer.supabase
-    .from('vehicle_loans')
-    .update({
-      group_id: input.groupId,
-      license_plate: input.plate,
-      model: input.model,
-      destination: input.destination,
-      handed_to: input.handedTo,
-      handed_out_at: input.handedOutAt,
-      odometer_out: input.odometerOut,
-      note: input.note,
-      ...(input.return
-        ? {
-            returned_at: input.return.returnedAt,
-            odometer_in: input.return.odometerIn,
-            was_used: input.return.wasUsed,
-            return_note: input.return.note,
-          }
-        : {}),
-    })
-    .eq('id', id)
-    .select('id');
+  // Alleen wat echt verandert: zo staat in het logboek wat de teamleider aanpaste, en niets anders.
+  const changes = correctionChanges(loan, input);
+  if (Object.keys(changes).length === 0) back(loan.returnedAt ? ARCHIVE : LIST, 'niets-gewijzigd', { kenteken: loan.plate });
+  const saved = await viewer.supabase.from('vehicle_loans').update(changes).eq('id', id).select('id');
   if (saved.error) return { error: dbErrorMessage(saved.error) };
   if (!saved.data?.length) return { error: 'Opslaan is niet gelukt: je hebt hier geen rechten voor, of de uitleen bestaat niet meer.' };
   back(loan.returnedAt ? ARCHIVE : LIST, 'gecorrigeerd', { kenteken: input.plate });

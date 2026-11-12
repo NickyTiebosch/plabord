@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createClosureResolver } from '../engine/closures';
-import { parseCorrectionForm, parseHandOutForm, parseOdometer, parseReturnForm } from './forms';
+import { correctionChanges, parseCorrectionForm, parseHandOutForm, parseOdometer, parseReturnForm } from './forms';
 import { formatPlate, normalizePlate, plateQuery } from './plates';
 import {
   distance,
@@ -183,7 +183,11 @@ describe('controle op Mobiliteit (V48)', () => {
       loan({ id: '6', plate: 'V26JXD', groupId: 'eindhoven', handedOutAt: at('2026-11-11', '09:00') }),
     ];
     const closed = createClosureResolver([{ id: 'x', date: '2026-11-11', groupId: 'eindhoven', isClosed: true, label: 'Verbouwing' }]);
-    const rows = mobilityDayCheck(loans, groups, ['2026-11-10', '2026-11-11', '2026-11-12'], '2026-11-12', closed);
+    const firstDates = new Map([
+      ['den_bosch', '2026-10-01'],
+      ['eindhoven', '2026-11-01'],
+    ]);
+    const rows = mobilityDayCheck(loans, groups, ['2026-11-10', '2026-11-11', '2026-11-12'], '2026-11-12', closed, firstDates);
     expect(rows.map((row) => row.groupId)).toEqual(['den_bosch', 'eindhoven']);
     expect(rows[0]?.cells.map((cell) => [cell.count, cell.state])).toEqual([
       [2, 'ok'],
@@ -196,6 +200,21 @@ describe('controle op Mobiliteit (V48)', () => {
       [0, 'pending'],
     ]);
     expect(rows[0]?.cells[0]?.label).toBe('di 10 nov');
+  });
+
+  it('telt de dagen vóór de eerste uitleen van een vestiging niet mee', () => {
+    const rows = mobilityDayCheck(
+      [loan({ id: '1', handedOutAt: at('2026-11-11', '08:00') })],
+      groups,
+      ['2026-11-10', '2026-11-11', '2026-11-12'],
+      '2026-11-12',
+      closures,
+      new Map([['den_bosch', '2026-11-11']]),
+    );
+    expect(rows.map((row) => row.cells.map((cell) => cell.state))).toEqual([
+      ['before', 'short', 'pending'],
+      ['before', 'before', 'before'],
+    ]);
   });
 });
 
@@ -291,5 +310,30 @@ describe('formulieren van de uitleen', () => {
     expect(ok.ok ? ok.data.return : null).toEqual({ returnedAt: '2026-11-12T12:50:00.000Z', odometerIn: null, wasUsed: false, note: null });
     const open = parseCorrectionForm(form(valid), { now, groupIds, returned: false });
     expect(open.ok ? open.data.return : 'fout').toBeNull();
+  });
+
+  it('slaat bij corrigeren alleen op wat echt verandert; seconden tellen niet', () => {
+    const stored = loan({
+      id: '1',
+      handedOutAt: '2026-11-12T12:45:31.123Z',
+      odometerOut: 45210,
+      returnedAt: '2026-11-12T12:50:12.000Z',
+      wasUsed: true,
+    });
+    const same = parseCorrectionForm(
+      form({ ...valid, model: 'VW Polo', returnDate: '2026-11-12', returnTime: '13:50', odometerIn: '', wasUsed: 'ja', returnNote: '' }),
+      { now, groupIds, returned: true },
+    );
+    expect(same.ok ? correctionChanges(stored, same.data) : null).toEqual({});
+    const changed = parseCorrectionForm(
+      form({ ...valid, model: 'VW Polo GTI', time: '13:40', returnDate: '2026-11-12', returnTime: '13:50', odometerIn: '45.300', wasUsed: 'nee', returnNote: '' }),
+      { now, groupIds, returned: true },
+    );
+    expect(changed.ok ? correctionChanges(stored, changed.data) : null).toEqual({
+      model: 'VW Polo GTI',
+      handed_out_at: '2026-11-12T12:40:00.000Z',
+      odometer_in: 45300,
+      was_used: false,
+    });
   });
 });

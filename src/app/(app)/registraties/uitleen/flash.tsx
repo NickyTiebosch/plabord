@@ -23,6 +23,7 @@ const MESSAGES: Record<string, { tone: Tone; text: string }> = {
   },
   'ongedaan-mislukt': { tone: 'error', text: 'Ongedaan maken is niet gelukt. Probeer het opnieuw.' },
   gecorrigeerd: { tone: 'success', text: 'Registratie van {kenteken} gecorrigeerd.' },
+  'niets-gewijzigd': { tone: 'success', text: 'Er was niets veranderd aan {kenteken}.' },
   verwijderd: { tone: 'success', text: 'Registratie van {kenteken} verwijderd.' },
   'verwijderen-mislukt': { tone: 'error', text: 'Verwijderen is niet gelukt. Probeer het opnieuw.' },
   'niet-gevonden': { tone: 'warning', text: 'Deze uitleen bestaat niet meer.' },

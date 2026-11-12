@@ -54,24 +54,27 @@ export default async function GuidePage() {
               {index + 1}. {topic.title}
             </h2>
             <p className="mt-1 text-slate-600">{topic.summary}</p>
-            <div className={cx('mt-4 grid gap-6', topic.videos.length > 1 && 'sm:grid-cols-2')}>
-              {topic.videos.map((video) => (
-                <figure key={video.file} className="mx-auto w-full max-w-[300px]">
-                  {video.device ? (
-                    <figcaption className="mb-2 text-center text-sm font-semibold text-slate-700">{video.device}</figcaption>
-                  ) : null}
-                  <video
-                    controls
-                    playsInline
-                    preload="none"
-                    poster={`${GUIDE_DIR}/${video.file}.jpg`}
-                    className="aspect-[9/16] w-full rounded-2xl bg-slate-100 shadow-sm"
-                  >
-                    <source src={`${GUIDE_DIR}/${video.file}.mp4`} type="video/mp4" />
-                  </video>
-                </figure>
-              ))}
-            </div>
+            {/* Een onderwerp zonder video (fase 5: de uitleen) heeft alleen de stappen. */}
+            {topic.videos.length > 0 ? (
+              <div className={cx('mt-4 grid gap-6', topic.videos.length > 1 && 'sm:grid-cols-2')}>
+                {topic.videos.map((video) => (
+                  <figure key={video.file} className="mx-auto w-full max-w-[300px]">
+                    {video.device ? (
+                      <figcaption className="mb-2 text-center text-sm font-semibold text-slate-700">{video.device}</figcaption>
+                    ) : null}
+                    <video
+                      controls
+                      playsInline
+                      preload="none"
+                      poster={`${GUIDE_DIR}/${video.file}.jpg`}
+                      className="aspect-[9/16] w-full rounded-2xl bg-slate-100 shadow-sm"
+                    >
+                      <source src={`${GUIDE_DIR}/${video.file}.mp4`} type="video/mp4" />
+                    </video>
+                  </figure>
+                ))}
+              </div>
+            ) : null}
             {topic.steps.map((group) => (
               <div key={group.device ?? 'iedereen'} className="mt-5">
                 {group.device ? <h3 className="text-sm font-semibold text-slate-900">{group.device}</h3> : null}

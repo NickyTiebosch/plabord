@@ -21,6 +21,7 @@ export interface GuideTopic {
   id: string;
   title: string;
   summary: string;
+  /** Leeg kan: dan alleen de stappen (fase 5: de uitleen, een video kan later). */
   videos: GuideVideo[];
   steps: GuideSteps[];
   notes: string[];
@@ -194,6 +195,27 @@ export function guideTopics(address: string): GuideTopic[] {
         },
       ],
       notes: [],
+    },
+    {
+      id: 'uitleen',
+      title: 'Een auto uitlenen',
+      summary: 'Auto’s voor Mobiliteit, en voor de werkplaats in het weekend.',
+      videos: [],
+      steps: [
+        {
+          steps: [
+            'Tik op Registraties en dan op Auto aanmelden.',
+            'Vul kenteken, model, bestemming en aan wie je de auto meegeeft in. Datum en tijd staan al op nu.',
+            'Dezelfde auto als laatst? Tik hem aan bij Opnieuw uitgeven; dan staat alles al ingevuld.',
+            'Komt de auto terug? Tik bij die auto op Retour · ingezet, of op Retour · niet ingezet als hij niet nodig was.',
+            'Verkeerd getikt? Tik bij Vandaag retour op Ongedaan maken. Dat kan op dezelfde dag.',
+          ],
+        },
+      ],
+      notes: [
+        'Klantgegevens zijn niet nodig.',
+        'Een registratie corrigeren of verwijderen doet je teamleider.',
+      ],
     },
   ];
 }

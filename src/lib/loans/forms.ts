@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { cleanName, type Parsed } from '../admin/forms';
+import type { Database } from '../db/database.types';
 import { amsterdamDateTime, isIsoDate } from '../engine/dates';
 import { parseTime } from '../engine/time';
 import { normalizePlate } from './plates';
@@ -264,4 +265,46 @@ export function parseCorrectionForm(
     ...(returned.ok ? {} : returned.state.fieldErrors),
   };
   return { ok: false, state: { error: 'Controleer de gemarkeerde velden.', fieldErrors: errors } };
+}
+
+/** Zelfde minuut? Een formulier kent geen seconden; dan is een tijdstip niet veranderd. */
+function sameMinute(a: string | null, b: string | null): boolean {
+  if (a === null || b === null) return a === b;
+  return Math.floor(Date.parse(a) / 60_000) === Math.floor(Date.parse(b) / 60_000);
+}
+
+/** Wat er bij corrigeren echt verandert, als kolommen voor de database. Alleen die komen in het logboek. */
+export function correctionChanges(
+  loan: {
+    groupId: string;
+    plate: string;
+    model: string;
+    destination: Destination;
+    handedTo: string;
+    handedOutAt: string;
+    odometerOut: number | null;
+    note: string | null;
+    returnedAt: string | null;
+    odometerIn: number | null;
+    wasUsed: boolean | null;
+    returnNote: string | null;
+  },
+  input: CorrectionInput,
+): Database['public']['Tables']['vehicle_loans']['Update'] {
+  const changes: Database['public']['Tables']['vehicle_loans']['Update'] = {};
+  if (input.groupId !== loan.groupId) changes.group_id = input.groupId;
+  if (input.plate !== loan.plate) changes.license_plate = input.plate;
+  if (input.model !== loan.model) changes.model = input.model;
+  if (input.destination !== loan.destination) changes.destination = input.destination;
+  if (input.handedTo !== loan.handedTo) changes.handed_to = input.handedTo;
+  if (!sameMinute(input.handedOutAt, loan.handedOutAt)) changes.handed_out_at = input.handedOutAt;
+  if (input.odometerOut !== loan.odometerOut) changes.odometer_out = input.odometerOut;
+  if (input.note !== loan.note) changes.note = input.note;
+  if (input.return) {
+    if (!sameMinute(input.return.returnedAt, loan.returnedAt)) changes.returned_at = input.return.returnedAt;
+    if (input.return.odometerIn !== loan.odometerIn) changes.odometer_in = input.return.odometerIn;
+    if (input.return.wasUsed !== loan.wasUsed) changes.was_used = input.return.wasUsed;
+    if (input.return.note !== loan.returnNote) changes.return_note = input.return.note;
+  }
+  return changes;
 }

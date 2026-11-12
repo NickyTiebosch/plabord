@@ -29,9 +29,12 @@ describe('uitleg voor collega’s', () => {
     const ids = topics.map((topic) => topic.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const topic of topics) {
-      expect(topic.videos.length).toBeGreaterThan(0);
       expect(topic.steps.flatMap((group) => group.steps).length).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it('heeft een video bij elk onderwerp van vóór fase 5; de uitleen heeft (nog) alleen stappen', () => {
+    expect(topics.filter((topic) => topic.videos.length === 0).map((topic) => topic.id)).toEqual(['uitleen']);
   });
 
   it('zet het adres van de app in de stappen voor het beginscherm', () => {
