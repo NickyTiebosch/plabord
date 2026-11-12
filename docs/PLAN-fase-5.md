@@ -27,7 +27,7 @@ Keuzes die tijdens het bouwen zijn gemaakt, naast het plan:
 - **In het archief** kan de teamleider een retour ook ongedaan maken, bijvoorbeeld als een auto per ongeluk retour is gemeld.
 - **Op een tablet** (smal scherm) staat in de kop, net als op de telefoon, Meer in plaats van Agenda (en voor de teamleider en beheerder ook Controle en Beheer). Op een breed scherm staat alles los.
 - **De gegevensexport van een medewerker** (inzageverzoek) heeft een tabblad Uitleen: wat die medewerker meegaf of retour meldde, zonder aan wie en zonder opmerkingen. En een regel Teamleider.
-- **De uitleg** heeft een onderwerp Een auto uitlenen, met alleen stappen. De PDF is niet opnieuw gemaakt; daar staat het nog niet in.
+- **De uitleg** heeft een onderwerp Een auto uitlenen, met een video en in de PDF. Omdat Agenda op de telefoon nu onder Meer staat (V44), zeggen de stappen en de video bij de agenda: tik op Meer en dan op Agenda. Alle video's zijn opnieuw gemaakt, zodat ze de nieuwe tabbalk tonen.
 - **Open punt voor de test:** een collega die een verkeerd kenteken aanmeldt, kan dat niet zelf herstellen; dat doet de teamleider. Blijkt dat in de praktijk lastig, dan kunnen we degene die aanmeldde dat op dezelfde dag zelf laten corrigeren.
 
 Fase 5 levert vier dingen:

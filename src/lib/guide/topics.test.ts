@@ -33,8 +33,17 @@ describe('uitleg voor collega’s', () => {
     }
   });
 
-  it('heeft een video bij elk onderwerp van vóór fase 5; de uitleen heeft (nog) alleen stappen', () => {
-    expect(topics.filter((topic) => topic.videos.length === 0).map((topic) => topic.id)).toEqual(['uitleen']);
+  it('heeft bij elk onderwerp een video, ook bij de uitleen (fase 5)', () => {
+    expect(topics.filter((topic) => topic.videos.length === 0).map((topic) => topic.id)).toEqual([]);
+  });
+
+  it('stuurt naar Agenda via Meer: sinds fase 5 staat Agenda niet meer in de tabbalk (V44)', () => {
+    const steps = topics.flatMap((topic) => topic.steps.flatMap((group) => group.steps));
+    expect(steps.filter((step) => step.includes('onderin op Agenda'))).toEqual([]);
+    const agenda = topics.find((topic) => topic.id === 'agenda');
+    for (const group of agenda?.steps ?? []) {
+      expect(group.steps[0], group.device).toContain('Tik onderin op Meer en dan op Agenda');
+    }
   });
 
   it('zet het adres van de app in de stappen voor het beginscherm', () => {
@@ -66,7 +75,7 @@ describe('uitleg voor collega’s', () => {
   });
 
   it('telt de speelduur in hele minuten', () => {
-    expect(totalMinutes(topics)).toBe(4);
+    expect(totalMinutes(topics)).toBe(5);
     expect(totalMinutes([])).toBe(1);
   });
 });

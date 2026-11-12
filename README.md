@@ -117,7 +117,7 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 
 ### Uitleg voor collega's
 
-- **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan negen korte video's op, met de stappen eronder:
+- **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan tien korte video's op, met de stappen eronder:
   - welkom;
   - op je beginscherm (iPhone en Android);
   - inloggen met je code;
@@ -125,7 +125,9 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - meldingen aanzetten (iPhone en Android);
   - je rooster in je agenda;
   - vakantie of afwezig;
-  - een auto uitlenen (fase 5): alleen stappen, nog zonder video, en nog niet in de PDF.
+  - een auto uitlenen (fase 5).
+
+  Sinds fase 5 tonen alle video's de nieuwe tabbalk, en loopt de agendavideo via **Meer**.
 - **Een PDF** met dezelfde stappen, plaatjes en een QR-code naar de video's. Je downloadt hem bovenaan de pagina.
 - **Waar de link staat:** op de inlogpagina ("Nieuw hier? Bekijk de uitleg") en in de kop van de app ("Uitleg").
 - De video's tonen een verzonnen team en hebben geen geluid. Ze staan bij de app zelf, niet op YouTube, dus er komen geen trackers mee.
@@ -456,7 +458,7 @@ Moet Planbord naar de accounts van iemand anders, bijvoorbeeld het bedrijf? Volg
 
 ## Agenda koppelen (uitleg voor collega's)
 
-1. Open **Agenda** in Planbord en kies **Link maken** bij de agenda die je wilt.
+1. Open **Agenda** in Planbord (op de telefoon onder **Meer**) en kies **Link maken** bij de agenda die je wilt.
 2. Zet de link in je agenda:
    - **iPhone of iPad:** tik op **Toevoegen aan agenda** en daarna op **Abonneer**. Of kopieer de link: Instellingen → Agenda → Accounts → Voeg account toe → Andere → Voeg agenda-abonnement toe → plak de link.
    - **Android:** de app Google Agenda kan geen agenda via een link toevoegen, en Toevoegen aan agenda werkt daar niet. Op een Android-telefoon toont Planbord daarom **Kopieer link** als knop (besluit V35). Daarna:

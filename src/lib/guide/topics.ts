@@ -21,7 +21,7 @@ export interface GuideTopic {
   id: string;
   title: string;
   summary: string;
-  /** Leeg kan: dan alleen de stappen (fase 5: de uitleen, een video kan later). */
+  /** Leeg kan: dan staan er alleen stappen. Nu heeft elk onderwerp een video. */
   videos: GuideVideo[];
   steps: GuideSteps[];
   notes: string[];
@@ -152,12 +152,13 @@ export function guideTopics(address: string): GuideTopic[] {
       summary: 'Zet je diensten in de agenda van je telefoon. Die werkt zichzelf bij.',
       // Eén video, van de iPhone. Op Android kan de app Google Agenda geen agenda via een link
       // toevoegen; dat gaat via de website (besluit V35). Die stappen staan er als tekst bij.
-      videos: [{ file: 'agenda', device: 'iPhone', seconds: 26 }],
+      videos: [{ file: 'agenda', device: 'iPhone', seconds: 27 }],
       steps: [
         {
           device: 'iPhone',
           steps: [
-            'Tik onderin op Agenda.',
+            // Sinds fase 5 (V44) staat Agenda op de telefoon onder Meer.
+            'Tik onderin op Meer en dan op Agenda.',
             'Tik bij Mijn rooster op Link maken.',
             'Tik op Toevoegen aan agenda, dan op Abonneer en Voeg toe.',
           ],
@@ -165,7 +166,7 @@ export function guideTopics(address: string): GuideTopic[] {
         {
           device: 'Android',
           steps: [
-            'Tik onderin op Agenda, bij Mijn rooster op Link maken en dan op Kopieer link.',
+            'Tik onderin op Meer en dan op Agenda. Tik bij Mijn rooster op Link maken en dan op Kopieer link.',
             'Open Chrome (niet Samsung Internet) en ga naar calendar.google.com. Tik op ⋮ en zet Desktopsite aan.',
             'Tik bij Andere agenda’s op + en kies Via URL. Zie je dat niet? Tik dan eerst linksboven op ☰.',
             'Plak de link en tik op Agenda toevoegen.',
@@ -200,7 +201,7 @@ export function guideTopics(address: string): GuideTopic[] {
       id: 'uitleen',
       title: 'Een auto uitlenen',
       summary: 'Auto’s voor Mobiliteit, en voor de werkplaats in het weekend.',
-      videos: [],
+      videos: [{ file: 'uitleen', seconds: 32 }],
       steps: [
         {
           steps: [

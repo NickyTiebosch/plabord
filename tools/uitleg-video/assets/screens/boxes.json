@@ -2,13 +2,13 @@
   "login": {
     "email": {
       "x": 37,
-      "y": 348.5,
+      "y": 322.5,
       "w": 316,
       "h": 44
     },
     "send": {
       "x": 37,
-      "y": 408.5,
+      "y": 382.5,
       "w": 316,
       "h": 44
     }
@@ -81,7 +81,7 @@
     "pushButton": {
       "x": 33,
       "y": 3349,
-      "w": 173,
+      "w": 172.3,
       "h": 44
     },
     "pushCardOn": {
@@ -93,25 +93,31 @@
     "nav:Mijn rooster": {
       "x": 0,
       "y": 733,
-      "width": 97.5,
+      "width": 78,
       "height": 56
     },
     "nav:Rooster": {
-      "x": 97.5,
+      "x": 78,
       "y": 733,
-      "width": 97.5,
+      "width": 78,
       "height": 56
     },
     "nav:Verlof": {
-      "x": 195,
+      "x": 156,
       "y": 733,
-      "width": 97.5,
+      "width": 78,
       "height": 56
     },
-    "nav:Agenda": {
-      "x": 292.5,
+    "nav:Registraties": {
+      "x": 234,
       "y": 733,
-      "width": 97.5,
+      "width": 78,
+      "height": 56
+    },
+    "nav:Meer": {
+      "x": 312,
+      "y": 733,
+      "width": 78,
       "height": 56
     }
   },
@@ -119,9 +125,9 @@
     "height": 1901,
     "navTop": 732,
     "tabEindhoven": {
-      "x": 119,
+      "x": 120.2,
       "y": 81,
-      "w": 93,
+      "w": 94.1,
       "h": 40
     },
     "today": {
@@ -145,12 +151,22 @@
     "height": 1628,
     "navTop": 732
   },
+  "meer": {
+    "height": 797,
+    "navTop": 732,
+    "agenda": {
+      "x": 17,
+      "y": 126,
+      "w": 356,
+      "h": 88
+    }
+  },
   "agenda": {
-    "height": 1333,
+    "height": 1361,
     "navTop": 732,
     "makeLink": {
       "x": 33,
-      "y": 242,
+      "y": 270,
       "w": 108,
       "h": 44
     }
@@ -161,8 +177,138 @@
     "add": {
       "x": 46,
       "y": 351,
-      "w": 215,
+      "w": 215.9,
       "h": 44
+    }
+  },
+  "uitleen": {
+    "height": 870,
+    "navTop": 732,
+    "add": {
+      "x": 16,
+      "y": 165,
+      "w": 141,
+      "h": 44
+    }
+  },
+  "uitleen-nieuw": {
+    "height": 1245,
+    "navTop": 732,
+    "option": {
+      "x": 16,
+      "y": 201,
+      "w": 136.3,
+      "h": 50
+    }
+  },
+  "uitleen-nieuw-gevuld": {
+    "height": 1245,
+    "navTop": 732,
+    "plate": {
+      "x": 33,
+      "y": 416,
+      "w": 324,
+      "h": 44
+    },
+    "model": {
+      "x": 33,
+      "y": 500,
+      "w": 324,
+      "h": 44
+    },
+    "destination": {
+      "x": 33,
+      "y": 564,
+      "w": 324,
+      "h": 72
+    },
+    "handedTo": {
+      "x": 33,
+      "y": 676,
+      "w": 324,
+      "h": 44
+    },
+    "submit": {
+      "x": 33,
+      "y": 1068,
+      "w": 107.8,
+      "h": 44
+    }
+  },
+  "uitleen-aangemeld": {
+    "height": 1087,
+    "navTop": 732,
+    "flash": {
+      "x": 16,
+      "y": 225,
+      "w": 358,
+      "h": 58
+    },
+    "polo": {
+      "x": 17,
+      "y": 495,
+      "w": 356,
+      "h": 143
+    },
+    "transporter": {
+      "x": 17,
+      "y": 332,
+      "w": 356,
+      "h": 163
+    },
+    "returnUsed": {
+      "x": 33,
+      "y": 446,
+      "w": 128.9,
+      "h": 36
+    },
+    "returnNotUsed": {
+      "x": 169.9,
+      "y": 446,
+      "w": 159.6,
+      "h": 36
+    }
+  },
+  "uitleen-retour": {
+    "height": 797,
+    "navTop": 732,
+    "odometer": {
+      "x": 33,
+      "y": 244,
+      "w": 324,
+      "h": 44
+    },
+    "submit": {
+      "x": 33,
+      "y": 528,
+      "w": 129.3,
+      "h": 44
+    }
+  },
+  "uitleen-retour-gevuld": {
+    "height": 797,
+    "navTop": 732
+  },
+  "uitleen-klaar": {
+    "height": 930,
+    "navTop": 732,
+    "flash": {
+      "x": 16,
+      "y": 225,
+      "w": 358,
+      "h": 38
+    },
+    "returned": {
+      "x": 17,
+      "y": 655,
+      "w": 356,
+      "h": 114
+    },
+    "undo": {
+      "x": 99.2,
+      "y": 721,
+      "w": 141.3,
+      "h": 36
     }
   }
 }
