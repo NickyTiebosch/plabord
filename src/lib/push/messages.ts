@@ -92,5 +92,5 @@ export function composePush(input: ComposePushInput): PushContent {
     }
   })();
 
-  return { title: 'Planbord', body: shorten(body), url: '/', tag };
+  return { title: 'Planbord', body: shorten(body), url: '/mijn-rooster', tag };
 }

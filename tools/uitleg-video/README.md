@@ -48,12 +48,14 @@ export NODE_OPTIONS="--require=/pad/naar/planbord/tools/uitleg-video/clock.cjs"
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_localtest
    SUPABASE_SECRET_KEY=sb_secret_localtest
    SITE_URL=https://planbord-ten.vercel.app   # hetzelfde adres als UITLEG_ADRES: het staat in de agendalink
-   VAPID_PUBLIC_KEY=<een willekeurige publieke P-256-sleutel, bijvoorbeeld uit Beheer → Instellingen>
+   VAPID_PUBLIC_KEY=<een publieke P-256-sleutel>    # alle drie nodig, anders toont Mijn rooster
+   VAPID_PRIVATE_KEY=<de bijbehorende privésleutel> # "Meldingen zijn nog niet ingesteld"; maak een
+   VAPID_SUBJECT=mailto:planbord@voorbeeld.nl       # nieuw paar onder Beheer → Instellingen
    ```
 
    Gebruik daarna `npm run build` en `npx next start -p 3000`.
-3. Zet de afwijkingen voor Sanne klaar: `node demo-data.mjs`. Dat zijn een gewijzigde dag, een vrije dag, een inval en afwezigheid.
-4. Leg de schermen vast: `UITLEG_ADRES=planbord-ten.vercel.app node capture.mjs`. Dit overschrijft `assets/screens/`, ook `boxes.json` met de plek van elke knop. Het script stopt als Mijn rooster niet op maandag 5 oktober staat, of als de agendalink een ander adres heeft dan `UITLEG_ADRES`.
+3. Zet de demogegevens klaar: `node demo-data.mjs`. Voor Sanne zijn dat een gewijzigde dag, een vrije dag, een inval en afwezigheid. Voor de uitleen (fase 5): twee auto's die Den Bosch vorige week uitleende, de auto die de werkplaats zaterdag meekreeg, en een auto van Eindhoven. Draai dit vóór elke `capture.mjs`: het vastleggen geeft een auto uit en meldt er een retour.
+4. Leg de schermen vast: `UITLEG_ADRES=planbord-ten.vercel.app node capture.mjs`. Dit overschrijft `assets/screens/`, ook `boxes.json` met de plek van elke knop. Het script stopt als Mijn rooster niet op maandag 5 oktober staat, als de agendalink een ander adres heeft dan `UITLEG_ADRES`, of als de demogegevens voor de uitleen ontbreken. De browser draait in het Nederlands, zodat datum- en tijdvelden 05-10-2026 en 10:00 tonen.
 5. Render, maak de PDF en publiceer, zoals hierboven.
 
 **Let op: de data**

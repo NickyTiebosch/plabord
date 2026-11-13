@@ -21,6 +21,7 @@ export interface GuideTopic {
   id: string;
   title: string;
   summary: string;
+  /** Leeg kan: dan staan er alleen stappen. Nu heeft elk onderwerp een video. */
   videos: GuideVideo[];
   steps: GuideSteps[];
   notes: string[];
@@ -42,6 +43,7 @@ export function guideTopics(address: string): GuideTopic[] {
       steps: [
         {
           steps: [
+            'Start: je dienst van vandaag, en de onderdelen. Tik op Planbord voor je rooster.',
             'Mijn rooster: je eigen diensten voor de komende 6 weken.',
             'Rooster: wie er werkt op je vestiging.',
             'Verlof: wie er wanneer afwezig is.',
@@ -133,7 +135,7 @@ export function guideTopics(address: string): GuideTopic[] {
         {
           steps: [
             'Open Planbord via het icoon op je beginscherm.',
-            'Scrol op Mijn rooster helemaal naar beneden.',
+            'Tik op Planbord en scrol op Mijn rooster helemaal naar beneden.',
             'Tik op Meldingen aanzetten en kies Sta toe (iPhone) of Toestaan (Android).',
             'Je krijgt een melding als je invalt, als je rooster voor een dag verandert, en om 16:00 als je rooster morgen afwijkt.',
           ],
@@ -151,12 +153,13 @@ export function guideTopics(address: string): GuideTopic[] {
       summary: 'Zet je diensten in de agenda van je telefoon. Die werkt zichzelf bij.',
       // Eén video, van de iPhone. Op Android kan de app Google Agenda geen agenda via een link
       // toevoegen; dat gaat via de website (besluit V35). Die stappen staan er als tekst bij.
-      videos: [{ file: 'agenda', device: 'iPhone', seconds: 26 }],
+      videos: [{ file: 'agenda', device: 'iPhone', seconds: 27 }],
       steps: [
         {
           device: 'iPhone',
           steps: [
-            'Tik onderin op Agenda.',
+            // Sinds V53: eerst het onderdeel Planbord, dan staat Agenda in de tabbalk.
+            'Tik op Planbord en dan onderin op Agenda.',
             'Tik bij Mijn rooster op Link maken.',
             'Tik op Toevoegen aan agenda, dan op Abonneer en Voeg toe.',
           ],
@@ -164,7 +167,7 @@ export function guideTopics(address: string): GuideTopic[] {
         {
           device: 'Android',
           steps: [
-            'Tik onderin op Agenda, bij Mijn rooster op Link maken en dan op Kopieer link.',
+            'Tik op Planbord en dan onderin op Agenda. Tik bij Mijn rooster op Link maken en dan op Kopieer link.',
             'Open Chrome (niet Samsung Internet) en ga naar calendar.google.com. Tik op ⋮ en zet Desktopsite aan.',
             'Tik bij Andere agenda’s op + en kies Via URL. Zie je dat niet? Tik dan eerst linksboven op ☰.',
             'Plak de link en tik op Agenda toevoegen.',
@@ -194,6 +197,27 @@ export function guideTopics(address: string): GuideTopic[] {
         },
       ],
       notes: [],
+    },
+    {
+      id: 'uitleen',
+      title: 'Een auto uitlenen',
+      summary: 'Auto’s voor Mobiliteit, en voor de werkplaats in het weekend.',
+      videos: [{ file: 'uitleen', seconds: 32 }],
+      steps: [
+        {
+          steps: [
+            'Tik op Mobiliteit en dan op Auto aanmelden.',
+            'Vul kenteken, model, bestemming en aan wie je de auto meegeeft in. Datum en tijd staan al op nu.',
+            'Dezelfde auto als laatst? Tik hem aan bij Opnieuw uitgeven; dan staat alles al ingevuld.',
+            'Komt de auto terug? Tik bij die auto op Retour · ingezet, of op Retour · niet ingezet als hij niet nodig was.',
+            'Verkeerd getikt? Tik bij Vandaag retour op Ongedaan maken. Dat kan op dezelfde dag.',
+          ],
+        },
+      ],
+      notes: [
+        'Klantgegevens zijn niet nodig.',
+        'Een registratie corrigeren of verwijderen doet je teamleider.',
+      ],
     },
   ];
 }

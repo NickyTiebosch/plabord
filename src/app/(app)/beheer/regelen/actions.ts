@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isUuid } from '@/lib/admin/forms';
 import { gapPath, planningWindow, safeReturnPath, withNotice } from '@/lib/admin/planning';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireLead } from '@/lib/auth/session';
 import type { Json } from '@/lib/db/database.types';
 import { toDayPartColumn } from '@/lib/db/mappers';
 import { loadPlanningSnapshot, loadSettings } from '@/lib/db/queries';
@@ -34,7 +34,8 @@ function done(formData: FormData, code: string, mail?: MailOutcome | null): neve
  * sleutel nog klopt met wat de beheerder zag; daarna door naar het nieuwe gat.
  */
 export async function assignSubstitution(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const employeeId = String(formData.get('employeeId') ?? '');
   const groupId = String(formData.get('groupId') ?? '');
   const date = String(formData.get('date') ?? '');
@@ -63,7 +64,7 @@ export async function assignSubstitution(formData: FormData): Promise<void> {
   // 23505: een andere beheerder zette hem net ergens anders in (hooguit één inval per dag).
   if (inserted.error) done(formData, inserted.error.code === '23505' ? 'inval-niet-meer-geldig' : 'inval-mislukt');
   // De invaller krijgt meteen een mail (fase 3, V14).
-  const mail = await mailAfterAction(supabase, [{ employeeId, kind: 'substitution_assigned', dates: [date] }]);
+  const mail = await mailAfterAction(viewer, [{ employeeId, kind: 'substitution_assigned', dates: [date] }]);
   revalidatePath('/', 'layout');
   // Schuiven (V40): meteen door naar het nieuwe gat in zijn eigen vestiging.
   if (decision.kind === 'move') redirect(withNotice(gapPath(decision.sourceGroupId, date), 'ingezet-nieuw-gat', mail));
@@ -88,7 +89,8 @@ const SELF_COVER_NOTICES: Record<SelfCoverCode, string> = {
  * Geen mail aan jezelf; wel aan invallers van wie de inval daardoor vervalt.
  */
 export async function coverGapMyself(formData: FormData): Promise<void> {
-  const { supabase, employeeId } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase, employeeId } = viewer;
   const groupId = String(formData.get('groupId') ?? '');
   const date = String(formData.get('date') ?? '');
   const dayParts = dayPartsFrom(formData);
@@ -114,7 +116,7 @@ export async function coverGapMyself(formData: FormData): Promise<void> {
   if (saved.error) done(formData, 'wijziging-mislukt');
   // Invallen op die dag controleren (V10), zoals na elke roosterwijziging.
   const review = await reviewAfterChange(supabase, [date], today);
-  const mail = await mailAfterAction(supabase, review.notices);
+  const mail = await mailAfterAction(viewer, review.notices);
   revalidatePath('/', 'layout');
   const newGap = plan.source && plan.source.shortfall.length > 0 ? plan.source.groupId : null;
   const code = review.error
@@ -131,7 +133,8 @@ export async function coverGapMyself(formData: FormData): Promise<void> {
 
 /** Een gat negeren (besluit V8): per dagdeel met het tekort van nu. */
 export async function ignoreGap(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const groupId = String(formData.get('groupId') ?? '');
   const date = String(formData.get('date') ?? '');
   if (!isIsoDate(date) || !/^[a-z_]{1,40}$/.test(groupId)) done(formData, 'inval-ongeldig');
@@ -156,7 +159,8 @@ export async function ignoreGap(formData: FormData): Promise<void> {
 
 /** Een genegeerd gat terugzetten in Nog te regelen. */
 export async function unignoreGap(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const groupId = String(formData.get('groupId') ?? '');
   const date = String(formData.get('date') ?? '');
   if (!isIsoDate(date) || !/^[a-z_]{1,40}$/.test(groupId)) done(formData, 'inval-ongeldig');
@@ -167,7 +171,8 @@ export async function unignoreGap(formData: FormData): Promise<void> {
 
 /** Een vervallen inval afhandelen: de beheerder heeft het de invaller laten weten (besluit V10). */
 export async function markHandled(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) done(formData, 'inval-ongeldig');
   await supabase.from('substitutions').update({ handled_at: new Date().toISOString() }).eq('id', id).neq('status', 'active');
@@ -177,7 +182,8 @@ export async function markHandled(formData: FormData): Promise<void> {
 
 /** Een inval intrekken: hij gaat niet door. Niet verwijderen; de status komt in het logboek. */
 export async function withdrawSubstitution(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) done(formData, 'inval-ongeldig');
   const withdrawn = await supabase
@@ -187,8 +193,7 @@ export async function withdrawSubstitution(formData: FormData): Promise<void> {
     .eq('status', 'active')
     .select('employee_id, date');
   // De invaller krijgt een mail dat de inval niet doorgaat (fase 3, V14).
-  const mail = await mailAfterAction(
-    supabase,
+  const mail = await mailAfterAction(viewer,
     (withdrawn.data ?? []).map((row) => ({ employeeId: row.employee_id, kind: 'substitution_cancelled' as const, dates: [row.date] })),
   );
   revalidatePath('/', 'layout');
@@ -197,7 +202,8 @@ export async function withdrawSubstitution(formData: FormData): Promise<void> {
 
 /** Invallen die niet meer kloppen bijwerken, na een klik op het overzicht. */
 export async function applyWarnings(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const today = todayInAmsterdam(new Date());
   const window = planningWindow(today, (await loadSettings(supabase)).lookaheadWeeks);
   const snapshot = await loadPlanningSnapshot(supabase, window);
@@ -208,7 +214,7 @@ export async function applyWarnings(formData: FormData): Promise<void> {
       changes: changes.map((change) => ({ id: change.substitutionId, status: change.status })) as unknown as Json,
     });
     if (result.error) done(formData, 'bijwerken-mislukt');
-    mail = await mailAfterAction(supabase, reviewNotices(snapshot, changes));
+    mail = await mailAfterAction(viewer, reviewNotices(snapshot, changes));
   }
   revalidatePath('/', 'layout');
   done(formData, 'bijgewerkt', mail);

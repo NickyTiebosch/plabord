@@ -48,7 +48,7 @@ export default async function LeaveOverviewPage({
         todayHref={href(view)}
       />
       <LeaveLegend />
-      <LeaveTimeline overview={overview} view={view} today={today} linkBars={viewer.isAdmin} />
+      <LeaveTimeline overview={overview} view={view} today={today} linkBars={viewer.isLead} />
       <p className="mt-3 text-xs text-slate-500">
         Per vestiging staat per week hoeveel medewerkers minstens een dagdeel afwezig zijn (ma–za), van het aantal in die
         vestiging.

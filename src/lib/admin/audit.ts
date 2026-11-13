@@ -7,6 +7,8 @@ import { formatDate, formatDateRange, formatDayShortWithYear, weekdayShort } fro
 import { ABSENCE_PART_LABELS, ABSENCE_STATUS_LABELS, DAY_PART_LABELS, ROLE_LABELS } from '../engine/labels';
 import { parseTime } from '../engine/time';
 import type { AbsencePart, AbsenceStatus, DayPart, Role, Weekday } from '../engine/types';
+import { formatPlate } from '../loans/plates';
+import { DESTINATION_LABELS, isDestination } from '../loans/types';
 
 export interface AuditRow {
   id: number;
@@ -45,6 +47,7 @@ export const AUDIT_ENTITIES: Record<string, string> = {
   substitutions: 'Invallen',
   shift_overrides: 'Roosterwijzigingen',
   gap_dismissals: 'Genegeerde gaten',
+  vehicle_loans: 'Mobiliteit',
   export: 'Exports',
 };
 
@@ -85,6 +88,14 @@ const FIELD_LABELS: Record<string, string> = {
   handled_at: 'afgehandeld',
   shortage: 'tekort',
   mail_enabled: 'mails versturen',
+  // Fase 5.
+  is_team_lead: 'teamleider',
+  mobility_loans_per_day: 'auto’s voor Mobiliteit per werkdag',
+  license_plate: 'kenteken',
+  destination: 'bestemming',
+  handed_out_at: 'meegegeven',
+  returned_at: 'retour',
+  was_used: 'ingezet',
 };
 
 const KINDS: Record<string, string> = {
@@ -128,6 +139,12 @@ function formatValue(field: string, value: unknown, lookups: Lookups): string {
   if (field === 'weekday') return weekdayShort(Number(value) as Weekday);
   if (field === 'kind') return KINDS[String(value)] ?? String(value);
   if (field === 'handled_at' && typeof value === 'string') return 'ja';
+  if (field === 'license_plate') return formatPlate(String(value));
+  if (field === 'destination') return isDestination(value) ? DESTINATION_LABELS[value] : String(value);
+  if ((field === 'handed_out_at' || field === 'returned_at') && typeof value === 'string') {
+    const moment = amsterdamDateTime(new Date(value));
+    return `${formatDate(moment.date)} ${moment.time}`;
+  }
   if (typeof value === 'string' && isIsoDate(value)) return formatDate(value);
   if (typeof value === 'string' && /^\d{2}:\d{2}(:\d{2})?$/.test(value)) return parseTime(value) ?? value;
   if (field === 'revoked_at' && typeof value === 'string') return 'ja';
@@ -189,6 +206,7 @@ const VERBS: Record<string, [string, string, string]> = {
   substitutions: ['Inval toegewezen', 'Inval gewijzigd', 'Inval verwijderd'],
   shift_overrides: ['Roosterwijziging voor één dag', 'Roosterwijziging aangepast', 'Terug naar de vaste dienst'],
   gap_dismissals: ['Gat genegeerd', 'Genegeerd gat bijgewerkt', 'Gat teruggezet'],
+  vehicle_loans: ['Auto aangemeld', 'Registratie gecorrigeerd', 'Registratie verwijderd'],
 };
 
 /** Wat er bij volledig verwijderen (fase 3, V21) met de medewerker verdween, als aantallen. */
@@ -316,8 +334,37 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
       }
       break;
     case 'export':
-      what = details.kind === 'employee' ? `Gegevens gedownload – ${lookups.employeeName(row.employee_id)}` : 'Planning geëxporteerd';
+      what =
+        details.kind === 'employee'
+          ? `Gegevens gedownload – ${lookups.employeeName(row.employee_id)}`
+          : details.kind === 'loans'
+            ? 'Mobiliteit geëxporteerd'
+            : 'Planning geëxporteerd';
       break;
+    case 'vehicle_loans': {
+      // Fase 5: zonder vrije tekst (aan wie, opmerkingen); wel kenteken, vestiging en tijdstippen.
+      const changed = row.changed_fields ?? [];
+      const returned = record(details.returned_at);
+      const used = record(details.was_used).new;
+      if (row.action === 'update' && changed.includes('returned_at') && returned.new && !returned.old) {
+        what = used === false ? 'Auto retour gemeld, niet ingezet' : 'Auto retour gemeld, ingezet';
+        detail = formatValue('returned_at', returned.new, lookups);
+      } else if (row.action === 'update' && changed.includes('returned_at') && !returned.new && returned.old) {
+        what = 'Retour ongedaan gemaakt';
+        detail = null;
+      } else if (row.action === 'update') {
+        detail = changesText(row, lookups);
+      } else {
+        if (row.action === 'delete' && row.source === 'opruimen') what = 'Registratie opgeruimd (langer dan 24 maanden retour)';
+        detail = [
+          formatValue('license_plate', details.license_plate, lookups),
+          formatValue('group_id', details.group_id, lookups),
+          formatValue('destination', details.destination, lookups),
+          formatValue('handed_out_at', details.handed_out_at, lookups),
+        ].join(', ');
+      }
+      break;
+    }
     case 'gap_dismissals':
       detail =
         row.action === 'update'

@@ -94,3 +94,74 @@ export function IconLogout(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+/** Registraties (fase 5): een klembord met een vinkje. */
+export function IconClipboard(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V3h6v1M9 13l2 2 4-4" />
+    </Icon>
+  );
+}
+
+/** Meer (fase 5): drie puntjes. */
+export function IconMore(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="5" cy="12" r="1.2" />
+      <circle cx="12" cy="12" r="1.2" />
+      <circle cx="19" cy="12" r="1.2" />
+    </Icon>
+  );
+}
+
+/** Controle (fase 5): een schild met een vinkje. */
+export function IconCheck(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3 4 6v6c0 4.5 3.4 8.2 8 9 4.6-.8 8-4.5 8-9V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </Icon>
+  );
+}
+
+/** Uitleg: een vraagteken in een rondje. */
+export function IconHelp(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 0 1 4.9.6c0 1.7-2.4 2.1-2.4 3.4M12 17h.01" />
+    </Icon>
+  );
+}
+
+/** Aanmelden (V53): een plus in een rondje. */
+export function IconPlus(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v8M8 12h8" />
+    </Icon>
+  );
+}
+
+/** Archief (V53): een doos. */
+export function IconArchive(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="5" rx="1" />
+      <path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4" />
+    </Icon>
+  );
+}
+
+/** Mijn rooster (V53): een persoon. */
+export function IconUser(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </Icon>
+  );
+}

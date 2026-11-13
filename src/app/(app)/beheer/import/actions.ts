@@ -121,7 +121,7 @@ export async function importAction(previous: ImportState, formData: FormData): P
   const today = todayInAmsterdam(new Date());
   const ranges = (plan.payload.absences ?? []).map((absence) => ({ startDate: absence.start_date, endDate: absence.end_date }));
   const review = await reviewAfterChange(supabase, changedDates(ranges, today), today);
-  const mail = await mailAfterAction(supabase, review.notices);
+  const mail = await mailAfterAction(viewer, review.notices);
 
   revalidatePath('/', 'layout');
   const summary = preview.summary;

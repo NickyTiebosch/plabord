@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Card, EmptyState, Notice, PageHeader, SectionTitle } from '@/components/ui';
 import { buildGapDetail } from '@/lib/admin/planning';
-import { requireAdminWith } from '@/lib/auth/session';
+import { requireLeadWith } from '@/lib/auth/session';
 import { mapGapDismissal } from '@/lib/db/mappers';
 import { loadPlanningSnapshot, must } from '@/lib/db/queries';
 import { isIsoDate, isoWeekKey, todayInAmsterdam } from '@/lib/engine/dates';
@@ -25,7 +25,7 @@ export default async function GapDetailPage({
   const [{ vestiging, datum }, { melding, mail }] = await Promise.all([params, searchParams]);
   if (!isIsoDate(datum) || !/^[a-z-]{1,40}$/.test(vestiging)) notFound();
   const groupId = vestiging.replace(/-/g, '_');
-  const [viewer, [snapshot, dismissals]] = await requireAdminWith((supabase) =>
+  const [viewer, [snapshot, dismissals]] = await requireLeadWith((supabase) =>
     Promise.all([
       loadPlanningSnapshot(supabase, { from: datum, to: datum }),
       supabase

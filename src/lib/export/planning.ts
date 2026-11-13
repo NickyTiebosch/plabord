@@ -30,6 +30,8 @@ export interface ExportSheet {
 
 export interface ExportEmployee extends Employee {
   email: string | null;
+  /** Teamleider (fase 5, V43). */
+  isTeamLead?: boolean;
 }
 
 export interface PlanningData {

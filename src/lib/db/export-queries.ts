@@ -6,6 +6,7 @@ import type { EmployeeData } from '../export/employee';
 import type { PlanningData } from '../export/planning';
 import { MAIL_KINDS, MAIL_STATUSES } from '../mail/types';
 import { loadEmployeesWithAccounts, loadSignIns } from './admin-queries';
+import { mapVehicleLoan } from './loan-queries';
 import { counterGroupsByEmployee, mapAbsence, mapEmployee, mapRecurringShift, mapShiftOverride, mapSubstitution } from './mappers';
 import { loadGroups, must, type DbClient } from './queries';
 
@@ -33,7 +34,7 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
   const employee = await client.from('employees').select('*').eq('id', employeeId).maybeSingle();
   if (employee.error) throw new Error(`Medewerker laden mislukt: ${employee.error.message}`);
   if (!employee.data) return null;
-  const [groups, account, eligibility, shifts, absences, substitutions, overrides, feeds, mails, devices, log, signIns] = await Promise.all([
+  const [groups, account, eligibility, shifts, absences, substitutions, overrides, feeds, mails, devices, log, signIns, loans] = await Promise.all([
     loadGroups(client),
     client.from('employee_accounts').select('email, user_id').eq('employee_id', employeeId).maybeSingle(),
     client.from('counter_eligibility').select('employee_id, group_id').eq('employee_id', employeeId),
@@ -48,6 +49,8 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
     client.from('audit_log').select('*').eq('employee_id', employeeId).order('occurred_at').order('id'),
     // V38: wanneer die voor het laatst inlogde, uit Supabase Auth.
     loadSignIns(client, employeeId),
+    // Fase 5: de uitleen die deze medewerker meegaf of retour meldde.
+    client.from('vehicle_loans').select('*').or(`handed_out_by.eq.${employeeId},returned_by.eq.${employeeId}`),
   ]);
   const counters = counterGroupsByEmployee(must(eligibility, 'de inzetbaarheid'));
   const name = employee.data.name;
@@ -56,7 +59,11 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
     groupName: (id: string | null | undefined) => groups.find((group) => group.id === id)?.name ?? String(id ?? ''),
   };
   return {
-    employee: { ...mapEmployee(employee.data, counters.get(employeeId) ?? []), email: account.data?.email ?? null },
+    employee: {
+      ...mapEmployee(employee.data, counters.get(employeeId) ?? []),
+      email: account.data?.email ?? null,
+      isTeamLead: employee.data.is_team_lead,
+    },
     hasAccount: Boolean(account.data?.user_id),
     lastSignInAt: signIns ? (signIns.get(employeeId) ?? null) : undefined,
     groups,
@@ -78,6 +85,7 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
         : [];
     }),
     devices: must(devices, 'de toestellen').map((device) => ({ createdAt: device.created_at, lastSuccessAt: device.last_success_at })),
+    loans: must(loans, 'de uitleen').map(mapVehicleLoan),
     // Wie iets deed, staat er niet in: alleen wat er wanneer met deze gegevens gebeurde.
     log: must(log, 'het logboek').map((row) => {
       const view = describeAudit(row as AuditRow, lookups);

@@ -225,3 +225,27 @@ Stap voor stap, voor iemand met alleen een browser:
 - Geen secrets of echte persoonsgegevens in de repo.
 
 Begin met stap 1 en 2 van de werkwijze.
+
+---
+
+## Aanvulling fase 5 (november 2026): registraties en de teamleider
+
+Toegevoegd op 10 november 2026 (besluit V41 in `docs/PLAN-fase-5.md`). Planbord wordt breder dan rooster en verlof: het team houdt er ook zijn dagelijkse registraties in bij. Wat er na fase 5 komt, staat in `docs/ROUTEKAART.md`.
+
+**Registraties**
+- Planbord heeft **onderdelen** met een **startscherm** (besluit V53). Het eerste nieuwe onderdeel is **Mobiliteit** (besluit V54), de uitleen van auto's, zichtbaar voor iedere vestiging: auto's die verhuur meegeeft aan Mobiliteit (vervangend vervoer voor stranders) of aan de werkplaats voor het weekend.
+- Aanmelden en retour melden is één of twee tikken. Retour kan ingezet of niet ingezet.
+- Iedere ingelogde collega registreert, op eigen naam. De werkplaats en Mobiliteit krijgen geen account.
+
+**Rol teamleider**
+- Naast beheerder ja/nee komt teamleider ja/nee. Alleen een beheerder maakt iemand teamleider.
+- Een teamleider voert afwezigheid in, wijzigt en keurt goed, en regelt gaten (invallen, schuiven, zelf inspringen, negeren, roosterwijzigingen voor één dag). Hij ziet de controle en het archief van de registraties, en mag registraties corrigeren, verwijderen en exporteren.
+- Medewerkers, accounts, vaste diensten, sluitingsdagen, normen, instellingen, import, mails en logboek blijven bij de beheerder. Een teamleider ziet geen werkmails.
+
+**Privacy**
+- Sla alleen op wat de planning en de registraties van het verhuurwerk nodig hebben. Voor de uitleen: kenteken, model, kilometerstand, bestemming, aan wie de auto is meegegeven (persoon of afdeling), wie hem meegaf en terugnam, de tijdstippen, ingezet ja of nee en een korte opmerking.
+- Nooit klantnamen of andere klantgegevens.
+
+**Testomgeving en overdracht**
+- Previews gebruiken een eigen Supabase-project (besluit V42). Het live Planbord verandert pas na akkoord van de eigenaar.
+- Planbord moet zonder de eigenaar verder kunnen: elk onderdeel heeft een Excel-export, en `docs/OVERDRACHT.md` beschrijft hoe het naar andere accounts gaat (besluit V51).

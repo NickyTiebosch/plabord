@@ -11,6 +11,10 @@ export interface Viewer {
   name: string;
   groupId: string;
   isAdmin: boolean;
+  /** Teamleider (fase 5, V43): helpt met afwezigheid, invallen en de registraties. */
+  isTeamLead: boolean;
+  /** Beheerder of teamleider. */
+  isLead: boolean;
   supabase: ServerClient;
 }
 
@@ -21,7 +25,7 @@ async function findEmployee(supabase: ServerClient, userId: string) {
   // Eén vraag aan de database: het account met de medewerker erbij. RLS geldt voor allebei.
   const account = await supabase
     .from('employee_accounts')
-    .select('employee:employees(id, name, group_id, is_admin, is_active)')
+    .select('employee:employees(id, name, group_id, is_admin, is_team_lead, is_active)')
     .eq('user_id', userId)
     .maybeSingle();
   const employee = account.data?.employee;
@@ -61,6 +65,8 @@ export async function requireViewer(): Promise<Viewer> {
     name: session.employee.name,
     groupId: session.employee.group_id,
     isAdmin: session.employee.is_admin,
+    isTeamLead: session.employee.is_team_lead,
+    isLead: session.employee.is_admin || session.employee.is_team_lead,
     supabase: session.supabase,
   };
 }
@@ -69,6 +75,13 @@ export async function requireViewer(): Promise<Viewer> {
 export async function requireAdmin(): Promise<Viewer> {
   const viewer = await requireViewer();
   if (!viewer.isAdmin) redirect('/');
+  return viewer;
+}
+
+/** Beheerder of teamleider (fase 5, V43). RLS controleert het daarna nog een keer. */
+export async function requireLead(): Promise<Viewer> {
+  const viewer = await requireViewer();
+  if (!viewer.isLead) redirect('/');
   return viewer;
 }
 
@@ -84,6 +97,11 @@ export function requireViewerWith<T>(load: (supabase: ServerClient) => Promise<T
 /** Als requireAdmin(), met de gegevens tegelijk geladen (zie requireViewerWith). */
 export function requireAdminWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
   return checkWhileLoading(requireAdmin, load);
+}
+
+/** Als requireLead(), met de gegevens tegelijk geladen (zie requireViewerWith). */
+export function requireLeadWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
+  return checkWhileLoading(requireLead, load);
 }
 
 async function checkWhileLoading<T>(

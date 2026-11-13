@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { dbErrorMessage } from '@/lib/admin/errors';
 import { parseDayRef, parseDayShiftForm, type ActionState } from '@/lib/admin/forms';
 import { safeReturnPath, withNotice } from '@/lib/admin/planning';
-import { requireAdmin, type Viewer } from '@/lib/auth/session';
+import { requireLead, type Viewer } from '@/lib/auth/session';
 import { loadGroups } from '@/lib/db/queries';
 import { reviewAfterChange } from '@/lib/db/review';
 import { todayInAmsterdam } from '@/lib/engine/dates';
@@ -22,15 +22,15 @@ function returnPath(formData: FormData): string {
  * met een melding.
  */
 async function finish(
-  supabase: Viewer['supabase'],
+  viewer: Viewer,
   formData: FormData,
   employeeId: string,
   dates: IsoDate[],
   code: string,
 ): Promise<never> {
   const today = todayInAmsterdam(new Date());
-  const review = await reviewAfterChange(supabase, dates, today);
-  const mail = await mailAfterAction(supabase, [{ employeeId, kind: 'day_changed', dates }, ...review.notices]);
+  const review = await reviewAfterChange(viewer.supabase, dates, today);
+  const mail = await mailAfterAction(viewer, [{ employeeId, kind: 'day_changed', dates }, ...review.notices]);
   revalidatePath('/', 'layout');
   redirect(
     withNotice(returnPath(formData), review.error ? 'controle-mislukt' : review.changes.length > 0 ? 'invallen-vervallen' : code, mail),
@@ -43,7 +43,8 @@ async function groupExists(supabase: Viewer['supabase'], groupId: string): Promi
 
 /** Geen dienst deze dag. De vaste dienst blijft verder gewoon staan. */
 export async function setDayOff(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const parsed = parseDayRef(formData);
   if (!parsed.ok) redirect(withNotice(returnPath(formData), 'wijziging-mislukt'));
   const { employeeId, date } = parsed.data;
@@ -57,12 +58,13 @@ export async function setDayOff(formData: FormData): Promise<void> {
     p_end_time: null,
   });
   if (saved.error) redirect(withNotice(returnPath(formData), 'wijziging-mislukt'));
-  await finish(supabase, formData, employeeId, [date], 'gewijzigd');
+  await finish(viewer, formData, employeeId, [date], 'gewijzigd');
 }
 
 /** Een andere dienst deze dag: andere groep, rol of tijden. Ook om een dienst toe te voegen. */
 export async function setDayShift(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const parsed = parseDayShiftForm(formData);
   if (!parsed.ok) return parsed.state;
   const input = parsed.data;
@@ -77,12 +79,13 @@ export async function setDayShift(_previous: ActionState, formData: FormData): P
     p_end_time: input.endTime,
   });
   if (saved.error) return { error: dbErrorMessage(saved.error) };
-  return finish(supabase, formData, input.employeeId, [input.date], 'gewijzigd');
+  return finish(viewer, formData, input.employeeId, [input.date], 'gewijzigd');
 }
 
 /** Verplaatsen naar een andere dag (besluit V6): geen dienst op de oude dag, een dienst op de nieuwe. */
 export async function moveDayShift(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const from = parseDayRef(formData);
   if (!from.ok) return from.state;
   const parsed = parseDayShiftForm(formData, 'to');
@@ -105,16 +108,17 @@ export async function moveDayShift(_previous: ActionState, formData: FormData): 
     p_end_time: input.endTime,
   });
   if (saved.error) return { error: dbErrorMessage(saved.error) };
-  return finish(supabase, formData, input.employeeId, [from.data.date, input.date], 'verplaatst');
+  return finish(viewer, formData, input.employeeId, [from.data.date, input.date], 'verplaatst');
 }
 
 /** Terug naar de vaste dienst: de wijziging voor die dag vervalt. Het logboek bewaart wat er was. */
 export async function clearDayChange(formData: FormData): Promise<void> {
-  const { supabase } = await requireAdmin();
+  const viewer = await requireLead();
+  const { supabase } = viewer;
   const parsed = parseDayRef(formData);
   if (!parsed.ok) redirect(withNotice(returnPath(formData), 'wijziging-mislukt'));
   const { employeeId, date } = parsed.data;
   const removed = await supabase.from('shift_overrides').delete().eq('employee_id', employeeId).eq('date', date);
   if (removed.error) redirect(withNotice(returnPath(formData), 'wijziging-mislukt'));
-  await finish(supabase, formData, employeeId, [date], 'hersteld');
+  await finish(viewer, formData, employeeId, [date], 'hersteld');
 }

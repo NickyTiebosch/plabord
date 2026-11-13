@@ -163,7 +163,9 @@ describe('database zonder automatische rechten', () => {
       'log_export',
       'move_shift',
       'register_push_subscription',
+      'return_vehicle_loan',
       'set_shift_override',
+      'undo_vehicle_loan_return',
     ]);
     expect(result.rows.filter((row) => !row.authenticated || row.anon)).toEqual([]);
   });

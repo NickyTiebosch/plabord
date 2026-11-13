@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Card, PageHeader } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
-import { requireAdmin } from '@/lib/auth/session';
+import { requireLead } from '@/lib/auth/session';
 import { mapAbsence, mapEmployee } from '@/lib/db/mappers';
 import { loadGroups, must } from '@/lib/db/queries';
 import { employeeOptions } from '../../admin-shared';
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: 'Afwezigheid wijzigen' };
 
 export default async function EditAbsencePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireLead();
   if (!isUuid(id)) notFound();
   const [groups, employees, absence] = await Promise.all([
     loadGroups(supabase),

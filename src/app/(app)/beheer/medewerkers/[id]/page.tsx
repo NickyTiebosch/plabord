@@ -150,6 +150,7 @@ export default async function EmployeeDetailPage({
           <span className="flex flex-wrap items-center gap-1">
             {groupName(employee.groupId)}
             {employee.isAdmin ? <Badge tone="brand">beheerder</Badge> : null}
+            {employeeRow.data.is_team_lead ? <Badge tone="brand">teamleider</Badge> : null}
             {!employee.isActive ? <Badge tone="closed">inactief</Badge> : null}
           </span>
         }
@@ -175,6 +176,7 @@ export default async function EmployeeDetailPage({
                 defaultRole: employee.defaultRole,
                 counterGroupIds: employee.counterGroupIds,
                 isAdmin: employee.isAdmin,
+                isTeamLead: employeeRow.data.is_team_lead,
                 isActive: employee.isActive,
               }}
             />

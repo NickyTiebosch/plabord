@@ -1,8 +1,8 @@
 # Planbord
 
-De rooster- en verlofapp van het verhuurteam. Planbord vervangt de Excel: wie werkt wanneer en waar, wie is afwezig, en welke dagen zijn we dicht.
+De rooster- en verlofapp van het verhuurteam. Planbord vervangt de Excel: wie werkt wanneer en waar, wie is afwezig, en welke dagen zijn we dicht. Sinds fase 5 houdt het team er ook registraties in bij, te beginnen met de uitleen van auto's.
 
-De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md), [`docs/PLAN-fase-2.md`](docs/PLAN-fase-2.md), [`docs/PLAN-fase-3.md`](docs/PLAN-fase-3.md) en [`docs/PLAN-fase-4.md`](docs/PLAN-fase-4.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
+De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md) tot en met [`docs/PLAN-fase-5.md`](docs/PLAN-fase-5.md); wat er na fase 5 komt, staat in [`docs/ROUTEKAART.md`](docs/ROUTEKAART.md). Hoe Planbord naar andere accounts overgaat, staat in [`docs/OVERDRACHT.md`](docs/OVERDRACHT.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
 
 ## Wat kan Planbord
 
@@ -91,16 +91,43 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Mails:** bij elke mail staat naar hoeveel toestellen de push ging.
 - **Medewerker:** hoeveel toestellen meldingen aan hebben. Volledig verwijderen neemt die mee, en de gegevensexport noemt ze, zonder het adres van het toestel.
 
+### Fase 5: de teamleider en de uitleen
+
+**Voor iedereen**
+- **Mobiliteit:** de auto's die verhuur meegeeft aan Mobiliteit, of aan de werkplaats voor het weekend. Zichtbaar voor iedere vestiging.
+  - **Auto aanmelden:** kenteken, model, bestemming, aan wie, en eventueel kilometerstand en opmerking. Datum, tijd en wie het doet vult Planbord in.
+  - **Opnieuw uitgeven:** de auto's van de laatste 14 dagen; één tik vult het formulier. Na het opslaan staat er **Nog een auto aanmelden**, met dezelfde bestemming.
+  - **Retour · ingezet** (met kilometerstand en opmerking) of **Retour · niet ingezet** (één tik).
+  - **Vandaag retour,** met **Ongedaan maken**: wie het meldde, op dezelfde dag.
+  - **Archief:** alles wat retour is, te filteren op kenteken, periode, vestiging, bestemming en ingezet.
+  - Een auto die te lang uit staat, valt op. Een kenteken kan maar één keer tegelijk uit staan.
+- **Onderdelen en een startscherm:** na het inloggen kom je op **Start**, met je dienst van vandaag en een tegel per onderdeel (Planbord, Mobiliteit, Beheer). Op de computer staan de onderdelen in een zijbalk links en het menu van het gekozen onderdeel bovenaan. Op de telefoon staat onderin Start met de tabs van het gekozen onderdeel.
+
+**Voor de teamleider** (nieuw, aan te vinken bij een medewerker)
+- **Beheer:** Overzicht, Afwezigheid en Invallen. Afwezigheid invoeren, wijzigen en goedkeuren, en gaten regelen: een invaller kiezen, schuiven, zelf inspringen, een gat negeren, en een roosterwijziging voor één dag.
+- **Controle:** wat er uit staat, wat te lang uit staat, en per vestiging per werkdag of Mobiliteit genoeg auto's kreeg.
+- **De uitleen** corrigeren en verwijderen, en downloaden als Excel.
+- Geen medewerkers, vaste diensten, sluitingsdagen, instellingen, import, mails of logboek. Werkmails van collega's ziet een teamleider niet.
+
+**Voor beheerders**
+- Alles van de teamleider, plus het vinkje **Teamleider** bij een medewerker.
+- **Instellingen → Uitleen:** per vestiging hoeveel auto's Mobiliteit per werkdag minstens krijgt (standaard 2; 0 = geen controle).
+- **Export → Uitleen downloaden:** Registratie en Archief, in de opbouw van het oude Excel-bestand.
+- Zie het plan van fase 5 (besluiten V41–V51).
+
 ### Uitleg voor collega's
 
-- **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan negen korte video's op, met de stappen eronder:
+- **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan tien korte video's op, met de stappen eronder:
   - welkom;
   - op je beginscherm (iPhone en Android);
   - inloggen met je code;
   - je rooster lezen;
   - meldingen aanzetten (iPhone en Android);
   - je rooster in je agenda;
-  - vakantie of afwezig.
+  - vakantie of afwezig;
+  - een auto uitlenen (fase 5).
+
+  Let op: de video's en de PDF tonen nog de tabbalk van vóór het startscherm (besluit V53). De stappen in tekst kloppen. De video's worden opnieuw gemaakt als alle onderdelen van de routekaart zijn gebouwd.
 - **Een PDF** met dezelfde stappen, plaatjes en een QR-code naar de video's. Je downloadt hem bovenaan de pagina.
 - **Waar de link staat:** op de inlogpagina ("Nieuw hier? Bekijk de uitleg") en in de kop van de app ("Uitleg").
 - De video's tonen een verzonnen team en hebben geen geluid. Ze staan bij de app zelf, niet op YouTube, dus er komen geen trackers mee.
@@ -168,7 +195,7 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
    - Het script nog een keer draaien kan geen kwaad: bestaande tabellen en gegevens blijven staan.
-4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql) en [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
+4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql), [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql) en [`supabase/setup/fase-5.sql`](supabase/setup/fase-5.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
 
 ### Stap 2. Inloggen instellen
 
@@ -378,13 +405,36 @@ De server staat al in Frankfurt, naast de database (V32), en het warm houden (V3
 
 ## Een fase testen en live zetten
 
-Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en een testlijstje.
+Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en een testlijstje. Sinds fase 5 test je op een aparte testomgeving (besluit V42); zie hieronder.
 
-1. Heeft de fase een SQL-bestand (`supabase/setup/fase-N.sql`)? Draai dat eerst in de SQL Editor van Supabase.
-2. Open de **preview**: Vercel zet de link in de pull request. Je moet daarvoor in het team bij Vercel zijn ingelogd.
+1. Heeft de fase een SQL-bestand (`supabase/setup/fase-N.sql`)? Draai dat eerst in het **testproject**.
+2. Open de **preview**: Vercel zet de link in de pull request. Je moet daarvoor in het team bij Vercel zijn ingelogd. De preview gebruikt de testdatabase.
 3. Loop het testlijstje uit de pull request door, het liefst op je telefoon.
-4. Alles goed? **Merge** de pull request. Vercel zet `main` dan automatisch live.
+4. Alles goed? Draai het SQL-bestand in het **live project**, en **merge** daarna de pull request. Vercel zet `main` dan automatisch live.
 5. Iets niet goed? Zet een opmerking in de pull request.
+
+### De testomgeving (besluit V42)
+
+Een tweede Supabase-project, alleen voor de previews. Zo verandert er niets in het live Planbord zolang je test. Eenmalig instellen, ongeveer een kwartier:
+
+1. **Supabase:** maak in hetzelfde account een project **Planbord test**, in dezelfde EU-regio, op het gratis plan. Het gratis plan staat twee actieve projecten per account toe; Supabase toont de prijs vóór het aanmaken.
+2. **SQL Editor** van het testproject: draai `fase-1.sql` tot en met de nieuwste fase, op volgorde. Draai daarna [`supabase/setup/testdata.sql`](supabase/setup/testdata.sql): een verzonnen team zonder e-mailadressen en zonder accounts, met wat afwezigheid en uitleen rond vandaag. Dat bestand weigert te draaien als er meer dan vijf werkmails zijn, zodat het niet per ongeluk in het live project belandt.
+3. **Authentication:** neem de instellingen van het live project over: stap 2 hierboven (registratie uit, e-mailcode, SMTP, het sjabloon met de code, rate limit).
+4. **Jezelf als beheerder:** stap 5 hierboven, in het testproject. Wil je de teamleider testen, voeg dan ook een tweede mailadres van jezelf toe als medewerker en vink **Teamleider** aan.
+5. **Sleutels:** onder **Project Settings** van het testproject: de **Project URL** (bij Data API: alleen `https://<code>.supabase.co`, zonder `/rest/v1`), de **Publishable key** en een **Secret key**.
+6. **Vercel → Settings → Environment Variables:** voor `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` en `SUPABASE_SECRET_KEY`:
+   - haal bij de bestaande variabele het vinkje **Preview** weg, zodat hij alleen voor **Production** geldt;
+   - voeg dezelfde naam opnieuw toe met de waarde van het testproject, alleen voor **Preview** (kies bij Environments → Environments, niet een losse tak).
+7. **Redeploy** de nieuwste preview: de `NEXT_PUBLIC_`-waarden worden bij het bouwen in de app gezet.
+8. **Controle:** open de preview en log in. Zie je het verzonnen team, dan werkt het. Zie je je echte collega's, dan wijst de preview nog naar de live database.
+
+Een gratis project pauzeert na ongeveer een week zonder gebruik. Zet het in Supabase met één klik weer aan voordat je test.
+
+---
+
+## Overdragen
+
+Moet Planbord naar de accounts van iemand anders, bijvoorbeeld het bedrijf? Volg [`docs/OVERDRACHT.md`](docs/OVERDRACHT.md): projecten overdragen, opnieuw opzetten, of alles naar Excel exporteren.
 
 ---
 
@@ -408,7 +458,7 @@ Elke fase komt als pull request op GitHub, met daarin de handmatige stappen en e
 
 ## Agenda koppelen (uitleg voor collega's)
 
-1. Open **Agenda** in Planbord en kies **Link maken** bij de agenda die je wilt.
+1. Open **Agenda** in Planbord (onderdeel **Planbord**) en kies **Link maken** bij de agenda die je wilt.
 2. Zet de link in je agenda:
    - **iPhone of iPad:** tik op **Toevoegen aan agenda** en daarna op **Abonneer**. Of kopieer de link: Instellingen → Agenda → Accounts → Voeg account toe → Andere → Voeg agenda-abonnement toe → plak de link.
    - **Android:** de app Google Agenda kan geen agenda via een link toevoegen, en Toevoegen aan agenda werkt daar niet. Op een Android-telefoon toont Planbord daarom **Kopieer link** als knop (besluit V35). Daarna:
@@ -436,7 +486,12 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
 - Mails gaan alleen naar de medewerker zelf, en alleen over het eigen rooster.
   - Er staan geen namen van collega's in, geen reden van afwezigheid, en geen plaatjes, trackers of leesbevestiging.
   - De wachtrij voor mails bewaart geen e-mailadressen en geen tekst. Regels ouder dan 90 dagen verdwijnen vanzelf.
-- Exporteren en volledig verwijderen kunnen alleen beheerders. Allebei komen ze in het logboek.
+- Exporteren en volledig verwijderen kunnen alleen beheerders. Allebei komen ze in het logboek. De uitleen exporteren kan ook de teamleider (fase 5).
+- De uitleen (fase 5) bewaart kenteken, model, kilometerstand, bestemming, aan wie de auto ging (persoon of afdeling), wie hem meegaf en terugnam, de tijdstippen, ingezet ja of nee, en een korte opmerking.
+  - Geen klantnamen of andere klantgegevens; bij de opmerking staat dat ze niet nodig zijn.
+  - Iedere collega ziet de uitleen. Het logboek bewaart daarvan geen vrije tekst: niet aan wie, en geen opmerkingen.
+  - Een registratie verdwijnt 24 maanden na retour vanzelf.
+- De teamleider (fase 5) ziet geen werkmails. Mails en pushmeldingen na een actie van een teamleider verstuurt de server met de secret key.
 - Pushmeldingen (fase 4):
   - je zet ze zelf aan, per toestel, en ze gaan alleen over je eigen rooster;
   - Planbord bewaart per toestel een push-abonnement: een adres bij de pushdienst van Apple, Google, Mozilla of Microsoft, met twee sleutels;

@@ -4,10 +4,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cx } from '../ui';
 
-const ITEMS = [
-  { href: '/beheer', label: 'Overzicht', exact: true },
-  { href: '/beheer/afwezigheid', label: 'Afwezigheid' },
-  { href: '/beheer/invallen', label: 'Invallen' },
+interface AdminNavItem {
+  href: string;
+  label: string;
+  exact?: boolean;
+  /** Ook voor de teamleider (fase 5, V43). De rest is alleen voor beheerders. */
+  lead?: boolean;
+}
+
+const ITEMS: AdminNavItem[] = [
+  { href: '/beheer', label: 'Overzicht', exact: true, lead: true },
+  { href: '/beheer/afwezigheid', label: 'Afwezigheid', lead: true },
+  { href: '/beheer/invallen', label: 'Invallen', lead: true },
   { href: '/beheer/medewerkers', label: 'Medewerkers' },
   { href: '/beheer/sluitingsdagen', label: 'Sluitingsdagen' },
   { href: '/beheer/instellingen', label: 'Instellingen' },
@@ -17,12 +25,13 @@ const ITEMS = [
   { href: '/beheer/logboek', label: 'Logboek' },
 ];
 
-export function AdminNav() {
+export function AdminNav({ isAdmin }: { isAdmin: boolean }) {
   const path = usePathname();
+  const items = isAdmin ? ITEMS : ITEMS.filter((item) => item.lead);
   return (
     <nav aria-label="Beheer" className="-mx-4 mb-5 overflow-x-auto px-4">
       <ul className="flex w-max gap-1 rounded-xl bg-slate-100 p-1">
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const active = item.exact ? path === item.href : path.startsWith(item.href);
           return (
             <li key={item.href}>

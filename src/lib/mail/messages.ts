@@ -100,6 +100,11 @@ const FOOTER = 'Deze mail komt van Planbord, de planning van het verhuurteam.';
 const paragraph = (content: string) => `<p style="margin:0 0 12px">${content}</p>`;
 
 /** De pagina met de uitleg, naast het adres van de app (dat eindigt op een /). */
+/** Mijn rooster (sinds V53 niet meer de startpagina). */
+export function rosterUrl(appUrl: string): string {
+  return new URL('mijn-rooster', appUrl).toString();
+}
+
 export function guideUrl(appUrl: string): string {
   return new URL('uitleg', appUrl).toString();
 }
@@ -120,7 +125,7 @@ const INVITE_LOG_IN =
   'Open Planbord voortaan via het icoon en log in met je werkmail: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers. Vul de code in. Een wachtwoord is niet nodig.';
 const INVITE_NOTIFICATIONS_LEAD = 'Vergeet niet de meldingen aan te zetten.';
 const INVITE_NOTIFICATIONS =
-  'Scrol op Mijn rooster helemaal naar beneden, tik op Meldingen aanzetten en kies Sta toe (iPhone) of Toestaan (Android). Dan krijg je een melding als je rooster verandert.';
+  'Tik op Planbord, scrol op Mijn rooster helemaal naar beneden, tik op Meldingen aanzetten en kies Sta toe (iPhone) of Toestaan (Android). Dan krijg je een melding als je rooster verandert.';
 
 /**
  * De uitnodiging (V33): hoe je begint, met een gewone link naar de app en de uitleg. Bewust geen
@@ -187,7 +192,7 @@ export function composeMail(input: ComposeInput): MailContent {
     ...(scheduleDays.length > 0
       ? ['', 'Zo ziet je rooster er nu uit:', ...scheduleDays.flatMap((day) => ['', day.label, ...dayLines(day).map((line) => `- ${line}`)])]
       : []),
-    ...(input.appUrl ? ['', `Bekijk je rooster in Planbord: ${input.appUrl}`] : []),
+    ...(input.appUrl ? ['', `Bekijk je rooster in Planbord: ${rosterUrl(input.appUrl)}`] : []),
     '',
     FOOTER,
     '',
@@ -209,7 +214,7 @@ export function composeMail(input: ComposeInput): MailContent {
         ]
       : []),
     ...(input.appUrl
-      ? [paragraph(`<a href="${escapeHtml(input.appUrl)}">Bekijk je rooster in Planbord</a>`)]
+      ? [paragraph(`<a href="${escapeHtml(rosterUrl(input.appUrl))}">Bekijk je rooster in Planbord</a>`)]
       : []),
     `<p style="margin:16px 0 0;font-size:13px;color:#64748b">${escapeHtml(FOOTER)}</p>`,
     '</body></html>',

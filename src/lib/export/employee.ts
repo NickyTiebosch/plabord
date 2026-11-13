@@ -9,6 +9,8 @@ import type { Absence, Group, IsoDate, RecurringShift, ShiftOverride, Substituti
 import { MAIL_KIND_LABELS, mailStatusLabel } from '../mail/labels';
 import { formatDateList } from '../mail/messages';
 import type { MailKind, MailStatus } from '../mail/types';
+import { formatPlate } from '../loans/plates';
+import { DESTINATION_LABELS, type VehicleLoan } from '../loans/types';
 import {
   dayPartsCell,
   formatExportDate,
@@ -35,6 +37,8 @@ export interface EmployeeData {
   devices: readonly { createdAt: string; lastSuccessAt: string | null }[];
   /** De logboekregels over deze medewerker, al in gewone taal. */
   log: readonly { when: string; what: string; detail: string | null }[];
+  /** De uitleen (fase 5) die deze medewerker meegaf of retour meldde. */
+  loans?: readonly VehicleLoan[];
 }
 
 /** Tijdstip in Nederlandse tijd: "14-10-2026 13:05". */
@@ -62,6 +66,7 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
         ['Standaardrol', ROLE_LABELS[employee.defaultRole]],
         ['Inzetbaar aan de balie in', employee.counterGroupIds.map((id) => groupName(id)).join(', ')],
         ['Beheerder', employee.isAdmin ? 'ja' : 'nee'],
+        ['Teamleider', employee.isTeamLead ? 'ja' : 'nee'],
         ['Actief', employee.isActive ? 'ja' : 'nee'],
         ['Inlogaccount', data.hasAccount ? 'ja' : 'nee'],
         [
@@ -156,6 +161,25 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
           `Toestel ${index + 1}`,
           formatExportMoment(device.createdAt),
           device.lastSuccessAt ? formatExportMoment(device.lastSuccessAt) : '',
+        ]),
+    },
+    {
+      // Fase 5: zonder aan wie de auto ging en zonder opmerkingen; dat zijn geen gegevens over deze persoon.
+      sheet: 'Mobiliteit',
+      header: ['Kenteken', 'Model', 'Vestiging', 'Bestemming', 'Meegegeven', 'Retour', 'Ingezet', 'Wat deed deze medewerker'],
+      rows: [...(data.loans ?? [])]
+        .sort(byDate((loan) => loan.handedOutAt))
+        .map((loan) => [
+          formatPlate(loan.plate),
+          loan.model,
+          groupName(loan.groupId),
+          DESTINATION_LABELS[loan.destination],
+          formatExportMoment(loan.handedOutAt),
+          loan.returnedAt ? formatExportMoment(loan.returnedAt) : '',
+          loan.wasUsed === null ? '' : loan.wasUsed ? 'ja' : 'nee',
+          [loan.handedOutBy === employee.id ? 'meegegeven' : null, loan.returnedBy === employee.id ? 'retour gemeld' : null]
+            .filter(Boolean)
+            .join(' en '),
         ]),
     },
     {

@@ -5,7 +5,7 @@ import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, Notice, PageHeader, SectionTitle } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
 import { safeReturnPath } from '@/lib/admin/planning';
-import { requireAdminWith } from '@/lib/auth/session';
+import { requireLeadWith } from '@/lib/auth/session';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
 import { isIsoDate, isoWeekKey, weekdayOf } from '@/lib/engine/dates';
 import { formatDayShort } from '@/lib/engine/format';
@@ -28,7 +28,7 @@ export default async function DayChangePage({
 }) {
   const [{ medewerker, datum }, { terug, melding, mail }] = await Promise.all([params, searchParams]);
   if (!isUuid(medewerker) || !isIsoDate(datum)) notFound();
-  const [, snapshot] = await requireAdminWith((supabase) => loadPlanningSnapshot(supabase, { from: datum, to: datum }));
+  const [, snapshot] = await requireLeadWith((supabase) => loadPlanningSnapshot(supabase, { from: datum, to: datum }));
   const context = createScheduleContext(snapshot);
   const employee = context.employeesById.get(medewerker);
   if (!employee) notFound();

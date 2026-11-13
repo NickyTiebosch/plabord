@@ -78,6 +78,7 @@ describe('formulier medewerker', () => {
         defaultRole: 'counter',
         counterGroupIds: ['den_bosch', 'breda'],
         isAdmin: 'on',
+        isTeamLead: 'on',
       }),
     );
     expect(result).toEqual({
@@ -89,6 +90,7 @@ describe('formulier medewerker', () => {
         defaultRole: 'counter',
         counterGroupIds: ['den_bosch', 'breda'],
         isAdmin: true,
+        isTeamLead: true,
         isActive: true,
       },
     });
@@ -366,6 +368,62 @@ describe('logboek', () => {
       detail: '14–16 okt, hele dag, aangevraagd',
       source: null,
     });
+  });
+
+  it('beschrijft de uitleen zonder vrije tekst, en de teamleider (fase 5)', () => {
+    const loan = { ...base, entity: 'vehicle_loans', entity_id: 'v1', employee_id: null };
+    expect(
+      describeAudit(
+        {
+          ...loan,
+          details: { license_plate: 'GHP39K', group_id: 'breda', destination: 'mobility', handed_out_at: '2026-10-14T07:12:00+00:00' },
+        },
+        lookups,
+      ),
+    ).toMatchObject({ what: 'Auto aangemeld', detail: 'GHP-39-K, Breda, Mobiliteit, 14 okt 2026 09:12' });
+    expect(
+      describeAudit(
+        {
+          ...loan,
+          action: 'update',
+          changed_fields: ['returned_at', 'returned_by', 'was_used'],
+          details: { returned_at: { old: null, new: '2026-10-15T06:30:00+00:00' }, was_used: { old: null, new: false } },
+        },
+        lookups,
+      ),
+    ).toMatchObject({ what: 'Auto retour gemeld, niet ingezet', detail: '15 okt 2026 08:30' });
+    expect(
+      describeAudit(
+        {
+          ...loan,
+          action: 'update',
+          changed_fields: ['returned_at', 'returned_by', 'was_used'],
+          details: { returned_at: { old: '2026-10-15T06:30:00+00:00', new: null }, was_used: { old: true, new: null } },
+        },
+        lookups,
+      ),
+    ).toMatchObject({ what: 'Retour ongedaan gemaakt' });
+    expect(
+      describeAudit(
+        { ...loan, action: 'update', changed_fields: ['destination'], details: { destination: { old: 'mobility', new: 'workshop_weekend' } } },
+        lookups,
+      ),
+    ).toMatchObject({ what: 'Registratie gecorrigeerd', detail: 'bestemming: Mobiliteit → Werkplaats (weekend)' });
+    expect(
+      describeAudit(
+        { ...loan, action: 'delete', source: 'opruimen', details: { license_plate: 'GHP39K', group_id: 'breda', destination: 'mobility', handed_out_at: '2024-10-14T07:12:00+00:00' } },
+        lookups,
+      ),
+    ).toMatchObject({ what: 'Registratie opgeruimd (langer dan 24 maanden retour)' });
+    expect(describeAudit({ ...base, entity: 'export', employee_id: null, details: { kind: 'loans' } }, lookups)).toMatchObject({
+      what: 'Mobiliteit geëxporteerd',
+    });
+    expect(
+      describeAudit(
+        { ...base, entity: 'employees', action: 'update', changed_fields: ['is_team_lead'], details: { is_team_lead: { old: false, new: true } } },
+        lookups,
+      ),
+    ).toMatchObject({ what: 'Medewerker gewijzigd – Sanne', detail: 'teamleider: nee → ja' });
   });
 
   it('beschrijft exports, volledig verwijderen en de schakelaar voor mails (fase 3)', () => {

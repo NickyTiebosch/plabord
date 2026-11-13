@@ -23,6 +23,7 @@ export interface EmployeeDefaults {
   defaultRole: Role;
   counterGroupIds: readonly string[];
   isAdmin: boolean;
+  isTeamLead: boolean;
   isActive: boolean;
 }
 
@@ -104,10 +105,15 @@ export function EmployeeForm({ groups, defaults }: { groups: GroupOption[]; defa
 
       <div className="flex flex-wrap gap-2">
         <Choice type="checkbox" name="isAdmin" value="on" label="Beheerder" defaultChecked={defaults?.isAdmin} />
+        <Choice type="checkbox" name="isTeamLead" value="on" label="Teamleider" defaultChecked={defaults?.isTeamLead} />
         {defaults ? (
           <Choice type="checkbox" name="isActive" value="on" label="Actief" defaultChecked={defaults.isActive} />
         ) : null}
       </div>
+      <p className="text-xs text-slate-500">
+        Teamleider: voert afwezigheid in, regelt gaten en ziet de controle en het archief van Mobiliteit. Geen
+        medewerkers, instellingen of vaste diensten. Een beheerder mag alles.
+      </p>
       {defaults ? (
         <p className="text-xs text-slate-500">
           Inactief: kan niet meer inloggen en verdwijnt uit de roosters, het verlofoverzicht en de feeds. De gegevens blijven

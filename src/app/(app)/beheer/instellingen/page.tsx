@@ -4,6 +4,7 @@ import { StatefulForm } from '@/components/client/stateful-form';
 import { VapidGenerator } from '@/components/client/vapid-generator';
 import { Card, Field, PageHeader, SectionTitle, inputClass } from '@/components/ui';
 import { requireAdminWith } from '@/lib/auth/session';
+import { loadLoanGroups } from '@/lib/db/loan-queries';
 import { loadGroups, loadPlanningSnapshot, loadSettings, must } from '@/lib/db/queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDayShort, weekdayShort } from '@/lib/engine/format';
@@ -14,7 +15,7 @@ import { composeMail, personalDaysFor } from '@/lib/mail/messages';
 import { reminderTargets } from '@/lib/mail/reminders';
 import { composePush } from '@/lib/push/messages';
 import { vapidPublicKey } from '@/lib/push/send';
-import { saveNorms, saveRanks, saveSettings, sendTestMailAction, sendTestPushAction, setMailEnabled } from './actions';
+import { saveMobility, saveNorms, saveRanks, saveSettings, sendTestMailAction, sendTestPushAction, setMailEnabled } from './actions';
 
 export const metadata: Metadata = { title: 'Instellingen' };
 
@@ -23,13 +24,14 @@ const numberClass = 'block w-16 min-h-11 rounded-lg border border-slate-300 bg-w
 export default async function SettingsPage() {
   const preview = previewReminderDate(todayInAmsterdam(new Date()));
   const pushReady = vapidPublicKey() !== null;
-  const [{ email }, [settings, groups, norms, mailSetting, snapshot]] = await requireAdminWith((supabase) =>
+  const [{ email }, [settings, groups, norms, mailSetting, snapshot, loanGroups]] = await requireAdminWith((supabase) =>
     Promise.all([
       loadSettings(supabase),
       loadGroups(supabase),
       supabase.from('staffing_norms').select('group_id, weekday, day_part, min_staff').then((result) => must(result, 'de normen')),
       supabase.from('settings').select('mail_enabled').maybeSingle(),
       loadPlanningSnapshot(supabase, { from: preview.date, to: preview.date }),
+      loadLoanGroups(supabase),
     ]),
   );
   const mailEnabled = Boolean(mailSetting.data?.mail_enabled);
@@ -240,6 +242,36 @@ export default async function SettingsPage() {
               ))}
             </div>
             <SubmitButton>Normen opslaan</SubmitButton>
+          </StatefulForm>
+        </Card>
+
+        <Card id="mobiliteit" className="scroll-mt-20 p-4 lg:col-span-2">
+          <SectionTitle className="mb-1">Mobiliteit</SectionTitle>
+          <p className="mb-3 text-sm text-slate-600">
+            Hoeveel auto’s Mobiliteit per werkdag minstens krijgt, per vestiging. Verhuur kan altijd meer auto’s aanmelden. De controle
+            toont rood bij minder, vanaf de eerste auto die een vestiging aan Mobiliteit meegeeft. 0 = geen controle voor die
+            vestiging.
+          </p>
+          <StatefulForm action={saveMobility} className="space-y-3">
+            <ul className="divide-y divide-slate-100">
+              {loanGroups.map((group) => (
+                <li key={group.id} className="flex items-center justify-between py-2">
+                  <label htmlFor={`mobility-${group.id}`} className="text-sm text-slate-800">
+                    {group.name}
+                  </label>
+                  <input
+                    id={`mobility-${group.id}`}
+                    name={`mobility:${group.id}`}
+                    type="number"
+                    min={0}
+                    max={20}
+                    defaultValue={group.mobilityPerDay}
+                    className={numberClass}
+                  />
+                </li>
+              ))}
+            </ul>
+            <SubmitButton>Opslaan</SubmitButton>
           </StatefulForm>
         </Card>
       </div>

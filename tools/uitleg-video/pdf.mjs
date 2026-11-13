@@ -28,8 +28,10 @@ const SHOTS = {
   'meldingen-iphone': [11, 13.8, 17, 22],
   'meldingen-android': [11, 13.8, 17, 22],
   'rooster-lezen': [8, 12.5, 19, 23.5],
-  agenda: [6.5, 10.5, 13.4, 20],
+  // Fase 5: eerst Meer, dan Agenda (V44).
+  agenda: [4.2, 8.4, 12.1, 21.6],
   afwezig: [4, 8.5, 13, 17],
+  uitleen: [9.2, 12.9, 18.5, 28],
 };
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.json': 'application/json', '.svg': 'image/svg+xml' };

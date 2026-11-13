@@ -29,8 +29,20 @@ describe('uitleg voor collega’s', () => {
     const ids = topics.map((topic) => topic.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const topic of topics) {
-      expect(topic.videos.length).toBeGreaterThan(0);
       expect(topic.steps.flatMap((group) => group.steps).length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('heeft bij elk onderwerp een video, ook bij de uitleen (fase 5)', () => {
+    expect(topics.filter((topic) => topic.videos.length === 0).map((topic) => topic.id)).toEqual([]);
+  });
+
+  it('stuurt naar Agenda via het onderdeel Planbord, en noemt Meer en Registraties niet meer (V53)', () => {
+    const steps = topics.flatMap((topic) => topic.steps.flatMap((group) => group.steps));
+    expect(steps.filter((step) => /op Meer\b|Registraties/.test(step))).toEqual([]);
+    const agenda = topics.find((topic) => topic.id === 'agenda');
+    for (const group of agenda?.steps ?? []) {
+      expect(group.steps[0], group.device).toContain('Tik op Planbord en dan onderin op Agenda');
     }
   });
 
@@ -63,7 +75,7 @@ describe('uitleg voor collega’s', () => {
   });
 
   it('telt de speelduur in hele minuten', () => {
-    expect(totalMinutes(topics)).toBe(4);
+    expect(totalMinutes(topics)).toBe(5);
     expect(totalMinutes([])).toBe(1);
   });
 });

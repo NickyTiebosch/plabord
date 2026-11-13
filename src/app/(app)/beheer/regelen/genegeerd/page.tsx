@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Card, EmptyState, PageHeader } from '@/components/ui';
-import { requireAdminWith } from '@/lib/auth/session';
+import { requireLeadWith } from '@/lib/auth/session';
 import { loadPlanningOverview } from '@/lib/db/admin-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { Flash } from '../../admin-shared';
@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: 'Genegeerde gaten' };
 export default async function IgnoredGapsPage({ searchParams }: { searchParams: Promise<{ melding?: string }> }) {
   const { melding } = await searchParams;
   const today = todayInAmsterdam(new Date());
-  const [, planning] = await requireAdminWith((supabase) => loadPlanningOverview(supabase, today));
+  const [, planning] = await requireLeadWith((supabase) => loadPlanningOverview(supabase, today));
 
   return (
     <>

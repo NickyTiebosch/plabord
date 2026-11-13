@@ -25,7 +25,12 @@ const fake = {
   auth: crypto.randomBytes(16).toString('base64url'),
 };
 
-const browser = await chromium.launch();
+// Met een Nederlandse taal voor de browser zelf tonen datum- en tijdvelden 05-10-2026 en 10:00, zoals
+// op een Nederlandse telefoon. `locale` hieronder doet dat niet voor die velden.
+const browser = await chromium.launch({
+  args: ['--lang=nl-NL'],
+  env: { ...process.env, LANG: 'nl_NL.UTF-8', LC_ALL: 'nl_NL.UTF-8', LANGUAGE: 'nl_NL:nl' },
+});
 const context = await browser.newContext({
   viewport: { width: W, height: H },
   deviceScaleFactor: 3,
@@ -138,8 +143,11 @@ await page.getByText('Meldingen staan aan op dit toestel').first().waitFor();
 await settle();
 mijn.pushCardOn = await box(page.locator('section, div').filter({ has: page.locator('h2, h3', { hasText: 'Meldingen op dit toestel' }) }).last());
 await page.screenshot({ path: `${OUT}push-aan.png`, clip: { x: 0, y: mijn.pushCardOn.y - 8, width: W, height: mijn.pushCardOn.h + 16 }, fullPage: true });
-for (const label of ['Mijn rooster', 'Rooster', 'Verlof', 'Agenda']) {
-  mijn[`nav:${label}`] = await page.locator('nav[aria-label="Hoofdmenu"]').last().getByRole('link', { name: label, exact: true }).boundingBox();
+// De tabbalk sinds fase 5 (V44): Agenda en Uitleg staan onder Meer.
+for (const label of ['Mijn rooster', 'Rooster', 'Verlof', 'Registraties', 'Meer']) {
+  const box = await page.locator('nav[aria-label="Hoofdmenu"]').last().getByRole('link', { name: label, exact: true }).boundingBox();
+  if (!box) throw new Error(`De tabbalk heeft geen ${label}.`);
+  mijn[`nav:${label}`] = box;
 }
 
 // 3. Rooster per vestiging
@@ -155,7 +163,12 @@ await capturePage('rooster-eindhoven');
 await page.goto(`${BASE}/verlof`);
 await capturePage('verlof');
 
-// 5. Agenda: eerst zonder link, dan met de link voor Mijn rooster
+// 5. Meer (fase 5): daar staat Agenda op de telefoon.
+await page.goto(`${BASE}/meer`);
+await capturePage('meer');
+boxes.meer.agenda = await box(page.locator('main').getByRole('link', { name: /Agenda/ }));
+
+// 6. Agenda: eerst zonder link, dan met de link voor Mijn rooster
 await page.goto(`${BASE}/agenda`);
 await capturePage('agenda');
 boxes.agenda.makeLink = await box(page.getByRole('button', { name: 'Link maken', exact: true }));
@@ -167,6 +180,60 @@ if (!link.startsWith(`https://${ADDRESS}/feed/`)) {
 }
 await capturePage('agenda-link');
 boxes['agenda-link'].add = await box(page.getByRole('link', { name: 'Toevoegen aan agenda' }));
+
+// 7. Registraties → Uitleen (fase 5), met de auto's uit demo-data.mjs. Sanne geeft de VW Polo
+// opnieuw uit aan Mobiliteit en meldt de VW Transporter van de werkplaats retour.
+const row = (model) => page.locator('main li', { hasText: model });
+await page.goto(`${BASE}/mobiliteit`);
+await settle();
+if ((await row('VW Transporter').count()) === 0) {
+  throw new Error('De uitleen toont de VW Transporter niet: draai eerst node demo-data.mjs (zie README).');
+}
+await capturePage('uitleen');
+boxes.uitleen.add = await box(page.locator('main').getByRole('link', { name: 'Auto aanmelden', exact: true }));
+
+await page.locator('main').getByRole('link', { name: 'Auto aanmelden', exact: true }).click();
+await page.waitForURL((url) => url.pathname.endsWith('/nieuw'));
+await capturePage('uitleen-nieuw');
+boxes['uitleen-nieuw'].option = await box(page.locator('main').getByRole('link', { name: /VW Polo/ }));
+
+await page.locator('main').getByRole('link', { name: /VW Polo/ }).click();
+await page.waitForURL((url) => url.searchParams.get('kenteken') === 'X920RV');
+await page.waitForFunction(() => Boolean(document.querySelector('#plate')?.value));
+await capturePage('uitleen-nieuw-gevuld');
+const filled = boxes['uitleen-nieuw-gevuld'];
+filled.plate = await box(page.locator('#plate'));
+filled.model = await box(page.locator('#model'));
+filled.destination = await box(page.locator('main fieldset').filter({ hasText: 'Bestemming' }));
+filled.handedTo = await box(page.locator('#handedTo'));
+filled.submit = await box(page.locator('main').getByRole('button', { name: 'Aanmelden', exact: true }));
+
+await page.locator('main').getByRole('button', { name: 'Aanmelden', exact: true }).click();
+await page.waitForURL((url) => url.searchParams.get('melding') === 'aangemeld');
+await capturePage('uitleen-aangemeld');
+const handedOut = boxes['uitleen-aangemeld'];
+handedOut.flash = await box(page.locator('main').getByRole('status'));
+handedOut.polo = await box(row('VW Polo'));
+handedOut.transporter = await box(row('VW Transporter'));
+handedOut.returnUsed = await box(row('VW Transporter').getByRole('link', { name: 'Retour · ingezet' }));
+handedOut.returnNotUsed = await box(row('VW Transporter').getByRole('button', { name: 'Retour · niet ingezet' }));
+
+await row('VW Transporter').getByRole('link', { name: 'Retour · ingezet' }).click();
+await page.waitForURL((url) => url.pathname.endsWith('/retour'));
+await capturePage('uitleen-retour');
+boxes['uitleen-retour'].odometer = await box(page.locator('#odometerIn'));
+boxes['uitleen-retour'].submit = await box(page.locator('main').getByRole('button', { name: 'Retour melden' }));
+await page.fill('#odometerIn', '102368');
+await page.evaluate(() => document.activeElement && document.activeElement.blur());
+await capturePage('uitleen-retour-gevuld');
+
+await page.locator('main').getByRole('button', { name: 'Retour melden' }).click();
+await page.waitForURL((url) => url.searchParams.get('melding') === 'retour');
+await capturePage('uitleen-klaar');
+const back = page.locator('section[aria-labelledby="vandaag-retour"] li', { hasText: 'VW Transporter' });
+boxes['uitleen-klaar'].flash = await box(page.locator('main').getByRole('status'));
+boxes['uitleen-klaar'].returned = await box(back);
+boxes['uitleen-klaar'].undo = await box(back.getByRole('button', { name: 'Ongedaan maken' }));
 
 fs.writeFileSync(`${OUT}boxes.json`, JSON.stringify(boxes, null, 2));
 await browser.close();

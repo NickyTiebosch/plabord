@@ -176,7 +176,7 @@ describe('mails: de tekst', () => {
         '- Invallen in Eindhoven · balie · 13:00–18:00',
         '- Backoffice · backoffice · 07:30–13:00 (deels elders invallen)',
         '',
-        'Bekijk je rooster in Planbord: https://planbord.example/',
+        'Bekijk je rooster in Planbord: https://planbord.example/mijn-rooster',
         '',
         'Deze mail komt van Planbord, de planning van het verhuurteam.',
         '',
@@ -370,7 +370,7 @@ describe('mails: de uitnodiging (V33)', () => {
         '   - iPhone: tik op de deelknop (het vierkantje met het pijltje; op nieuwere iPhones zit hij achter •••). Kies Zet op beginscherm, laat Open als webapp aan staan en tik op Voeg toe.',
         '   - Android: tik rechtsboven op ⋮, kies App installeren (of Toevoegen aan startscherm) en tik op Installeren.',
         '3. Open Planbord voortaan via het icoon en log in met je werkmail: het adres waarop je deze mail krijgt. Je krijgt dan een mail met een code van 6 cijfers. Vul de code in. Een wachtwoord is niet nodig.',
-        '4. Vergeet niet de meldingen aan te zetten. Scrol op Mijn rooster helemaal naar beneden, tik op Meldingen aanzetten en kies Sta toe (iPhone) of Toestaan (Android). Dan krijg je een melding als je rooster verandert.',
+        '4. Vergeet niet de meldingen aan te zetten. Tik op Planbord, scrol op Mijn rooster helemaal naar beneden, tik op Meldingen aanzetten en kies Sta toe (iPhone) of Toestaan (Android). Dan krijg je een melding als je rooster verandert.',
         '',
         "Korte video's van elke stap: https://planbord.example/uitleg",
         '',
@@ -385,7 +385,7 @@ describe('mails: de uitnodiging (V33)', () => {
     expect(invite.html).toContain('<li>Open <a href="https://planbord.example/">Planbord</a> op je telefoon. Op een iPhone in Safari, op Android in Chrome (niet in Samsung Internet).</li>');
     expect(invite.html).toContain('<li><strong>iPhone:</strong> tik op de deelknop');
     expect(invite.html).toContain('<li><strong>Android:</strong> tik rechtsboven op ⋮, kies App installeren (of Toevoegen aan startscherm) en tik op Installeren.</li>');
-    expect(invite.html).toContain('<strong>Vergeet niet de meldingen aan te zetten.</strong> Scrol op Mijn rooster');
+    expect(invite.html).toContain('<strong>Vergeet niet de meldingen aan te zetten.</strong> Tik op Planbord, scrol op Mijn rooster');
     expect(invite.html.match(/<li>/g)).toHaveLength(6);
   });
 
