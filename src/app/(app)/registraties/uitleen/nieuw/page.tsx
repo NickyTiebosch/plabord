@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { StatefulForm } from '@/components/client/stateful-form';
 import { Card, PageHeader, SectionTitle } from '@/components/ui';
-import { requireViewerWith } from '@/lib/auth/session';
+import { requireLoansWith } from '@/lib/auth/session';
 import { loadCurrentLoans, loadLoanGroups } from '@/lib/db/loan-queries';
 import { addDays, amsterdamDateTime, todayInAmsterdam } from '@/lib/engine/dates';
 import { formatPlate, normalizePlate } from '@/lib/loans/plates';
@@ -27,7 +27,7 @@ export default async function NewLoanPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const now = new Date();
   const today = todayInAmsterdam(now);
-  const [viewer, [groups, loans]] = await requireViewerWith((supabase) =>
+  const [viewer, [groups, loans]] = await requireLoansWith((supabase) =>
     Promise.all([loadLoanGroups(supabase), loadCurrentLoans(supabase, addDays(today, -REISSUE_DAYS))]),
   );
   const isGroup = (id: string | undefined): id is string => Boolean(id && groups.some((group) => group.id === id));

@@ -15,6 +15,8 @@ export interface Viewer {
   isTeamLead: boolean;
   /** Beheerder of teamleider. */
   isLead: boolean;
+  /** Werkt met de uitleen (V52): een vestiging die uitleent, daar mogen invallen, of beheerder of teamleider. */
+  usesLoans: boolean;
   supabase: ServerClient;
 }
 
@@ -37,8 +39,10 @@ export const getSession = cache(async () => {
   const supabase = await getClient();
   const { data, error } = await supabase.auth.getClaims();
   const claims = error ? null : data?.claims;
-  if (!claims?.sub) return { supabase, userId: null, email: null, employee: null } as const;
+  if (!claims?.sub) return { supabase, userId: null, email: null, employee: null, usesLoans: false } as const;
 
+  // Tegelijk: wie het is, en of die met de uitleen werkt (V52). Mislukt dat laatste, dan niet.
+  const loans = supabase.rpc('uses_loans').then((result) => result.data === true, () => false);
   let employee = await findEmployee(supabase, claims.sub);
   if (!employee) {
     // Eerste keer inloggen, of het koppelen bij het aanmaken ging mis: koppel op e-mailadres.
@@ -50,6 +54,7 @@ export const getSession = cache(async () => {
     userId: claims.sub,
     email: typeof claims.email === 'string' ? claims.email : null,
     employee,
+    usesLoans: employee ? await loans : false,
   } as const;
 });
 
@@ -67,6 +72,7 @@ export async function requireViewer(): Promise<Viewer> {
     isAdmin: session.employee.is_admin,
     isTeamLead: session.employee.is_team_lead,
     isLead: session.employee.is_admin || session.employee.is_team_lead,
+    usesLoans: session.usesLoans,
     supabase: session.supabase,
   };
 }
@@ -85,6 +91,13 @@ export async function requireLead(): Promise<Viewer> {
   return viewer;
 }
 
+/** Alleen voor wie met de uitleen werkt (V52). RLS controleert het daarna nog een keer. */
+export async function requireLoans(): Promise<Viewer> {
+  const viewer = await requireViewer();
+  if (!viewer.usesLoans) redirect('/');
+  return viewer;
+}
+
 /**
  * Als requireViewer(), maar de gegevens van de pagina laden al terwijl de controle loopt, in plaats
  * van erna. Dat scheelt een rondgang naar de database. De pagina krijgt de gegevens pas als de
@@ -97,6 +110,11 @@ export function requireViewerWith<T>(load: (supabase: ServerClient) => Promise<T
 /** Als requireAdmin(), met de gegevens tegelijk geladen (zie requireViewerWith). */
 export function requireAdminWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
   return checkWhileLoading(requireAdmin, load);
+}
+
+/** Als requireLoans(), met de gegevens tegelijk geladen (zie requireViewerWith). */
+export function requireLoansWith<T>(load: (supabase: ServerClient) => Promise<T>): Promise<[Viewer, T]> {
+  return checkWhileLoading(requireLoans, load);
 }
 
 /** Als requireLead(), met de gegevens tegelijk geladen (zie requireViewerWith). */

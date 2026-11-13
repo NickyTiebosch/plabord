@@ -8,6 +8,7 @@ import {
   formatOdometer,
   isOverdue,
   loanDueDate,
+  loanSummary,
   mobilityDayCheck,
   openLoanFor,
   recentWeekdays,
@@ -335,5 +336,35 @@ describe('formulieren van de uitleen', () => {
       odometer_in: 45300,
       was_used: false,
     });
+  });
+});
+
+describe('de stand voor het startscherm (V53)', () => {
+  const groups: LoanGroup[] = [{ id: 'den_bosch', name: 'Den Bosch', mobilityPerDay: 2 }];
+  const first = new Map([['den_bosch', '2026-11-02']]);
+
+  it('telt wat uit staat, wat te lang uit staat en Mobiliteit vandaag', () => {
+    const loans = [
+      loan({ id: 'a', plate: 'AAA111', handedOutAt: at('2026-11-12', '08:10') }),
+      loan({ id: 'b', plate: 'BBB222', handedOutAt: at('2026-11-10', '08:10') }),
+      loan({ id: 'c', plate: 'CCC333', handedOutAt: at('2026-11-11', '08:00'), returnedAt: at('2026-11-11', '17:00'), wasUsed: true }),
+    ];
+    const summary = loanSummary(loans, groups, amsterdamInstant('2026-11-12', '10:00'), closures, '18:00', first);
+    expect(summary.open).toBe(2);
+    expect(summary.overdue).toBe(1);
+    expect(summary.today).toEqual([{ groupId: 'den_bosch', groupName: 'Den Bosch', count: 1, required: 2, state: 'pending' }]);
+    // Woensdag 11 november: één auto, twee nodig.
+    expect(summary.shortBefore).toEqual([{ groupName: 'Den Bosch', date: '2026-11-11', label: 'wo 11 nov', count: 1, required: 2 }]);
+  });
+
+  it('meldt niets over de vorige werkdag als die in orde was, of als de vestiging toen nog niet begon', () => {
+    const loans = [
+      loan({ id: 'a', plate: 'AAA111', handedOutAt: at('2026-11-11', '08:10'), returnedAt: at('2026-11-11', '17:00'), wasUsed: true }),
+      loan({ id: 'b', plate: 'BBB222', handedOutAt: at('2026-11-11', '08:20'), returnedAt: at('2026-11-11', '17:00'), wasUsed: false }),
+    ];
+    const now = amsterdamInstant('2026-11-12', '10:00');
+    expect(loanSummary(loans, groups, now, closures, '18:00', first).shortBefore).toEqual([]);
+    expect(loanSummary([], groups, now, closures, '18:00', new Map()).shortBefore).toEqual([]);
+    expect(loanSummary([], groups, now, closures, '18:00', new Map()).today[0]?.state).toBe('before');
   });
 });

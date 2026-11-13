@@ -161,7 +161,7 @@ describe('push: de tekst (V26)', () => {
     expect(push('substitution_assigned', 'danique', ['2026-10-12'])).toEqual({
       title: 'Planbord',
       body: 'Je valt in op ma 12 okt in Den Bosch (13:00–18:00)',
-      url: '/',
+      url: '/mijn-rooster',
       tag: 'substitution_assigned-2026-10-12',
     });
   });

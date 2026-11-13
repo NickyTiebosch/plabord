@@ -131,13 +131,15 @@ describe('fase 5: de uitleen', () => {
   let anna: TestPerson; // beheerder
   let tess: TestPerson; // teamleider
   let bas: TestPerson; // medewerker Den Bosch
-  let eva: TestPerson; // medewerker Eindhoven
+  let ruben: TestPerson; // medewerker Den Bosch
+  let eva: TestPerson; // medewerker Eindhoven: gebruikt de uitleen niet (V52)
 
   beforeAll(async () => {
     db = await createDatabase();
     anna = await createPerson(db, { name: 'Anna', isAdmin: true, role: 'none', groupId: 'other' });
     tess = await createPerson(db, { name: 'Tess', role: 'none', groupId: 'other' });
     bas = await createPerson(db, { name: 'Bas' });
+    ruben = await createPerson(db, { name: 'Ruben' });
     eva = await createPerson(db, { name: 'Eva', groupId: 'eindhoven' });
     await db.query('update public.employees set is_team_lead = true where id = $1', [tess.employeeId]);
   });
@@ -182,20 +184,20 @@ describe('fase 5: de uitleen', () => {
     expect(after.rows[0]?.mobility_loans_per_day).toBe(3);
   });
 
-  it('laat iedere medewerker een auto aanmelden, altijd op eigen naam', async () => {
+  it('laat iedere medewerker van een vestiging die uitleent een auto aanmelden, altijd op eigen naam', async () => {
     const own = await handOut(bas, 'GHP39K');
     expect(own.rows[0]?.handed_out_by).toBe(bas.employeeId);
-    const other = await handOut(eva, 'X920RV', { group_id: 'eindhoven', handed_out_by: anna.employeeId }).catch((error: Error) => error);
+    const other = await handOut(ruben, 'X920RV', { handed_out_by: anna.employeeId }).catch((error: Error) => error);
     // handed_out_by mag niet worden meegestuurd; zonder dat veld vult de database het in.
     expect(other).toBeInstanceOf(Error);
-    const seen = await withSession(db, session(eva), () => db.query('select * from public.vehicle_loans'));
+    const seen = await withSession(db, session(ruben), () => db.query('select * from public.vehicle_loans'));
     expect(seen.rows).toHaveLength(1);
   });
 
   it('weigert een auto die al uit staat, een ongeldig kenteken en een groep zonder balie', async () => {
-    await expectError(handOut(eva, 'GHP39K', { group_id: 'eindhoven' }), /vehicle_loans_one_open_per_plate|duplicate key/);
+    await expectError(handOut(ruben, 'GHP39K'), /vehicle_loans_one_open_per_plate|duplicate key/);
     await expectError(handOut(bas, 'ghp-39-k'), /vehicle_loans_plate_format/);
-    await expectError(handOut(bas, 'AB12CD', { group_id: 'logistics' }), /vehicle_loans_group_fkey|foreign key/);
+    await expectError(handOut(bas, 'AB12CD', { group_id: 'logistics' }), /leent geen auto|vehicle_loans_group_fkey/);
     await expectError(handOut(bas, 'AB12CD', { destination: 'garage' }), /vehicle_loans_destination/);
     await expectError(handOut(bas, 'AB12CD', { handed_to: '  ' }), /vehicle_loans_handed_to_format/);
     await expectError(
@@ -218,7 +220,7 @@ describe('fase 5: de uitleen', () => {
 
   it('laat een collega een auto retour melden, ingezet of niet, en maar één keer', async () => {
     const id = (await handOut(bas, 'KPK66J', { odometer_out: 1000 })).rows[0]?.id ?? '';
-    await withSession(db, session(eva), async () => {
+    await withSession(db, session(ruben), async () => {
       await expectError(db.query('select public.return_vehicle_loan($1, true, 900)', [id]), /vehicle_loans_odometer_order/);
       await expectError(db.query('select public.return_vehicle_loan($1, null)', [id]), /Kies of de auto is ingezet/);
       await expectError(
@@ -230,13 +232,13 @@ describe('fase 5: de uitleen', () => {
       const again = await db.query<{ n: number }>('select public.return_vehicle_loan($1, false) as n', [id]);
       expect(again.rows[0]?.n).toBe(0);
     });
-    expect(await loan(id)).toMatchObject({ returned_by: eva.employeeId, was_used: true, odometer_in: 1042, return_note: 'Pech onderweg' });
+    expect(await loan(id)).toMatchObject({ returned_by: ruben.employeeId, was_used: true, odometer_in: 1042, return_note: 'Pech onderweg' });
   });
 
   it('laat wie retour meldde dat vandaag ongedaan maken; anderen niet, de teamleider wel', async () => {
     const id = (await handOut(bas, 'T826HN')).rows[0]?.id ?? '';
     await withSession(db, session(bas), () => db.query('select public.return_vehicle_loan($1, false)', [id]));
-    await withSession(db, session(eva), () =>
+    await withSession(db, session(ruben), () =>
       expectError(db.query('select public.undo_vehicle_loan_return($1)', [id]), /Alleen wie de auto retour meldde/),
     );
     const undone = await withSession(db, session(bas), () =>
@@ -260,7 +262,7 @@ describe('fase 5: de uitleen', () => {
   it('kan een retour niet ongedaan maken als dezelfde auto alweer uit staat', async () => {
     const first = (await handOut(bas, 'KJL05P')).rows[0]?.id ?? '';
     await withSession(db, session(bas), () => db.query('select public.return_vehicle_loan($1, true)', [first]));
-    await handOut(eva, 'KJL05P', { group_id: 'eindhoven' });
+    await handOut(ruben, 'KJL05P');
     await withSession(db, session(bas), () =>
       expectError(db.query('select public.undo_vehicle_loan_return($1)', [first]), /vehicle_loans_one_open_per_plate|duplicate key/),
     );
@@ -271,7 +273,7 @@ describe('fase 5: de uitleen', () => {
     await withSession(db, session(bas), async () => {
       expect((await db.query(`update public.vehicle_loans set model = 'Golf' where id = $1`, [id])).affectedRows).toBe(0);
       expect((await db.query('delete from public.vehicle_loans where id = $1', [id])).affectedRows).toBe(0);
-      await expectError(db.query('update public.vehicle_loans set handed_out_by = $1 where id = $2', [eva.employeeId, id]), /permission denied/);
+      await expectError(db.query('update public.vehicle_loans set handed_out_by = $1 where id = $2', [ruben.employeeId, id]), /permission denied/);
     });
     await withSession(db, session(tess), async () => {
       expect((await db.query(`update public.vehicle_loans set model = 'VW Golf' where id = $1`, [id])).affectedRows).toBe(1);
@@ -297,14 +299,59 @@ describe('fase 5: de uitleen', () => {
   it('ruimt registraties op die langer dan 24 maanden retour zijn', async () => {
     await db.query(
       `insert into public.vehicle_loans (group_id, license_plate, model, destination, handed_to, handed_out_at, returned_at, was_used)
-       values ('breda', 'OUD001', 'Polo', 'mobility', 'Mobiliteit', now() - interval '3 years', now() - interval '25 months', true),
-              ('breda', 'OUD002', 'Polo', 'mobility', 'Mobiliteit', now() - interval '2 years', now() - interval '23 months', true)`,
+       values ('den_bosch', 'OUD001', 'Polo', 'mobility', 'Mobiliteit', now() - interval '3 years', now() - interval '25 months', true),
+              ('den_bosch', 'OUD002', 'Polo', 'mobility', 'Mobiliteit', now() - interval '2 years', now() - interval '23 months', true)`,
     );
     await handOut(bas, 'NIEUW1');
     const left = await db.query<{ license_plate: string }>(`select license_plate from public.vehicle_loans where license_plate like 'OUD%'`);
     expect(left.rows.map((row) => row.license_plate)).toEqual(['OUD002']);
     const log = await db.query<{ source: string }>(`select source from public.audit_log where entity = 'vehicle_loans' and action = 'delete' and details ->> 'license_plate' = 'OUD001'`);
     expect(log.rows).toEqual([{ source: 'opruimen' }]);
+  });
+
+  it('toont en opent de uitleen alleen voor wie ermee werkt (V52)', async () => {
+    const lends = await db.query('select id, lends_vehicles from public.groups where has_counter order by sort_order');
+    expect(lends.rows).toEqual([
+      { id: 'den_bosch', lends_vehicles: true },
+      { id: 'eindhoven', lends_vehicles: false },
+      { id: 'breda', lends_vehicles: false },
+    ]);
+    const uses = (person: TestPerson) =>
+      withSession(db, session(person), async () => (await db.query<{ ok: boolean }>('select public.uses_loans() as ok')).rows[0]?.ok);
+    expect(await uses(bas)).toBe(true);
+    expect(await uses(tess)).toBe(true);
+    expect(await uses(anna)).toBe(true);
+    expect(await uses(eva)).toBe(false);
+
+    const id = (await handOut(bas, 'V52AAA')).rows[0]?.id ?? '';
+    // Eva (Eindhoven) ziet niets, kan niet aanmelden en niet retour melden.
+    const seen = await withSession(db, session(eva), () => db.query('select * from public.vehicle_loans'));
+    expect(seen.rows).toHaveLength(0);
+    await expectError(handOut(eva, 'V52BBB'), /row-level security|geen rechten/);
+    await withSession(db, session(eva), () =>
+      expectError(db.query('select public.return_vehicle_loan($1, false)', [id]), /geen rechten|bestaat niet|niet gevonden/),
+    );
+    expect((await loan(id))?.returned_at).toBeNull();
+    // Een vestiging die niet uitleent, kan geen auto's krijgen; ook niet van de beheerder.
+    await expectError(handOut(anna, 'V52CCC', { group_id: 'eindhoven' }), /leent geen auto/);
+    await expectError(
+      withSession(db, session(anna), () => db.query(`update public.vehicle_loans set group_id = 'breda' where id = $1`, [id])),
+      /leent geen auto/,
+    );
+    // Mag Eva in Den Bosch aan de balie invallen, dan werkt ze ook met de uitleen.
+    await db.query(`insert into public.counter_eligibility (employee_id, group_id) values ($1, 'den_bosch')`, [eva.employeeId]);
+    expect(await uses(eva)).toBe(true);
+    await withSession(db, session(eva), () => db.query('select public.return_vehicle_loan($1, false)', [id]));
+    expect((await loan(id))?.was_used).toBe(false);
+    await db.query(`delete from public.counter_eligibility where employee_id = $1 and group_id = 'den_bosch'`, [eva.employeeId]);
+
+    // De beheerder zet een vestiging aan; de setup laat dat daarna staan.
+    await withSession(db, session(anna), () => db.query(`update public.groups set lends_vehicles = true where id = 'breda'`));
+    await db.exec(setupSql());
+    const after = await db.query<{ lends_vehicles: boolean }>(`select lends_vehicles from public.groups where id = 'breda'`);
+    expect(after.rows[0]?.lends_vehicles).toBe(true);
+    await withSession(db, session(anna), () => db.query(`update public.groups set lends_vehicles = false where id = 'breda'`));
+    await expectError(db.query(`update public.groups set lends_vehicles = true where id = 'logistics'`), /groups_lends_vehicles_counter_only/);
   });
 
   it('laat de beheerder en de teamleider de uitleen exporteren, en een medewerker niet', async () => {
@@ -316,9 +363,9 @@ describe('fase 5: de uitleen', () => {
   });
 
   it('houdt registraties zonder naam als de medewerker volledig wordt verwijderd', async () => {
-    const id = (await handOut(eva, 'WEG001', { group_id: 'eindhoven' })).rows[0]?.id ?? '';
-    await db.query('update public.employees set is_active = false where id = $1', [eva.employeeId]);
-    await withSession(db, session(anna), () => db.query('select public.delete_employee($1)', [eva.employeeId]));
+    const id = (await handOut(ruben, 'WEG001')).rows[0]?.id ?? '';
+    await db.query('update public.employees set is_active = false where id = $1', [ruben.employeeId]);
+    await withSession(db, session(anna), () => db.query('select public.delete_employee($1)', [ruben.employeeId]));
     const kept = await db.query<{ handed_out_by: string | null }>('select handed_out_by from public.vehicle_loans where id = $1', [id]);
     expect(kept.rows).toEqual([{ handed_out_by: null }]);
   });

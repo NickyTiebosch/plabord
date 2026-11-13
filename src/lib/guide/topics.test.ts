@@ -37,12 +37,12 @@ describe('uitleg voor collega’s', () => {
     expect(topics.filter((topic) => topic.videos.length === 0).map((topic) => topic.id)).toEqual([]);
   });
 
-  it('stuurt naar Agenda via Meer: sinds fase 5 staat Agenda niet meer in de tabbalk (V44)', () => {
+  it('stuurt naar Agenda via het onderdeel Planbord, en noemt Meer en Registraties niet meer (V53)', () => {
     const steps = topics.flatMap((topic) => topic.steps.flatMap((group) => group.steps));
-    expect(steps.filter((step) => step.includes('onderin op Agenda'))).toEqual([]);
+    expect(steps.filter((step) => /op Meer\b|Registraties/.test(step))).toEqual([]);
     const agenda = topics.find((topic) => topic.id === 'agenda');
     for (const group of agenda?.steps ?? []) {
-      expect(group.steps[0], group.device).toContain('Tik onderin op Meer en dan op Agenda');
+      expect(group.steps[0], group.device).toContain('Tik op Planbord en dan onderin op Agenda');
     }
   });
 

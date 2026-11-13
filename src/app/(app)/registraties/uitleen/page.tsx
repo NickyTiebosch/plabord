@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
-import { requireViewerWith } from '@/lib/auth/session';
+import { requireLoansWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { loadClosures, loadCurrentLoans, loadEndOfDay, loadLoanGroups } from '@/lib/db/loan-queries';
 import { addDays, todayInAmsterdam } from '@/lib/engine/dates';
@@ -33,7 +33,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const now = new Date();
   const today = todayInAmsterdam(now);
-  const [viewer, [groups, loans, names, closures, endOfDay]] = await requireViewerWith((supabase) =>
+  const [viewer, [groups, loans, names, closures, endOfDay]] = await requireLoansWith((supabase) =>
     Promise.all([
       loadLoanGroups(supabase),
       loadCurrentLoans(supabase, addDays(today, -LOOKBACK_DAYS)),

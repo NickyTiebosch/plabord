@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, Field, LinkButton, PageHeader, buttonClass, inputClass } from '@/components/ui';
-import { requireViewerWith } from '@/lib/auth/session';
+import { requireLoansWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { ARCHIVE_LIMIT, loadArchive, loadLoanGroups, type ArchiveFilter } from '@/lib/db/loan-queries';
 import { addDays, isIsoDate, todayInAmsterdam } from '@/lib/engine/dates';
@@ -40,7 +40,7 @@ export default async function LoanArchivePage({ searchParams }: { searchParams: 
     wasUsed: params.ingezet === 'ja' ? true : params.ingezet === 'nee' ? false : null,
     plate: plateQuery(params.zoek ?? ''),
   };
-  const [viewer, [groups, archive, names]] = await requireViewerWith((supabase) =>
+  const [viewer, [groups, archive, names]] = await requireLoansWith((supabase) =>
     Promise.all([loadLoanGroups(supabase), loadArchive(supabase, filter), loadEmployeeNames(supabase)]),
   );
   const groupName = (id: string) => groups.find((group) => group.id === id)?.name ?? id;

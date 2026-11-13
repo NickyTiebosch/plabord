@@ -108,14 +108,22 @@ insert into public.vehicle_loans (
 ) values
   ('32000000-0000-4000-8000-000000000001', 'den_bosch', 'GHP39K', 'Audi A4 Avant', 'mobility', 'Mobiliteit',
    '30000000-0000-4000-8000-000000000002', now() - interval '2 hours', 45210, null, null, null, null, null, null),
-  ('32000000-0000-4000-8000-000000000002', 'eindhoven', 'X920RV', 'VW Polo', 'mobility', 'Mobiliteit',
-   '30000000-0000-4000-8000-000000000007', now() - interval '4 days', 18730, null, null, null, null, null, null),
-  ('32000000-0000-4000-8000-000000000003', 'breda', 'KPK66J', 'Skoda Octavia', 'workshop_weekend', 'Werkplaats Breda',
-   '30000000-0000-4000-8000-000000000012', now() - interval '5 days', 60120,
-   now() - interval '3 days', '30000000-0000-4000-8000-000000000013', 60188, true, 'Voor spoedjes op zaterdag', null),
+  ('32000000-0000-4000-8000-000000000002', 'den_bosch', 'X920RV', 'VW Polo', 'mobility', 'Mobiliteit',
+   '30000000-0000-4000-8000-000000000003', now() - interval '4 days', 18730, null, null, null, null, null, null),
+  ('32000000-0000-4000-8000-000000000003', 'den_bosch', 'KPK66J', 'Skoda Octavia', 'workshop_weekend', 'Werkplaats Den Bosch',
+   '30000000-0000-4000-8000-000000000005', now() - interval '5 days', 60120,
+   now() - interval '3 days', '30000000-0000-4000-8000-000000000002', 60188, true, 'Voor spoedjes op zaterdag', null),
   ('32000000-0000-4000-8000-000000000004', 'den_bosch', 'T826HN', 'VW Transporter', 'mobility', 'Mobiliteit',
    '30000000-0000-4000-8000-000000000005', now() - interval '1 day', 102300,
    now() - interval '20 hours', '30000000-0000-4000-8000-000000000005', null, false, null, 'Niet ingezet')
 on conflict do nothing;
+
+-- Sinds besluit V52 leent alleen Den Bosch uit. Een eerdere versie van dit bestand zette twee auto's
+-- bij Eindhoven en Breda; die verhuizen naar Den Bosch.
+update public.vehicle_loans
+   set group_id = 'den_bosch',
+       handed_to = case when destination = 'workshop_weekend' then 'Werkplaats Den Bosch' else handed_to end
+ where id in ('32000000-0000-4000-8000-000000000002', '32000000-0000-4000-8000-000000000003')
+   and group_id <> 'den_bosch';
 
 commit;

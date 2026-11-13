@@ -190,3 +190,47 @@ export function formatOdometer(value: number | null): string {
 export function distance(loan: Pick<VehicleLoan, 'odometerOut' | 'odometerIn'>): number | null {
   return loan.odometerOut !== null && loan.odometerIn !== null ? loan.odometerIn - loan.odometerOut : null;
 }
+
+export interface LoanSummary {
+  /** Auto's die nu uit staan. */
+  open: number;
+  /** Waarvan te lang uit. */
+  overdue: number;
+  /** Mobiliteit vandaag, per vestiging met een ondergrens. */
+  today: { groupId: string; groupName: string; count: number; required: number; state: DayCheckState }[];
+  /** Vestigingen die op de vorige werkdag te weinig auto's aan Mobiliteit meegaven. */
+  shortBefore: { groupName: string; date: IsoDate; label: string; count: number; required: number }[];
+}
+
+/**
+ * De stand van de uitleen voor het startscherm (V53): wat er uit staat, Mobiliteit vandaag, en of
+ * de vorige werkdag in orde was. `loans` bevat alles wat uit staat en alles sinds de vorige werkdag.
+ */
+export function loanSummary(
+  loans: readonly VehicleLoan[],
+  groups: readonly LoanGroup[],
+  now: Date,
+  closures: ClosureResolver,
+  endOfDay: TimeOfDay,
+  firstDates: ReadonlyMap<string, IsoDate>,
+): LoanSummary {
+  const today = localMoment(now.toISOString()).date;
+  const open = loans.filter((loan) => !loan.returnedAt);
+  // Vandaag en de werkdag ervoor (op zondag: vrijdag en donderdag; die van vandaag telt dan niet mee).
+  const days = recentWeekdays(today, 2);
+  const rows = mobilityDayCheck(loans, groups, days, today, closures, firstDates);
+  return {
+    open: open.length,
+    overdue: open.filter((loan) => isOverdue(loan, now, closures, endOfDay)).length,
+    today: rows.flatMap((row) => {
+      const cell = row.cells.find((candidate) => candidate.date === today);
+      return cell ? [{ groupId: row.groupId, groupName: row.groupName, count: cell.count, required: row.required, state: cell.state }] : [];
+    }),
+    shortBefore: rows.flatMap((row) =>
+      row.cells
+        .filter((cell) => cell.date !== today && cell.state === 'short')
+        .slice(-1)
+        .map((cell) => ({ groupName: row.groupName, date: cell.date, label: cell.label, count: cell.count, required: row.required })),
+    ),
+  };
+}

@@ -4,7 +4,7 @@ import { StatefulForm } from '@/components/client/stateful-form';
 import { VapidGenerator } from '@/components/client/vapid-generator';
 import { Card, Field, PageHeader, SectionTitle, inputClass } from '@/components/ui';
 import { requireAdminWith } from '@/lib/auth/session';
-import { loadLoanGroups } from '@/lib/db/loan-queries';
+import { loadLoanSettings } from '@/lib/db/loan-queries';
 import { loadGroups, loadPlanningSnapshot, loadSettings, must } from '@/lib/db/queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDayShort, weekdayShort } from '@/lib/engine/format';
@@ -31,7 +31,7 @@ export default async function SettingsPage() {
       supabase.from('staffing_norms').select('group_id, weekday, day_part, min_staff').then((result) => must(result, 'de normen')),
       supabase.from('settings').select('mail_enabled').maybeSingle(),
       loadPlanningSnapshot(supabase, { from: preview.date, to: preview.date }),
-      loadLoanGroups(supabase),
+      loadLoanSettings(supabase),
     ]),
   );
   const mailEnabled = Boolean(mailSetting.data?.mail_enabled);
@@ -248,17 +248,20 @@ export default async function SettingsPage() {
         <Card id="uitleen" className="scroll-mt-20 p-4 lg:col-span-2">
           <SectionTitle className="mb-1">Uitleen</SectionTitle>
           <p className="mb-3 text-sm text-slate-600">
-            Hoeveel auto’s Mobiliteit per werkdag minstens krijgt. Verhuur kan altijd meer auto’s aanmelden. De controle toont rood bij
-            minder; 0 = geen controle voor die vestiging.
+            Welke vestigingen auto’s uitlenen, en hoeveel auto’s Mobiliteit daar per werkdag minstens krijgt. Alleen collega’s van een
+            vestiging die uitleent zien de uitleen, naast de beheerder en de teamleider. Verhuur kan altijd meer auto’s aanmelden. De
+            controle toont rood bij minder; 0 = geen controle voor die vestiging.
           </p>
           <StatefulForm action={saveMobility} className="space-y-3">
             <ul className="divide-y divide-slate-100">
               {loanGroups.map((group) => (
-                <li key={group.id} className="flex items-center justify-between py-2">
-                  <label htmlFor={`mobility-${group.id}`} className="text-sm text-slate-800">
-                    {group.name}
+                <li key={group.id} className="flex items-center justify-between gap-3 py-2">
+                  <label className="flex min-h-11 flex-1 items-center gap-3 text-sm text-slate-800">
+                    <input type="checkbox" name={`lends:${group.id}`} defaultChecked={group.lendsVehicles} className="size-5" />
+                    {group.name} leent uit
                   </label>
                   <input
+                    aria-label={`${group.name}: auto’s voor Mobiliteit per werkdag`}
                     id={`mobility-${group.id}`}
                     name={`mobility:${group.id}`}
                     type="number"

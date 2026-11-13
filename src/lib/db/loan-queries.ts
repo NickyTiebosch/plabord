@@ -33,13 +33,31 @@ export function mapVehicleLoan(row: Tables<'vehicle_loans'>): VehicleLoan {
   };
 }
 
-/** De vestigingen met een balie, met hun ondergrens voor Mobiliteit (V48). */
+/** De vestigingen die auto's uitlenen (V52), met hun ondergrens voor Mobiliteit (V48). */
 export async function loadLoanGroups(client: DbClient): Promise<LoanGroup[]> {
   const rows = must(
-    await client.from('groups').select('id, name, has_counter, mobility_loans_per_day').eq('has_counter', true).order('sort_order'),
+    await client.from('groups').select('id, name, mobility_loans_per_day').eq('lends_vehicles', true).order('sort_order'),
     'de vestigingen',
   );
   return rows.map((row) => ({ id: row.id, name: row.name, mobilityPerDay: row.mobility_loans_per_day }));
+}
+
+export interface LoanSetting extends LoanGroup {
+  lendsVehicles: boolean;
+}
+
+/** Voor de instellingen: alle vestigingen met een balie, ook die niet uitlenen. */
+export async function loadLoanSettings(client: DbClient): Promise<LoanSetting[]> {
+  const rows = must(
+    await client.from('groups').select('id, name, mobility_loans_per_day, lends_vehicles').eq('has_counter', true).order('sort_order'),
+    'de vestigingen',
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    mobilityPerDay: row.mobility_loans_per_day,
+    lendsVehicles: row.lends_vehicles,
+  }));
 }
 
 /**

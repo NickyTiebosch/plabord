@@ -135,3 +135,33 @@ export function IconHelp(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+/** Aanmelden (V53): een plus in een rondje. */
+export function IconPlus(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v8M8 12h8" />
+    </Icon>
+  );
+}
+
+/** Archief (V53): een doos. */
+export function IconArchive(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="5" rx="1" />
+      <path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4" />
+    </Icon>
+  );
+}
+
+/** Mijn rooster (V53): een persoon. */
+export function IconUser(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </Icon>
+  );
+}

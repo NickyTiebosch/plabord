@@ -67,16 +67,21 @@ export async function saveRanks(_previous: ActionState, formData: FormData): Pro
   return { ok: true, message: 'Invalvolgorde opgeslagen.' };
 }
 
-/** Uitleen (fase 5, V48): per vestiging het minimale aantal auto's voor Mobiliteit per werkdag. Velden "mobility:{groep}". */
+/**
+ * Uitleen (fase 5): per vestiging of ze auto's uitleent (V52, vinkje "lends:{groep}") en het minimale
+ * aantal auto's voor Mobiliteit per werkdag (V48, veld "mobility:{groep}").
+ */
 export async function saveMobility(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdmin();
   const parsed = parseNumberFields(formData, 'mobility', 0, 20);
   if (!parsed.ok) return { error: parsed.error };
-  const current = must(await supabase.from('groups').select('id, has_counter, mobility_loans_per_day'), 'de groepen');
+  const current = must(await supabase.from('groups').select('id, has_counter, mobility_loans_per_day, lends_vehicles'), 'de groepen');
   for (const group of current) {
     const value = parsed.values.get(group.id);
-    if (!group.has_counter || value === undefined || value === group.mobility_loans_per_day) continue;
-    const saved = await supabase.from('groups').update({ mobility_loans_per_day: value }).eq('id', group.id);
+    if (!group.has_counter || value === undefined) continue;
+    const lends = formData.get(`lends:${group.id}`) === 'on';
+    if (value === group.mobility_loans_per_day && lends === group.lends_vehicles) continue;
+    const saved = await supabase.from('groups').update({ mobility_loans_per_day: value, lends_vehicles: lends }).eq('id', group.id);
     if (saved.error) return { error: dbErrorMessage(saved.error) };
   }
   revalidatePath('/', 'layout');

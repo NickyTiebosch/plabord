@@ -21,7 +21,6 @@ await sql(`insert into public.absences (employee_id, start_date, end_date, day_p
 // auto die de werkplaats zaterdag meekreeg (die komt in de video terug) en een auto van Eindhoven.
 const JORIS = '20000000-0000-4000-8000-000000000003';
 const BRAM = '20000000-0000-4000-8000-000000000005';
-const DAAN = '20000000-0000-4000-8000-000000000007';
 await sql(`delete from public.vehicle_loans`);
 await sql(
   `insert into public.vehicle_loans (group_id, license_plate, model, destination, handed_to, handed_out_by, handed_out_at, odometer_out,
@@ -29,7 +28,7 @@ await sql(
    ('den_bosch', 'GHP39K', 'Audi A4 Avant', 'mobility', 'Mobiliteit', $1, '2026-10-01 08:10+02', 45210, '2026-10-01 17:40+02', $1, 45388, true),
    ('den_bosch', 'X920RV', 'VW Polo', 'mobility', 'Mobiliteit', $2, '2026-10-02 08:05+02', 18730, '2026-10-02 16:55+02', $2, 18802, true),
    ('den_bosch', 'T826HN', 'VW Transporter', 'workshop_weekend', 'Werkplaats Den Bosch', $3, '2026-10-03 08:20+02', 102300, null, null, null, null),
-   ('eindhoven', 'KPK66J', 'Skoda Octavia', 'mobility', 'Mobiliteit', $4, '2026-10-05 08:30+02', 60120, null, null, null, null)`,
-  [JORIS, SANNE, BRAM, DAAN],
+   ('den_bosch', 'KPK66J', 'Skoda Octavia', 'mobility', 'Mobiliteit', $1, '2026-10-05 08:30+02', 60120, null, null, null, null)`,
+  [JORIS, SANNE, BRAM],
 );
 console.log('demo-data ok');

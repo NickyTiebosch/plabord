@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { dbErrorMessage } from '@/lib/admin/errors';
 import { isUuid, type ActionState } from '@/lib/admin/forms';
-import { requireLead, requireViewer, type Viewer } from '@/lib/auth/session';
+import { requireLead, requireLoans, type Viewer } from '@/lib/auth/session';
 import { loadLoan, loadLoanGroups } from '@/lib/db/loan-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { correctionChanges, parseCorrectionForm, parseHandOutForm, parseReturnForm } from '@/lib/loans/forms';
@@ -38,7 +38,7 @@ async function stillOutMessage(viewer: Viewer, plate: string, exceptId: string |
 
 /** Een auto aanmelden (V46). Altijd op eigen naam: de database vult in wie het doet. */
 export async function handOutVehicle(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const viewer = await requireViewer();
+  const viewer = await requireLoans();
   const groups = await loadLoanGroups(viewer.supabase);
   const parsed = parseHandOutForm(formData, { now: new Date(), groupIds: groups.map((group) => group.id) });
   if (!parsed.ok) return parsed.state;
@@ -74,7 +74,7 @@ export async function handOutVehicle(_previous: ActionState, formData: FormData)
 
 /** Retour · ingezet (V47): met kilometerstand, tijdstip en een opmerking. */
 export async function returnUsed(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const viewer = await requireViewer();
+  const viewer = await requireLoans();
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) return { error: 'Deze uitleen bestaat niet meer.' };
   const loan = await loadLoan(viewer.supabase, id);
@@ -95,7 +95,7 @@ export async function returnUsed(_previous: ActionState, formData: FormData): Pr
 
 /** Retour · niet ingezet (V47): één tik. */
 export async function returnNotUsed(formData: FormData): Promise<void> {
-  const viewer = await requireViewer();
+  const viewer = await requireLoans();
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) back(LIST, 'niet-gevonden');
   const result = await viewer.supabase.rpc('return_vehicle_loan', { p_id: id, p_was_used: false });
@@ -106,7 +106,7 @@ export async function returnNotUsed(formData: FormData): Promise<void> {
 
 /** Retour ongedaan maken (V47): wie het meldde, vandaag; daarna de teamleider of beheerder. */
 export async function undoReturn(formData: FormData): Promise<void> {
-  const viewer = await requireViewer();
+  const viewer = await requireLoans();
   const id = String(formData.get('id') ?? '');
   const plate = String(formData.get('kenteken') ?? '');
   const to = formData.get('terug') === 'archief' ? ARCHIVE : LIST;

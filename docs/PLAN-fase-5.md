@@ -11,8 +11,13 @@ Alle voorstellen uit §1 (V41–V51) zijn aangenomen. Vier zijn aangevuld of aan
 | V43 | De teamleider mag ook in het rooster helpen: afwezigheid invoeren, wijzigen en goedkeuren, en gaten regelen onder Nog te regelen. Vaste diensten, medewerkers en instellingen blijven bij de beheerder. |
 | V45 | Bevestigd: verhuur geeft de auto's mee en registreert zelf. De werkplaats en Mobiliteit krijgen geen account. |
 | V48 | Den Bosch, Eindhoven en Breda geven alle drie dagelijks auto's mee aan Mobiliteit. De 2 is een ondergrens voor de controle, geen maximum: verhuur kan altijd meer auto's aanmelden. De werkplaats krijgt voor spoedjes op zaterdag ook meerdere auto's mee. |
+| V52 | **Vervangt V48 op één punt (13 november):** alleen Den Bosch geeft auto's mee aan Mobiliteit. De uitleen is alleen zichtbaar voor wie ermee werkt: collega's van een vestiging die uitleent, collega's die daar aan de balie mogen invallen, en de beheerder en teamleider. Welke vestigingen uitlenen, is een instelling (Beheer → Instellingen → Uitleen); bij de start alleen Den Bosch. De database dwingt het af: wie de uitleen niet gebruikt, kan niets lezen, aanmelden of retour melden, en een vestiging die niet uitleent kan geen auto's krijgen. |
+| V53 | **Vervangt de tabbalk van V44 (13 november, akkoord van de eigenaar):** Planbord heeft onderdelen. Nu: Start, Planbord, Uitleen en (voor beheerder en teamleider) Beheer; later komen binnenvallers, WPL-meldingen en uitloop erbij. Op een breed scherm staat links een zijbalk met de onderdelen en bovenaan het menu van het gekozen onderdeel. Op de telefoon staat onderin Start met de tabs van het gekozen onderdeel; op Start en in Beheer staan daar de onderdelen zelf. Iedereen komt na het inloggen op **Start**: je dienst van vandaag en je eerstvolgende dienst, een tegel per onderdeel met de stand van nu, en voor beheerder en teamleider een blok Let op. Mijn rooster verhuist van `/` naar `/mijn-rooster`; links in mails en meldingen wijzen daarheen. De pagina Meer vervalt. Een eigen startonderdeel per collega bouwen we nu niet. |
 
 De tekst hieronder is op deze besluiten aangepast.
+
+### Nog te doen na V53
+De uitlegvideo's en de PDF tonen nog de tabbalk van V44. De stappen in tekst kloppen al. De video's maak ik opnieuw zodra de eigenaar de nieuwe navigatie in de preview heeft goedgekeurd, zodat dat niet twee keer hoeft.
 
 ### Uitwerkingen tijdens de bouw (12 november 2026)
 Keuzes die tijdens het bouwen zijn gemaakt, naast het plan:

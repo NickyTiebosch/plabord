@@ -17,6 +17,7 @@ export interface Database {
           sort_order: number;
           substitution_rank: number;
           mobility_loans_per_day: number;
+          lends_vehicles: boolean;
           updated_at: Timestamp;
         };
         Insert: {
@@ -26,7 +27,7 @@ export interface Database {
           sort_order?: number;
           substitution_rank?: number;
         };
-        Update: { substitution_rank?: number; mobility_loans_per_day?: number };
+        Update: { substitution_rank?: number; mobility_loans_per_day?: number; lends_vehicles?: boolean };
         Relationships: [];
       };
       settings: {
@@ -380,6 +381,7 @@ export interface Database {
     Views: { [_ in never]: never };
     Functions: {
       claim_account: { Args: Record<string, never>; Returns: string | null };
+      uses_loans: { Args: Record<string, never>; Returns: boolean };
       apply_import: { Args: { plan: Json }; Returns: Json };
       set_shift_override: {
         Args: {

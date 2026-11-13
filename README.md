@@ -94,14 +94,14 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 ### Fase 5: de teamleider en de uitleen
 
 **Voor iedereen**
-- **Registraties → Uitleen:** de auto's die verhuur meegeeft aan Mobiliteit, of aan de werkplaats voor het weekend.
+- **Uitleen:** de auto's die verhuur meegeeft aan Mobiliteit, of aan de werkplaats voor het weekend. Alleen zichtbaar voor vestigingen die uitlenen (bij de start alleen Den Bosch, in te stellen onder Beheer → Instellingen), en voor de beheerder en teamleider.
   - **Auto aanmelden:** kenteken, model, bestemming, aan wie, en eventueel kilometerstand en opmerking. Datum, tijd en wie het doet vult Planbord in.
   - **Opnieuw uitgeven:** de auto's van de laatste 14 dagen; één tik vult het formulier. Na het opslaan staat er **Nog een auto aanmelden**, met dezelfde bestemming.
   - **Retour · ingezet** (met kilometerstand en opmerking) of **Retour · niet ingezet** (één tik).
   - **Vandaag retour,** met **Ongedaan maken**: wie het meldde, op dezelfde dag.
   - **Archief:** alles wat retour is, te filteren op kenteken, periode, vestiging, bestemming en ingezet.
   - Een auto die te lang uit staat, valt op. Een kenteken kan maar één keer tegelijk uit staan.
-- **De tabbalk** op de telefoon: Mijn rooster, Rooster, Verlof, Registraties en **Meer**. Onder Meer staan Agenda, Uitleg en Uitloggen, en voor wie het mag Controle en Beheer.
+- **Onderdelen en een startscherm:** na het inloggen kom je op **Start**, met je dienst van vandaag en een tegel per onderdeel (Planbord, Uitleen, Beheer). Op de computer staan de onderdelen in een zijbalk links en het menu van het gekozen onderdeel bovenaan. Op de telefoon staat onderin Start met de tabs van het gekozen onderdeel.
 
 **Voor de teamleider** (nieuw, aan te vinken bij een medewerker)
 - **Beheer:** Overzicht, Afwezigheid en Invallen. Afwezigheid invoeren, wijzigen en goedkeuren, en gaten regelen: een invaller kiezen, schuiven, zelf inspringen, een gat negeren, en een roosterwijziging voor één dag.
@@ -127,7 +127,7 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - vakantie of afwezig;
   - een auto uitlenen (fase 5).
 
-  Sinds fase 5 tonen alle video's de nieuwe tabbalk, en loopt de agendavideo via **Meer**.
+  Let op: de video's en de PDF tonen nog de tabbalk van vóór het startscherm (besluit V53). De stappen in tekst kloppen. De video's worden opnieuw gemaakt na akkoord op de nieuwe navigatie.
 - **Een PDF** met dezelfde stappen, plaatjes en een QR-code naar de video's. Je downloadt hem bovenaan de pagina.
 - **Waar de link staat:** op de inlogpagina ("Nieuw hier? Bekijk de uitleg") en in de kop van de app ("Uitleg").
 - De video's tonen een verzonnen team en hebben geen geluid. Ze staan bij de app zelf, niet op YouTube, dus er komen geen trackers mee.
@@ -458,7 +458,7 @@ Moet Planbord naar de accounts van iemand anders, bijvoorbeeld het bedrijf? Volg
 
 ## Agenda koppelen (uitleg voor collega's)
 
-1. Open **Agenda** in Planbord (op de telefoon onder **Meer**) en kies **Link maken** bij de agenda die je wilt.
+1. Open **Agenda** in Planbord (onderdeel **Planbord**) en kies **Link maken** bij de agenda die je wilt.
 2. Zet de link in je agenda:
    - **iPhone of iPad:** tik op **Toevoegen aan agenda** en daarna op **Abonneer**. Of kopieer de link: Instellingen → Agenda → Accounts → Voeg account toe → Andere → Voeg agenda-abonnement toe → plak de link.
    - **Android:** de app Google Agenda kan geen agenda via een link toevoegen, en Toevoegen aan agenda werkt daar niet. Op een Android-telefoon toont Planbord daarom **Kopieer link** als knop (besluit V35). Daarna:

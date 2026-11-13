@@ -91,6 +91,7 @@ const FIELD_LABELS: Record<string, string> = {
   // Fase 5.
   is_team_lead: 'teamleider',
   mobility_loans_per_day: 'auto’s voor Mobiliteit per werkdag',
+  lends_vehicles: 'leent auto’s uit',
   license_plate: 'kenteken',
   destination: 'bestemming',
   handed_out_at: 'meegegeven',

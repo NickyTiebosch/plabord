@@ -44,7 +44,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 
 ## Codeafspraken
 - Engels voor code, bestandsnamen, tabellen, kolommen en variabelen.
-- Nederlands voor alle tekst die een gebruiker ziet, ook foutmeldingen. Ook de URL's zijn Nederlands: `/rooster`, `/verlof`, `/agenda`, `/beheer`.
+- Nederlands voor alle tekst die een gebruiker ziet, ook foutmeldingen. Ook de URL's zijn Nederlands: `/mijn-rooster`, `/rooster`, `/verlof`, `/agenda`, `/beheer`.
 - Tijdzone overal Europe/Amsterdam.
   - Een kalenderdatum is een ISO-string `YYYY-MM-DD`.
   - Bepaal "vandaag" altijd in Europe/Amsterdam, nooit in de tijdzone van de server.
@@ -56,6 +56,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
 - Een pagina laadt haar gegevens met `requireViewerWith` of `requireAdminWith` (besluit V31): tegelijk met de controle wie er kijkt, niet erna. Hebben de gegevens de kijker nodig, dan eerst `requireViewer()`.
+- Onderdelen (besluit V53): Start (`/`), Planbord, Uitleen en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
 - Geen AI of taalmodel in de roosterlogica.
 - Geen trackers, analytics, externe fonts of scripts van derden. Ook geen Vercel Analytics of Speed Insights.
@@ -77,6 +78,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - `anon` krijgt alleen iets als het echt nodig is (in fase 1 niets).
 - Hulpfuncties voor policies staan in schema `private`, als `security definer` met `set search_path = ''`. Het gaat om `private.current_employee_id()`, `private.is_admin()` en (fase 5) `private.is_lead()`: beheerder of teamleider.
 - Teamleider (fase 5, V43): afwezigheid, invallen, roosterwijzigingen voor één dag en genegeerde gaten gebruiken `is_lead()`, net als de registraties. Medewerkers, accounts, vaste diensten, sluitingsdagen, normen en instellingen blijven `is_admin()`. In de app: `requireLead()` en `requireLeadWith()`.
+- Uitleen (V52): alleen vestigingen met `groups.lends_vehicles` lenen uit (bij de start alleen Den Bosch). Lezen en schrijven mag alleen wie ermee werkt: `private.uses_loans()`; in de app `requireLoans()` en `requireLoansWith()`.
 - Voor RPC-functies in `public`: `revoke execute ... from public, anon` en geef alleen `grant` aan wie ze echt nodig heeft.
 
 ## Privacy (harde regels)

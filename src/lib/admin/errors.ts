@@ -26,6 +26,7 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   vehicle_loans_odometer_order: 'De kilometerstand bij retour is lager dan bij het meegeven.',
   vehicle_loans_return_order: 'Retour kan niet vóór het meegeven liggen.',
   vehicle_loans_group_fkey: 'Kies een vestiging met een balie.',
+  groups_lends_vehicles_counter_only: 'Alleen een vestiging met een balie kan auto’s uitlenen.',
   groups_mobility_loans_range: 'Vul een aantal in van 0 tot en met 20.',
 };
 
