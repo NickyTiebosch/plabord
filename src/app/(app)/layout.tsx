@@ -12,7 +12,7 @@ import { signOut } from '../actions';
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const viewer = await requireViewer();
-  const nav = { isLead: viewer.isLead, usesLoans: viewer.usesLoans };
+  const nav = { isLead: viewer.isLead };
   return (
     <div className="min-h-dvh pb-24 md:pb-8 md:pl-56">
       <SideNav

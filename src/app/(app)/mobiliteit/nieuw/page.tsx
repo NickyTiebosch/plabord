@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { StatefulForm } from '@/components/client/stateful-form';
 import { Card, PageHeader, SectionTitle } from '@/components/ui';
-import { requireLoansWith } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadCurrentLoans, loadLoanGroups } from '@/lib/db/loan-queries';
 import { addDays, amsterdamDateTime, todayInAmsterdam } from '@/lib/engine/dates';
 import { formatPlate, normalizePlate } from '@/lib/loans/plates';
@@ -27,7 +27,7 @@ export default async function NewLoanPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const now = new Date();
   const today = todayInAmsterdam(now);
-  const [viewer, [groups, loans]] = await requireLoansWith((supabase) =>
+  const [viewer, [groups, loans]] = await requireViewerWith((supabase) =>
     Promise.all([loadLoanGroups(supabase), loadCurrentLoans(supabase, addDays(today, -REISSUE_DAYS))]),
   );
   const isGroup = (id: string | undefined): id is string => Boolean(id && groups.some((group) => group.id === id));
@@ -49,7 +49,7 @@ export default async function NewLoanPage({ searchParams }: { searchParams: Prom
   // Een andere keuze bij Opnieuw uitgeven moet het formulier opnieuw vullen.
   const formKey = [defaults.groupId, defaults.plate, defaults.model, defaults.destination, defaults.handedTo].join('|');
   const reissueHref = (option: (typeof options)[number]) =>
-    `/registraties/uitleen/nieuw?${new URLSearchParams({
+    `/mobiliteit/nieuw?${new URLSearchParams({
       kenteken: option.plate,
       model: option.model,
       bestemming: option.destination,
@@ -62,7 +62,7 @@ export default async function NewLoanPage({ searchParams }: { searchParams: Prom
       <PageHeader
         title="Auto aanmelden"
         actions={
-          <Link href="/registraties/uitleen" className="text-sm underline">
+          <Link href="/mobiliteit" className="text-sm underline">
             Terug
           </Link>
         }

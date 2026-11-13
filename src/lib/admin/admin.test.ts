@@ -408,15 +408,15 @@ describe('logboek', () => {
         { ...loan, action: 'update', changed_fields: ['destination'], details: { destination: { old: 'mobility', new: 'workshop_weekend' } } },
         lookups,
       ),
-    ).toMatchObject({ what: 'Uitleen gecorrigeerd', detail: 'bestemming: Mobiliteit → Werkplaats (weekend)' });
+    ).toMatchObject({ what: 'Registratie gecorrigeerd', detail: 'bestemming: Mobiliteit → Werkplaats (weekend)' });
     expect(
       describeAudit(
         { ...loan, action: 'delete', source: 'opruimen', details: { license_plate: 'GHP39K', group_id: 'breda', destination: 'mobility', handed_out_at: '2024-10-14T07:12:00+00:00' } },
         lookups,
       ),
-    ).toMatchObject({ what: 'Uitleen opgeruimd (langer dan 24 maanden retour)' });
+    ).toMatchObject({ what: 'Registratie opgeruimd (langer dan 24 maanden retour)' });
     expect(describeAudit({ ...base, entity: 'export', employee_id: null, details: { kind: 'loans' } }, lookups)).toMatchObject({
-      what: 'Uitleen geëxporteerd',
+      what: 'Mobiliteit geëxporteerd',
     });
     expect(
       describeAudit(

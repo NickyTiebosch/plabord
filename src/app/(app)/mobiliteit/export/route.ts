@@ -23,5 +23,5 @@ export async function GET() {
     groupName: (id) => groups.find((group) => group.id === id)?.name ?? id,
     personName: (id) => (id ? (names.get(id) ?? 'oud-collega') : 'oud-collega'),
   });
-  return xlsxResponse(await buildLoansWorkbook(sheets), `planbord-uitleen-${todayInAmsterdam(now)}.xlsx`);
+  return xlsxResponse(await buildLoansWorkbook(sheets), `planbord-mobiliteit-${todayInAmsterdam(now)}.xlsx`);
 }

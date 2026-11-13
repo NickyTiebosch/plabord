@@ -166,7 +166,6 @@ describe('database zonder automatische rechten', () => {
       'return_vehicle_loan',
       'set_shift_override',
       'undo_vehicle_loan_return',
-      'uses_loans',
     ]);
     expect(result.rows.filter((row) => !row.authenticated || row.anon)).toEqual([]);
   });

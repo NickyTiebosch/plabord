@@ -4,15 +4,15 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { dbErrorMessage } from '@/lib/admin/errors';
 import { isUuid, type ActionState } from '@/lib/admin/forms';
-import { requireLead, requireLoans, type Viewer } from '@/lib/auth/session';
+import { requireLead, requireViewer, type Viewer } from '@/lib/auth/session';
 import { loadLoan, loadLoanGroups } from '@/lib/db/loan-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { correctionChanges, parseCorrectionForm, parseHandOutForm, parseReturnForm } from '@/lib/loans/forms';
 import { formatPlate } from '@/lib/loans/plates';
 import { formatLoanMoment } from '@/lib/loans/status';
 
-const LIST = '/registraties/uitleen';
-const ARCHIVE = '/registraties/uitleen/archief';
+const LIST = '/mobiliteit';
+const ARCHIVE = '/mobiliteit/archief';
 
 /** Terug naar een lijst met een melding (?melding=…) en eventueel het kenteken erbij. */
 function back(path: string, code: string, extra: Record<string, string> = {}): never {
@@ -38,7 +38,7 @@ async function stillOutMessage(viewer: Viewer, plate: string, exceptId: string |
 
 /** Een auto aanmelden (V46). Altijd op eigen naam: de database vult in wie het doet. */
 export async function handOutVehicle(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const viewer = await requireLoans();
+  const viewer = await requireViewer();
   const groups = await loadLoanGroups(viewer.supabase);
   const parsed = parseHandOutForm(formData, { now: new Date(), groupIds: groups.map((group) => group.id) });
   if (!parsed.ok) return parsed.state;
@@ -74,11 +74,11 @@ export async function handOutVehicle(_previous: ActionState, formData: FormData)
 
 /** Retour · ingezet (V47): met kilometerstand, tijdstip en een opmerking. */
 export async function returnUsed(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const viewer = await requireLoans();
+  const viewer = await requireViewer();
   const id = String(formData.get('id') ?? '');
-  if (!isUuid(id)) return { error: 'Deze uitleen bestaat niet meer.' };
+  if (!isUuid(id)) return { error: 'Deze registratie bestaat niet meer.' };
   const loan = await loadLoan(viewer.supabase, id);
-  if (!loan) return { error: 'Deze uitleen bestaat niet meer.' };
+  if (!loan) return { error: 'Deze registratie bestaat niet meer.' };
   if (loan.returnedAt) back(LIST, 'al-retour', { kenteken: loan.plate });
   const parsed = parseReturnForm(formData, { now: new Date(), loan });
   if (!parsed.ok) return parsed.state;
@@ -95,7 +95,7 @@ export async function returnUsed(_previous: ActionState, formData: FormData): Pr
 
 /** Retour · niet ingezet (V47): één tik. */
 export async function returnNotUsed(formData: FormData): Promise<void> {
-  const viewer = await requireLoans();
+  const viewer = await requireViewer();
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) back(LIST, 'niet-gevonden');
   const result = await viewer.supabase.rpc('return_vehicle_loan', { p_id: id, p_was_used: false });
@@ -106,7 +106,7 @@ export async function returnNotUsed(formData: FormData): Promise<void> {
 
 /** Retour ongedaan maken (V47): wie het meldde, vandaag; daarna de teamleider of beheerder. */
 export async function undoReturn(formData: FormData): Promise<void> {
-  const viewer = await requireLoans();
+  const viewer = await requireViewer();
   const id = String(formData.get('id') ?? '');
   const plate = String(formData.get('kenteken') ?? '');
   const to = formData.get('terug') === 'archief' ? ARCHIVE : LIST;
@@ -124,9 +124,9 @@ export async function undoReturn(formData: FormData): Promise<void> {
 export async function correctLoan(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const viewer = await requireLead();
   const id = String(formData.get('id') ?? '');
-  if (!isUuid(id)) return { error: 'Deze uitleen bestaat niet meer.' };
+  if (!isUuid(id)) return { error: 'Deze registratie bestaat niet meer.' };
   const [loan, groups] = await Promise.all([loadLoan(viewer.supabase, id), loadLoanGroups(viewer.supabase)]);
-  if (!loan) return { error: 'Deze uitleen bestaat niet meer.' };
+  if (!loan) return { error: 'Deze registratie bestaat niet meer.' };
   const parsed = parseCorrectionForm(formData, {
     now: new Date(),
     groupIds: groups.map((group) => group.id),
@@ -143,7 +143,7 @@ export async function correctLoan(_previous: ActionState, formData: FormData): P
   if (Object.keys(changes).length === 0) back(loan.returnedAt ? ARCHIVE : LIST, 'niets-gewijzigd', { kenteken: loan.plate });
   const saved = await viewer.supabase.from('vehicle_loans').update(changes).eq('id', id).select('id');
   if (saved.error) return { error: dbErrorMessage(saved.error) };
-  if (!saved.data?.length) return { error: 'Opslaan is niet gelukt: je hebt hier geen rechten voor, of de uitleen bestaat niet meer.' };
+  if (!saved.data?.length) return { error: 'Opslaan is niet gelukt: je hebt hier geen rechten voor, of de registratie bestaat niet meer.' };
   back(loan.returnedAt ? ARCHIVE : LIST, 'gecorrigeerd', { kenteken: input.plate });
 }
 

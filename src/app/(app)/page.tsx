@@ -23,8 +23,7 @@ export const metadata: Metadata = { title: 'Start' };
 /** Zo ver kijkt het startscherm vooruit voor je eerstvolgende dienst. */
 const DAYS_AHEAD = 21;
 
-async function loadLoans(viewer: Viewer, now: Date, today: IsoDate): Promise<LoanSummary | null> {
-  if (!viewer.usesLoans) return null;
+async function loadLoans(viewer: Viewer, now: Date, today: IsoDate): Promise<LoanSummary> {
   const since = recentWeekdays(today, 2)[0] ?? today;
   const [groups, loans, closures, endOfDay] = await Promise.all([
     loadLoanGroups(viewer.supabase),
@@ -90,7 +89,7 @@ const plural = (count: number, one: string, many: string) => `${count} ${count =
  * per onderdeel met de stand van nu. Toont alleen gegevens die er al zijn.
  */
 export default async function StartPage() {
-  // De gegevens hangen af van wie er kijkt (uitleen, teamleider): daarom eerst de kijker (V31).
+  // De gegevens hangen af van wie er kijkt (teamleider): daarom eerst de kijker (V31).
   const viewer = await requireViewer();
   const now = new Date();
   const today = todayInAmsterdam(now);
@@ -110,7 +109,7 @@ export default async function StartPage() {
   if (attention && attention.requests > 0) {
     alerts.push({ href: '/beheer/afwezigheid', text: `${plural(attention.requests, 'aanvraag', 'aanvragen')} voor afwezigheid ${attention.requests === 1 ? 'wacht' : 'wachten'} op akkoord` });
   }
-  if (viewer.isLead && loans) {
+  if (viewer.isLead) {
     if (loans.overdue > 0) alerts.push({ href: '/controle', text: `${plural(loans.overdue, 'auto staat', 'auto’s staan')} te lang uit` });
     for (const short of loans.shortBefore) {
       alerts.push({ href: '/controle', text: `${short.groupName} gaf op ${short.label} ${short.count} van de ${short.required} auto’s aan Mobiliteit mee` });
@@ -170,30 +169,28 @@ export default async function StartPage() {
           <p>Je rooster, het rooster per vestiging, verlof en je agenda.</p>
         </Tile>
 
-        {loans ? (
-          <Tile
-            href="/registraties/uitleen"
-            icon={<IconClipboard />}
-            title="Uitleen"
-            actions={
-              <LinkButton href="/registraties/uitleen/nieuw" variant="primary">
-                Auto aanmelden
-              </LinkButton>
-            }
-          >
-            <p>
-              {loans.open === 0 ? 'Er staat nu geen auto uit' : `${plural(loans.open, 'auto', 'auto’s')} uit`}
-              {loans.overdue > 0 ? <span className="font-semibold text-rose-700">, {loans.overdue} te lang</span> : null}
-            </p>
-            {loans.today
-              .filter((row) => row.state === 'ok' || row.state === 'pending' || row.state === 'before')
-              .map((row) => (
-                <p key={row.groupId}>
-                  Mobiliteit vandaag{loans.today.length > 1 ? ` (${row.groupName})` : ''}: {row.count} van {row.required}
-                </p>
-              ))}
-          </Tile>
-        ) : null}
+        <Tile
+          href="/mobiliteit"
+          icon={<IconClipboard />}
+          title="Mobiliteit"
+          actions={
+            <LinkButton href="/mobiliteit/nieuw" variant="primary">
+              Auto aanmelden
+            </LinkButton>
+          }
+        >
+          <p>
+            {loans.open === 0 ? 'Er staat nu geen auto uit' : `${plural(loans.open, 'auto', 'auto’s')} uit`}
+            {loans.overdue > 0 ? <span className="font-semibold text-rose-700">, {loans.overdue} te lang</span> : null}
+          </p>
+          {loans.today
+            .filter((row) => row.state === 'ok' || row.state === 'pending' || row.state === 'before')
+            .map((row) => (
+              <p key={row.groupId}>
+                Vandaag meegegeven{loans.today.length > 1 ? ` (${row.groupName})` : ''}: {row.count} van {row.required}
+              </p>
+            ))}
+        </Tile>
 
         {viewer.isLead ? (
           <Tile href="/beheer" icon={<IconSettings />} title="Beheer">

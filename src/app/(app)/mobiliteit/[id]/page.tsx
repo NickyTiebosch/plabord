@@ -15,7 +15,7 @@ import { localMoment } from '@/lib/loans/time';
 import { correctLoan, deleteLoan } from '../actions';
 import { HandOutFields, recentValues } from '../loan-fields';
 
-export const metadata: Metadata = { title: 'Uitleen corrigeren' };
+export const metadata: Metadata = { title: 'Registratie corrigeren' };
 
 /** Corrigeren (teamleider of beheerder, V47): alles van de registratie, en verwijderen. */
 export default async function CorrectLoanPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,7 +32,7 @@ export default async function CorrectLoanPage({ params }: { params: Promise<{ id
   );
   if (!loan) notFound();
   const out = localMoment(loan.handedOutAt);
-  const back = loan.returnedAt ? '/registraties/uitleen/archief' : '/registraties/uitleen';
+  const back = loan.returnedAt ? '/mobiliteit/archief' : '/mobiliteit';
   const personName = (personId: string | null) => (personId ? (names.get(personId) ?? 'oud-collega') : 'oud-collega');
   const sorted = [...recent].sort((a, b) => (a.handedOutAt < b.handedOutAt ? 1 : -1));
   const returned = loan.returnedAt ? localMoment(loan.returnedAt) : null;
@@ -40,7 +40,7 @@ export default async function CorrectLoanPage({ params }: { params: Promise<{ id
   return (
     <>
       <PageHeader
-        title="Uitleen corrigeren"
+        title="Registratie corrigeren"
         subtitle={
           <>
             <span className="font-mono font-semibold tracking-wide text-slate-900">{formatPlate(loan.plate)}</span> · meegegeven door{' '}

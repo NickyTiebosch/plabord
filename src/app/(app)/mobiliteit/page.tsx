@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
-import { requireLoansWith } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { loadClosures, loadCurrentLoans, loadEndOfDay, loadLoanGroups } from '@/lib/db/loan-queries';
 import { addDays, todayInAmsterdam } from '@/lib/engine/dates';
@@ -14,7 +14,7 @@ import { DESTINATION_LABELS, type VehicleLoan } from '@/lib/loans/types';
 import { returnNotUsed, undoReturn } from './actions';
 import { LoanFlash, type FlashParams } from './flash';
 
-export const metadata: Metadata = { title: 'Uitleen' };
+export const metadata: Metadata = { title: 'Mobiliteit' };
 
 /** Zo ver terug laadt de pagina, voor Vandaag retour (en straks de controle). */
 const LOOKBACK_DAYS = 21;
@@ -33,7 +33,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const now = new Date();
   const today = todayInAmsterdam(now);
-  const [viewer, [groups, loans, names, closures, endOfDay]] = await requireLoansWith((supabase) =>
+  const [viewer, [groups, loans, names, closures, endOfDay]] = await requireViewerWith((supabase) =>
     Promise.all([
       loadLoanGroups(supabase),
       loadCurrentLoans(supabase, addDays(today, -LOOKBACK_DAYS)),
@@ -57,10 +57,10 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader
-        title="Uitleen"
+        title="Mobiliteit"
         subtitle="Auto’s voor Mobiliteit, en voor de werkplaats in het weekend."
         actions={
-          <LinkButton href="/registraties/uitleen/nieuw" variant="primary">
+          <LinkButton href="/mobiliteit/nieuw" variant="primary">
             Auto aanmelden
           </LinkButton>
         }
@@ -95,7 +95,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <LinkButton href={`/registraties/uitleen/${loan.id}/retour`} variant="primary" size="sm">
+                      <LinkButton href={`/mobiliteit/${loan.id}/retour`} variant="primary" size="sm">
                         Retour · ingezet
                       </LinkButton>
                       <form action={returnNotUsed}>
@@ -106,7 +106,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
                         </SubmitButton>
                       </form>
                       {viewer.isLead ? (
-                        <LinkButton href={`/registraties/uitleen/${loan.id}`} variant="ghost" size="sm">
+                        <LinkButton href={`/mobiliteit/${loan.id}`} variant="ghost" size="sm">
                           Corrigeren
                         </LinkButton>
                       ) : null}
@@ -157,7 +157,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
       </section>
 
       <p className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-        <Link href="/registraties/uitleen/archief" className="font-medium text-brand-800 underline underline-offset-2">
+        <Link href="/mobiliteit/archief" className="font-medium text-brand-800 underline underline-offset-2">
           Archief
         </Link>
         {viewer.isLead ? (

@@ -1,7 +1,7 @@
 -- =====================================================================
--- Planbord · Fase 5: de rol teamleider en de uitleen
+-- Planbord · Fase 5: de rol teamleider en Mobiliteit
 --
--- Draai eerst fase-1.sql tot en met fase-4.sql. Deze bundel voegt een tabel, drie kolommen en functies toe, en geeft de teamleider rechten op afwezigheid en invallen; de app van fase 4 merkt er niets van.
+-- Draai eerst fase-1.sql tot en met fase-4.sql. Deze bundel voegt een tabel, twee kolommen en functies toe, en geeft de teamleider rechten op afwezigheid en invallen; de app van fase 4 merkt er niets van.
 --
 -- Plak dit hele bestand in Supabase: SQL Editor → New query → Run.
 -- Het is veilig om opnieuw te draaien: bestaande tabellen en gegevens blijven staan.
@@ -536,5 +536,40 @@ $$;
 revoke all on function private.check_vehicle_loan() from public, anon, authenticated;
 create or replace trigger check_loan before insert or update on public.vehicle_loans
   for each row execute function private.check_vehicle_loan();
+
+-- ---------------------------------------------------------------------
+-- 20261113000200_loans_for_all.sql
+-- ---------------------------------------------------------------------
+
+-- Planbord · fase 5 · 05 Mobiliteit voor iedere vestiging (besluit V54, vervangt V52)
+-- Iedere collega ziet het onderdeel Mobiliteit weer, en iedere vestiging met een balie kan auto's
+-- meegeven. De beperking uit 04 vervalt: de rechten zijn weer zoals in 02. Een nieuwe migratie in
+-- plaats van 04 aanpassen, omdat 04 al in het testproject kan staan.
+
+-- Lezen en aanmelden: weer iedere actieve medewerker.
+drop policy if exists vehicle_loans_select on public.vehicle_loans;
+create policy vehicle_loans_select on public.vehicle_loans for select to authenticated
+  using ((select private.current_employee_id()) is not null);
+drop policy if exists vehicle_loans_insert on public.vehicle_loans;
+create policy vehicle_loans_insert on public.vehicle_loans for insert to authenticated
+  with check (
+    (select private.current_employee_id()) is not null
+    and handed_out_by = (select private.current_employee_id())
+    and returned_at is null
+  );
+
+-- De controle per vestiging uit 04 vervalt. Dat een auto bij een vestiging met een balie hoort,
+-- dwingt de verwijzing naar groups (id, has_counter) uit 02 al af.
+drop trigger if exists check_loan on public.vehicle_loans;
+drop function if exists private.check_vehicle_loan();
+drop function if exists public.uses_loans();
+drop function if exists private.uses_loans();
+
+-- De instelling "leent uit" vervalt; het logboek volgt weer de velden uit 02.
+create or replace trigger audit after insert or update or delete on public.groups
+  for each row execute function private.audit_row(
+    'name', 'has_counter', 'sort_order', 'substitution_rank', 'mobility_loans_per_day'
+  );
+alter table public.groups drop column if exists lends_vehicles;
 
 commit;

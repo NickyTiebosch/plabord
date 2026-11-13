@@ -86,13 +86,13 @@ export function loansExport(
   return [
     {
       sheet: 'Registratie',
-      title: `Uitleen · nu uitgeleend · stand ${dutchDate(stand.date)} ${stand.time}`,
+      title: `Mobiliteit · nu uitgeleend · stand ${dutchDate(stand.date)} ${stand.time}`,
       header: LOAN_EXPORT_HEADER,
       rows: open.map((loan) => loanRow(loan, lookups)),
     },
     {
       sheet: 'Archief',
-      title: `Uitleen · archief (retour, ingezet en niet ingezet) · stand ${dutchDate(stand.date)} ${stand.time}`,
+      title: `Mobiliteit · archief (retour, ingezet en niet ingezet) · stand ${dutchDate(stand.date)} ${stand.time}`,
       header: LOAN_EXPORT_HEADER,
       rows: returned.map((loan) => loanRow(loan, lookups)),
     },

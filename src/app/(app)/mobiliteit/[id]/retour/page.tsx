@@ -5,7 +5,7 @@ import { SubmitButton } from '@/components/client/form-controls';
 import { StatefulForm } from '@/components/client/stateful-form';
 import { Card, Field, PageHeader, inputClass } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
-import { requireLoansWith } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadLoan } from '@/lib/db/loan-queries';
 import { amsterdamDateTime, todayInAmsterdam } from '@/lib/engine/dates';
 import { formatPlate } from '@/lib/loans/plates';
@@ -19,9 +19,9 @@ export const metadata: Metadata = { title: 'Retour melden' };
 export default async function ReturnPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [, loan] = await requireLoansWith((supabase) => loadLoan(supabase, id));
+  const [, loan] = await requireViewerWith((supabase) => loadLoan(supabase, id));
   if (!loan) notFound();
-  if (loan.returnedAt) redirect(`/registraties/uitleen?melding=al-retour&kenteken=${loan.plate}`);
+  if (loan.returnedAt) redirect(`/mobiliteit?melding=al-retour&kenteken=${loan.plate}`);
   const now = new Date();
   const moment = amsterdamDateTime(now);
 
@@ -36,7 +36,7 @@ export default async function ReturnPage({ params }: { params: Promise<{ id: str
           </>
         }
         actions={
-          <Link href="/registraties/uitleen" className="text-sm underline">
+          <Link href="/mobiliteit" className="text-sm underline">
             Terug
           </Link>
         }
@@ -72,7 +72,7 @@ export default async function ReturnPage({ params }: { params: Promise<{ id: str
           <SubmitButton>Retour melden</SubmitButton>
           <p className="text-sm text-slate-600">
             Niet ingezet? Tik dan op{' '}
-            <Link href="/registraties/uitleen" className="underline">
+            <Link href="/mobiliteit" className="underline">
               Retour · niet ingezet
             </Link>{' '}
             in de lijst.

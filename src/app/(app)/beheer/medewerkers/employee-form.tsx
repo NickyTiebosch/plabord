@@ -111,7 +111,7 @@ export function EmployeeForm({ groups, defaults }: { groups: GroupOption[]; defa
         ) : null}
       </div>
       <p className="text-xs text-slate-500">
-        Teamleider: voert afwezigheid in, regelt gaten en ziet de controle en het archief van de registraties. Geen
+        Teamleider: voert afwezigheid in, regelt gaten en ziet de controle en het archief van Mobiliteit. Geen
         medewerkers, instellingen of vaste diensten. Een beheerder mag alles.
       </p>
       {defaults ? (

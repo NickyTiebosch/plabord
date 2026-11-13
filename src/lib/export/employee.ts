@@ -165,7 +165,7 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
     },
     {
       // Fase 5: zonder aan wie de auto ging en zonder opmerkingen; dat zijn geen gegevens over deze persoon.
-      sheet: 'Uitleen',
+      sheet: 'Mobiliteit',
       header: ['Kenteken', 'Model', 'Vestiging', 'Bestemming', 'Meegegeven', 'Retour', 'Ingezet', 'Wat deed deze medewerker'],
       rows: [...(data.loans ?? [])]
         .sort(byDate((loan) => loan.handedOutAt))

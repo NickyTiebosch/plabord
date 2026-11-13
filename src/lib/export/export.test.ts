@@ -143,7 +143,7 @@ describe('gegevens van één medewerker (V20)', () => {
       'Agendalinks',
       'Mails',
       'Meldingen',
-      'Uitleen',
+      'Mobiliteit',
       'Logboek',
     ]);
     expect(sheets[0]?.rows).toEqual([

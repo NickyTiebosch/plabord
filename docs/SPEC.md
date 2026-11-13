@@ -233,7 +233,7 @@ Begin met stap 1 en 2 van de werkwijze.
 Toegevoegd op 10 november 2026 (besluit V41 in `docs/PLAN-fase-5.md`). Planbord wordt breder dan rooster en verlof: het team houdt er ook zijn dagelijkse registraties in bij. Wat er na fase 5 komt, staat in `docs/ROUTEKAART.md`.
 
 **Registraties**
-- Planbord heeft **onderdelen** met een **startscherm** (besluit V53). Het eerste nieuwe onderdeel is de **uitleen**, alleen voor vestigingen die uitlenen (besluit V52, bij de start alleen Den Bosch): auto's die verhuur meegeeft aan Mobiliteit (vervangend vervoer voor stranders) of aan de werkplaats voor het weekend.
+- Planbord heeft **onderdelen** met een **startscherm** (besluit V53). Het eerste nieuwe onderdeel is **Mobiliteit** (besluit V54), de uitleen van auto's, zichtbaar voor iedere vestiging: auto's die verhuur meegeeft aan Mobiliteit (vervangend vervoer voor stranders) of aan de werkplaats voor het weekend.
 - Aanmelden en retour melden is één of twee tikken. Retour kan ingezet of niet ingezet.
 - Iedere ingelogde collega registreert, op eigen naam. De werkplaats en Mobiliteit krijgen geen account.
 

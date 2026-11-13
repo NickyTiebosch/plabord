@@ -55,7 +55,7 @@ export default async function CheckPage() {
 
   return (
     <>
-      <PageHeader title="Controle" subtitle="De uitleen: wat er uit staat, en of Mobiliteit elke werkdag genoeg auto’s kreeg." />
+      <PageHeader title="Controle" subtitle="Mobiliteit: wat er uit staat, en of Mobiliteit elke werkdag genoeg auto’s kreeg." />
 
       <section className="mb-6">
         <SectionTitle className="mb-2">Nu uit</SectionTitle>
@@ -72,8 +72,8 @@ export default async function CheckPage() {
             })}
           </ul>
           <p className="mt-2 text-sm">
-            <Link href="/registraties/uitleen" className="font-medium text-brand-800 underline underline-offset-2">
-              Naar de uitleen
+            <Link href="/mobiliteit" className="font-medium text-brand-800 underline underline-offset-2">
+              Naar Mobiliteit
             </Link>
           </p>
         </Card>
@@ -122,7 +122,7 @@ export default async function CheckPage() {
         {rows.length === 0 ? (
           <EmptyState title="Er is geen ondergrens ingesteld.">
             {viewer.isAdmin ? (
-              <Link href="/beheer/instellingen#uitleen" className="underline">
+              <Link href="/beheer/instellingen#mobiliteit" className="underline">
                 Stel per vestiging het aantal in bij Instellingen.
               </Link>
             ) : (
@@ -172,7 +172,7 @@ export default async function CheckPage() {
         )}
         {viewer.isAdmin && rows.length > 0 ? (
           <p className="mt-2 text-sm">
-            <Link href="/beheer/instellingen#uitleen" className="text-brand-800 underline underline-offset-2">
+            <Link href="/beheer/instellingen#mobiliteit" className="text-brand-800 underline underline-offset-2">
               Ondergrens per vestiging aanpassen
             </Link>
           </p>

@@ -26,7 +26,7 @@ const MESSAGES: Record<string, { tone: Tone; text: string }> = {
   'niets-gewijzigd': { tone: 'success', text: 'Er was niets veranderd aan {kenteken}.' },
   verwijderd: { tone: 'success', text: 'Registratie van {kenteken} verwijderd.' },
   'verwijderen-mislukt': { tone: 'error', text: 'Verwijderen is niet gelukt. Probeer het opnieuw.' },
-  'niet-gevonden': { tone: 'warning', text: 'Deze uitleen bestaat niet meer.' },
+  'niet-gevonden': { tone: 'warning', text: 'Deze registratie bestaat niet meer.' },
 };
 
 export interface FlashParams {
@@ -44,7 +44,7 @@ export function nextLoanHref(params: FlashParams): string {
   if (params.aan) query.set('aan', params.aan.slice(0, 60));
   if (params.vestiging && /^[a-z_]{1,40}$/.test(params.vestiging)) query.set('vestiging', params.vestiging);
   const text = query.toString();
-  return `/registraties/uitleen/nieuw${text ? `?${text}` : ''}`;
+  return `/mobiliteit/nieuw${text ? `?${text}` : ''}`;
 }
 
 /** Korte melding na een actie, via ?melding=… in de URL. */

@@ -1,6 +1,6 @@
 # CLAUDE.md: vaste afspraken voor Planbord
 
-Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de plek voor de registraties van verhuur (te beginnen met de uitleen). De opdracht in `docs/SPEC.md` is leidend. Het plan per fase staat in `docs/PLAN-fase-N.md`, het geheel in `docs/ROUTEKAART.md`. Wijkt dit bestand af van de spec, dan geldt de spec en pas je dit bestand aan.
+Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de plek voor de registraties van verhuur (te beginnen met Mobiliteit: de auto's die verhuur uitleent). De opdracht in `docs/SPEC.md` is leidend. Het plan per fase staat in `docs/PLAN-fase-N.md`, het geheel in `docs/ROUTEKAART.md`. Wijkt dit bestand af van de spec, dan geldt de spec en pas je dit bestand aan.
 
 ## Werkwijze
 - Werk fase voor fase. Schrijf pas code als de eigenaar het plan van die fase heeft goedgekeurd. Begin pas aan een volgende fase na "ga verder met fase X".
@@ -56,7 +56,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
 - Een pagina laadt haar gegevens met `requireViewerWith` of `requireAdminWith` (besluit V31): tegelijk met de controle wie er kijkt, niet erna. Hebben de gegevens de kijker nodig, dan eerst `requireViewer()`.
-- Onderdelen (besluit V53): Start (`/`), Planbord, Uitleen en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
+- Onderdelen (besluit V53): Start (`/`), Planbord, Mobiliteit (`/mobiliteit`, besluit V54: de uitleen van auto's) en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
 - Geen AI of taalmodel in de roosterlogica.
 - Geen trackers, analytics, externe fonts of scripts van derden. Ook geen Vercel Analytics of Speed Insights.
@@ -78,7 +78,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - `anon` krijgt alleen iets als het echt nodig is (in fase 1 niets).
 - Hulpfuncties voor policies staan in schema `private`, als `security definer` met `set search_path = ''`. Het gaat om `private.current_employee_id()`, `private.is_admin()` en (fase 5) `private.is_lead()`: beheerder of teamleider.
 - Teamleider (fase 5, V43): afwezigheid, invallen, roosterwijzigingen voor één dag en genegeerde gaten gebruiken `is_lead()`, net als de registraties. Medewerkers, accounts, vaste diensten, sluitingsdagen, normen en instellingen blijven `is_admin()`. In de app: `requireLead()` en `requireLeadWith()`.
-- Uitleen (V52): alleen vestigingen met `groups.lends_vehicles` lenen uit (bij de start alleen Den Bosch). Lezen en schrijven mag alleen wie ermee werkt: `private.uses_loans()`; in de app `requireLoans()` en `requireLoansWith()`.
+- Mobiliteit (V54): iedere actieve medewerker leest en meldt aan, voor elke vestiging met een balie. In de database heet het `vehicle_loans`, in de code `loans`.
 - Voor RPC-functies in `public`: `revoke execute ... from public, anon` en geef alleen `grant` aan wie ze echt nodig heeft.
 
 ## Privacy (harde regels)

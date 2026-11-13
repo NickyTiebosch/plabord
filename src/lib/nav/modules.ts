@@ -1,9 +1,9 @@
 /**
- * De onderdelen van Planbord (besluit V53): Start, Planbord, Uitleen en Beheer, elk met eigen tabs.
+ * De onderdelen van Planbord (besluit V53): Start, Planbord, Mobiliteit en Beheer, elk met eigen tabs.
  * Puur: wie kijkt en welk pad open staat komen binnen als parameter. Een nieuw onderdeel
  * (binnenvallers, meldingen, uitloop) komt hier als extra regel bij.
  */
-export type ModuleId = 'start' | 'planbord' | 'uitleen' | 'beheer';
+export type ModuleId = 'start' | 'planbord' | 'mobiliteit' | 'beheer';
 export type NavIcon = 'home' | 'grid' | 'timeline' | 'calendar' | 'clipboard' | 'check' | 'settings' | 'plus' | 'archive' | 'user';
 
 export interface NavTab {
@@ -20,10 +20,9 @@ export interface NavModule extends NavTab {
 
 export interface NavViewer {
   isLead: boolean;
-  usesLoans: boolean;
 }
 
-const LOANS = '/registraties/uitleen';
+const LOANS = '/mobiliteit';
 
 /** De onderdelen die deze kijker ziet, in de volgorde van de zijbalk. */
 export function modulesFor(viewer: NavViewer): NavModule[] {
@@ -42,21 +41,19 @@ export function modulesFor(viewer: NavViewer): NavModule[] {
       ],
     },
   ];
-  // Alleen wie met de uitleen werkt (V52).
-  if (viewer.usesLoans) {
-    modules.push({
-      id: 'uitleen',
-      href: LOANS,
-      label: 'Uitleen',
-      icon: 'clipboard',
-      tabs: [
-        { href: LOANS, label: 'Nu uit', icon: 'clipboard' },
-        { href: `${LOANS}/nieuw`, label: 'Aanmelden', icon: 'plus' },
-        { href: `${LOANS}/archief`, label: 'Archief', icon: 'archive' },
-        ...(viewer.isLead ? [{ href: '/controle', label: 'Controle', icon: 'check' as const }] : []),
-      ],
-    });
-  }
+  // Mobiliteit (V54): de auto's die verhuur meegeeft. Voor iedere vestiging.
+  modules.push({
+    id: 'mobiliteit',
+    href: LOANS,
+    label: 'Mobiliteit',
+    icon: 'clipboard',
+    tabs: [
+      { href: LOANS, label: 'Nu uit', icon: 'clipboard' },
+      { href: `${LOANS}/nieuw`, label: 'Aanmelden', icon: 'plus' },
+      { href: `${LOANS}/archief`, label: 'Archief', icon: 'archive' },
+      ...(viewer.isLead ? [{ href: '/controle', label: 'Controle', icon: 'check' as const }] : []),
+    ],
+  });
   if (viewer.isLead) modules.push({ id: 'beheer', href: '/beheer', label: 'Beheer', icon: 'settings', tabs: [] });
   return modules;
 }
@@ -65,13 +62,13 @@ const under = (path: string, prefix: string) => path === prefix || path.startsWi
 
 /** Bij welk onderdeel een pad hoort. Onbekende paden horen bij Start. */
 export function moduleOf(path: string): ModuleId {
-  if (under(path, '/registraties') || under(path, '/controle')) return 'uitleen';
+  if (under(path, LOANS) || under(path, '/controle')) return 'mobiliteit';
   if (under(path, '/beheer')) return 'beheer';
   if (['/mijn-rooster', '/rooster', '/verlof', '/agenda'].some((prefix) => under(path, prefix))) return 'planbord';
   return 'start';
 }
 
-/** Is deze tab actief? Het rooster heeft een pad per vestiging; Nu uit is de uitleen zonder Aanmelden en Archief. */
+/** Is deze tab actief? Het rooster heeft een pad per vestiging; Nu uit is Mobiliteit zonder Aanmelden en Archief. */
 export function isActiveTab(tab: NavTab, path: string): boolean {
   if (tab.href.startsWith('/rooster')) return under(path, '/rooster');
   if (tab.href === LOANS) return under(path, LOANS) && !under(path, `${LOANS}/nieuw`) && !under(path, `${LOANS}/archief`);

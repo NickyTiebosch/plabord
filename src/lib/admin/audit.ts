@@ -47,7 +47,7 @@ export const AUDIT_ENTITIES: Record<string, string> = {
   substitutions: 'Invallen',
   shift_overrides: 'Roosterwijzigingen',
   gap_dismissals: 'Genegeerde gaten',
-  vehicle_loans: 'Uitleen',
+  vehicle_loans: 'Mobiliteit',
   export: 'Exports',
 };
 
@@ -91,7 +91,6 @@ const FIELD_LABELS: Record<string, string> = {
   // Fase 5.
   is_team_lead: 'teamleider',
   mobility_loans_per_day: 'auto’s voor Mobiliteit per werkdag',
-  lends_vehicles: 'leent auto’s uit',
   license_plate: 'kenteken',
   destination: 'bestemming',
   handed_out_at: 'meegegeven',
@@ -207,7 +206,7 @@ const VERBS: Record<string, [string, string, string]> = {
   substitutions: ['Inval toegewezen', 'Inval gewijzigd', 'Inval verwijderd'],
   shift_overrides: ['Roosterwijziging voor één dag', 'Roosterwijziging aangepast', 'Terug naar de vaste dienst'],
   gap_dismissals: ['Gat genegeerd', 'Genegeerd gat bijgewerkt', 'Gat teruggezet'],
-  vehicle_loans: ['Auto aangemeld', 'Uitleen gecorrigeerd', 'Uitleen verwijderd'],
+  vehicle_loans: ['Auto aangemeld', 'Registratie gecorrigeerd', 'Registratie verwijderd'],
 };
 
 /** Wat er bij volledig verwijderen (fase 3, V21) met de medewerker verdween, als aantallen. */
@@ -339,7 +338,7 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
         details.kind === 'employee'
           ? `Gegevens gedownload – ${lookups.employeeName(row.employee_id)}`
           : details.kind === 'loans'
-            ? 'Uitleen geëxporteerd'
+            ? 'Mobiliteit geëxporteerd'
             : 'Planning geëxporteerd';
       break;
     case 'vehicle_loans': {
@@ -356,7 +355,7 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
       } else if (row.action === 'update') {
         detail = changesText(row, lookups);
       } else {
-        if (row.action === 'delete' && row.source === 'opruimen') what = 'Uitleen opgeruimd (langer dan 24 maanden retour)';
+        if (row.action === 'delete' && row.source === 'opruimen') what = 'Registratie opgeruimd (langer dan 24 maanden retour)';
         detail = [
           formatValue('license_plate', details.license_plate, lookups),
           formatValue('group_id', details.group_id, lookups),

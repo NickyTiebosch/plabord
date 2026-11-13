@@ -58,7 +58,7 @@ describe('export van de uitleen (V50)', () => {
       ['Registratie', 1],
       ['Archief', 1],
     ]);
-    expect(sheets[0]?.title).toBe('Uitleen · nu uitgeleend · stand 12-11-2026 14:05');
+    expect(sheets[0]?.title).toBe('Mobiliteit · nu uitgeleend · stand 12-11-2026 14:05');
     expect(LOAN_EXPORT_HEADER.slice(0, 10)).toEqual([
       'Kenteken',
       'Model auto',
@@ -95,7 +95,7 @@ describe('export van de uitleen (V50)', () => {
     const read = await readExcelFile(file);
     expect(read.map((sheet) => sheet.sheet)).toEqual(['Registratie', 'Archief']);
     const archive = read[1]?.data ?? [];
-    expect(archive[0]?.[0]).toBe('Uitleen · archief (retour, ingezet en niet ingezet) · stand 12-11-2026 14:05');
+    expect(archive[0]?.[0]).toBe('Mobiliteit · archief (retour, ingezet en niet ingezet) · stand 12-11-2026 14:05');
     expect(archive[1]?.[0]).toBe('Kenteken');
     const row = archive[2] ?? [];
     expect(row[0]).toBe('KPK-66-J');

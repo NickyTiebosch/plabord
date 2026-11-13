@@ -206,7 +206,7 @@ export function guideTopics(address: string): GuideTopic[] {
       steps: [
         {
           steps: [
-            'Tik op Uitleen en dan op Auto aanmelden. Je ziet Uitleen alleen als jouw vestiging auto’s uitleent.',
+            'Tik op Mobiliteit en dan op Auto aanmelden.',
             'Vul kenteken, model, bestemming en aan wie je de auto meegeeft in. Datum en tijd staan al op nu.',
             'Dezelfde auto als laatst? Tik hem aan bij Opnieuw uitgeven; dan staat alles al ingevuld.',
             'Komt de auto terug? Tik bij die auto op Retour · ingezet, of op Retour · niet ingezet als hij niet nodig was.',

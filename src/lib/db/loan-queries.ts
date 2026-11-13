@@ -33,31 +33,13 @@ export function mapVehicleLoan(row: Tables<'vehicle_loans'>): VehicleLoan {
   };
 }
 
-/** De vestigingen die auto's uitlenen (V52), met hun ondergrens voor Mobiliteit (V48). */
+/** De vestigingen met een balie: die kunnen auto's meegeven (V54), met hun ondergrens voor Mobiliteit (V48). */
 export async function loadLoanGroups(client: DbClient): Promise<LoanGroup[]> {
   const rows = must(
-    await client.from('groups').select('id, name, mobility_loans_per_day').eq('lends_vehicles', true).order('sort_order'),
+    await client.from('groups').select('id, name, mobility_loans_per_day').eq('has_counter', true).order('sort_order'),
     'de vestigingen',
   );
   return rows.map((row) => ({ id: row.id, name: row.name, mobilityPerDay: row.mobility_loans_per_day }));
-}
-
-export interface LoanSetting extends LoanGroup {
-  lendsVehicles: boolean;
-}
-
-/** Voor de instellingen: alle vestigingen met een balie, ook die niet uitlenen. */
-export async function loadLoanSettings(client: DbClient): Promise<LoanSetting[]> {
-  const rows = must(
-    await client.from('groups').select('id, name, mobility_loans_per_day, lends_vehicles').eq('has_counter', true).order('sort_order'),
-    'de vestigingen',
-  );
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    mobilityPerDay: row.mobility_loans_per_day,
-    lendsVehicles: row.lends_vehicles,
-  }));
 }
 
 /**
@@ -115,13 +97,21 @@ export async function loadArchive(client: DbClient, filter: ArchiveFilter): Prom
 }
 
 /**
- * Per vestiging de dag van de eerste uitleen in Planbord: de controle telt de dagen daarvoor niet mee.
- * Een vestiging zonder uitleen staat er niet in.
+ * Per vestiging de dag waarop die voor het eerst een auto aan Mobiliteit meegaf in Planbord: de
+ * controle telt de dagen daarvoor niet mee (V54). Een auto voor de werkplaats telt hier niet: een
+ * vestiging die alleen de werkplaats auto's meegeeft, staat dus nooit rood. Een vestiging zonder
+ * auto voor Mobiliteit staat er niet in.
  */
 export async function loadFirstLoanDates(client: DbClient, groupIds: readonly string[]): Promise<Map<string, IsoDate>> {
   const results = await Promise.all(
     groupIds.map((groupId) =>
-      client.from('vehicle_loans').select('handed_out_at').eq('group_id', groupId).order('handed_out_at').limit(1),
+      client
+        .from('vehicle_loans')
+        .select('handed_out_at')
+        .eq('group_id', groupId)
+        .eq('destination', 'mobility')
+        .order('handed_out_at')
+        .limit(1),
     ),
   );
   const dates = new Map<string, IsoDate>();

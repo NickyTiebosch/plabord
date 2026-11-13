@@ -184,7 +184,7 @@ boxes['agenda-link'].add = await box(page.getByRole('link', { name: 'Toevoegen a
 // 7. Registraties → Uitleen (fase 5), met de auto's uit demo-data.mjs. Sanne geeft de VW Polo
 // opnieuw uit aan Mobiliteit en meldt de VW Transporter van de werkplaats retour.
 const row = (model) => page.locator('main li', { hasText: model });
-await page.goto(`${BASE}/registraties/uitleen`);
+await page.goto(`${BASE}/mobiliteit`);
 await settle();
 if ((await row('VW Transporter').count()) === 0) {
   throw new Error('De uitleen toont de VW Transporter niet: draai eerst node demo-data.mjs (zie README).');

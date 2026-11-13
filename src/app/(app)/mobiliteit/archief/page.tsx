@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/client/form-controls';
 import { Badge, Card, EmptyState, Field, LinkButton, PageHeader, buttonClass, inputClass } from '@/components/ui';
-import { requireLoansWith } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { ARCHIVE_LIMIT, loadArchive, loadLoanGroups, type ArchiveFilter } from '@/lib/db/loan-queries';
 import { addDays, isIsoDate, todayInAmsterdam } from '@/lib/engine/dates';
@@ -12,7 +12,7 @@ import { DESTINATION_LABELS, DESTINATIONS, isDestination } from '@/lib/loans/typ
 import { undoReturn } from '../actions';
 import { LoanFlash, type FlashParams } from '../flash';
 
-export const metadata: Metadata = { title: 'Archief uitleen' };
+export const metadata: Metadata = { title: 'Archief Mobiliteit' };
 
 interface Params extends FlashParams {
   zoek?: string;
@@ -40,7 +40,7 @@ export default async function LoanArchivePage({ searchParams }: { searchParams: 
     wasUsed: params.ingezet === 'ja' ? true : params.ingezet === 'nee' ? false : null,
     plate: plateQuery(params.zoek ?? ''),
   };
-  const [viewer, [groups, archive, names]] = await requireLoansWith((supabase) =>
+  const [viewer, [groups, archive, names]] = await requireViewerWith((supabase) =>
     Promise.all([loadLoanGroups(supabase), loadArchive(supabase, filter), loadEmployeeNames(supabase)]),
   );
   const groupName = (id: string) => groups.find((group) => group.id === id)?.name ?? id;
@@ -49,17 +49,17 @@ export default async function LoanArchivePage({ searchParams }: { searchParams: 
   return (
     <>
       <PageHeader
-        title="Archief uitleen"
+        title="Archief Mobiliteit"
         subtitle="Alles wat retour is gemeld, ingezet en niet ingezet. Registraties blijven 24 maanden bewaard."
         actions={
           <>
             {viewer.isLead ? (
               // Een gewone link: elke klik is één export in het logboek.
-              <a href="/registraties/uitleen/export" download className={buttonClass('secondary')}>
+              <a href="/mobiliteit/export" download className={buttonClass('secondary')}>
                 Download (Excel)
               </a>
             ) : null}
-            <Link href="/registraties/uitleen" className="text-sm underline">
+            <Link href="/mobiliteit" className="text-sm underline">
               Terug
             </Link>
           </>
@@ -116,7 +116,7 @@ export default async function LoanArchivePage({ searchParams }: { searchParams: 
           </Field>
           <div className="flex gap-2 sm:col-span-3">
             <SubmitButton>Zoeken</SubmitButton>
-            <LinkButton href="/registraties/uitleen/archief" variant="ghost">
+            <LinkButton href="/mobiliteit/archief" variant="ghost">
               Wissen
             </LinkButton>
           </div>
@@ -163,7 +163,7 @@ export default async function LoanArchivePage({ searchParams }: { searchParams: 
                     </div>
                     {viewer.isLead ? (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <LinkButton href={`/registraties/uitleen/${loan.id}`} variant="ghost" size="sm">
+                        <LinkButton href={`/mobiliteit/${loan.id}`} variant="ghost" size="sm">
                           Corrigeren
                         </LinkButton>
                         <form action={undoReturn}>
