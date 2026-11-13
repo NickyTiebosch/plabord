@@ -7,14 +7,16 @@ const labels = (items: { label: string }[]) => items.map((item) => item.label);
 
 describe('de onderdelen (V53)', () => {
   it('toont Mobiliteit aan iedereen (V54), en Beheer alleen aan beheerder en teamleider', () => {
-    expect(labels(modulesFor(employee))).toEqual(['Start', 'Planbord', 'Mobiliteit']);
-    expect(labels(modulesFor(lead))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Beheer']);
+    expect(labels(modulesFor(employee))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Meldingen']);
+    expect(labels(modulesFor(lead))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Meldingen', 'Controle', 'Beheer']);
   });
 
-  it('geeft Controle alleen aan beheerder en teamleider', () => {
-    const tabs = (viewer: typeof lead) => labels(modulesFor(viewer).find((module) => module.id === 'mobiliteit')?.tabs ?? []);
-    expect(tabs(employee)).toEqual(['Nu uit', 'Aanmelden', 'Archief']);
-    expect(tabs(lead)).toEqual(['Nu uit', 'Aanmelden', 'Archief', 'Controle']);
+  it('geeft Controle als eigen onderdeel aan beheerder en teamleider, met de invulcontrole en Mobiliteit (V55)', () => {
+    const tabs = (viewer: typeof lead, id: string) => labels(modulesFor(viewer).find((module) => module.id === id)?.tabs ?? []);
+    expect(tabs(employee, 'mobiliteit')).toEqual(['Nu uit', 'Aanmelden', 'Archief']);
+    expect(tabs(lead, 'controle')).toEqual(['Invulcontrole', 'Mobiliteit']);
+    expect(tabs(employee, 'controle')).toEqual([]);
+    expect(tabs(employee, 'meldingen')).toEqual(['Meldingen', 'Nieuw', 'Doorbelasten', 'Archief']);
   });
 
   it('weet bij welk onderdeel een pad hoort', () => {
@@ -24,30 +26,37 @@ describe('de onderdelen (V53)', () => {
     expect(moduleOf('/verlof')).toBe('planbord');
     expect(moduleOf('/agenda')).toBe('planbord');
     expect(moduleOf('/mobiliteit/archief')).toBe('mobiliteit');
-    expect(moduleOf('/controle')).toBe('mobiliteit');
+    expect(moduleOf('/controle/mobiliteit')).toBe('controle');
+    expect(moduleOf('/binnenvallers/overzicht')).toBe('binnenvallers');
+    expect(moduleOf('/meldingen/nieuw')).toBe('meldingen');
     expect(moduleOf('/registraties/uitleen')).toBe('start');
     expect(moduleOf('/beheer/medewerkers/nieuw')).toBe('beheer');
     expect(moduleOf('/roosters')).toBe('start');
   });
 
   it('markeert de juiste tab', () => {
-    const [nowOut, add, archive] = modulesFor(employee).find((module) => module.id === 'mobiliteit')?.tabs ?? [];
-    const active = (path: string) => [nowOut, add, archive].filter((tab) => tab && isActiveTab(tab, path)).map((tab) => tab?.label);
-    expect(active('/mobiliteit')).toEqual(['Nu uit']);
-    expect(active('/mobiliteit/abc/retour')).toEqual(['Nu uit']);
-    expect(active('/mobiliteit/nieuw')).toEqual(['Aanmelden']);
-    expect(active('/mobiliteit/archief')).toEqual(['Archief']);
-    const roster = modulesFor(employee)[1]?.tabs[1];
-    expect(roster && isActiveTab(roster, '/rooster/breda')).toBe(true);
-    const mine = modulesFor(employee)[1]?.tabs[0];
-    expect(mine && isActiveTab(mine, '/rooster/breda')).toBe(false);
+    const active = (viewer: typeof lead, id: string, path: string) => {
+      const tabs = modulesFor(viewer).find((module) => module.id === id)?.tabs ?? [];
+      return tabs.filter((tab) => isActiveTab(tab, path, tabs)).map((tab) => tab.label);
+    };
+    expect(active(employee, 'mobiliteit', '/mobiliteit')).toEqual(['Nu uit']);
+    expect(active(employee, 'mobiliteit', '/mobiliteit/abc/retour')).toEqual(['Nu uit']);
+    expect(active(employee, 'mobiliteit', '/mobiliteit/nieuw')).toEqual(['Aanmelden']);
+    expect(active(employee, 'mobiliteit', '/mobiliteit/archief')).toEqual(['Archief']);
+    expect(active(employee, 'meldingen', '/meldingen/abc')).toEqual(['Meldingen']);
+    expect(active(employee, 'meldingen', '/meldingen/doorbelasten')).toEqual(['Doorbelasten']);
+    expect(active(lead, 'controle', '/controle')).toEqual(['Invulcontrole']);
+    expect(active(lead, 'controle', '/controle/mobiliteit')).toEqual(['Mobiliteit']);
+    expect(active(employee, 'planbord', '/rooster/breda')).toEqual(['Rooster']);
   });
 
   it('zet onderin Start en de tabs van het onderdeel; op Start en in Beheer de onderdelen', () => {
-    expect(labels(bottomTabs(modulesFor(lead), '/'))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Beheer']);
-    expect(labels(bottomTabs(modulesFor(lead), '/beheer/regelen'))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Beheer']);
+    expect(labels(bottomTabs(modulesFor(lead), '/'))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Meldingen']);
+    // In Beheer blijft Beheer zelf in beeld.
+    expect(labels(bottomTabs(modulesFor(lead), '/beheer/regelen'))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Beheer']);
     expect(labels(bottomTabs(modulesFor(employee), '/verlof'))).toEqual(['Start', 'Mijn rooster', 'Rooster', 'Verlof', 'Agenda']);
-    expect(labels(bottomTabs(modulesFor(lead), '/controle'))).toEqual(['Start', 'Nu uit', 'Aanmelden', 'Archief', 'Controle']);
-    for (const path of ['/', '/verlof', '/controle', '/beheer']) expect(bottomTabs(modulesFor(lead), path).length).toBeLessThanOrEqual(5);
+    expect(labels(bottomTabs(modulesFor(lead), '/controle'))).toEqual(['Start', 'Invulcontrole', 'Mobiliteit']);
+    expect(labels(bottomTabs(modulesFor(employee), '/meldingen'))).toEqual(['Start', 'Meldingen', 'Nieuw', 'Doorbelasten', 'Archief']);
+    for (const path of ['/', '/verlof', '/controle', '/beheer', '/meldingen']) expect(bottomTabs(modulesFor(lead), path).length).toBeLessThanOrEqual(5);
   });
 });

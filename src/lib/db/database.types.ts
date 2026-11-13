@@ -39,6 +39,8 @@ export interface Database {
           day_part_boundary: string;
           lookahead_weeks: number;
           mail_enabled: boolean;
+          charge_cancellation_from: string;
+          day_close_reminder_at: string | null;
           updated_at: Timestamp;
         };
         Insert: { id?: boolean };
@@ -50,6 +52,8 @@ export interface Database {
           day_part_boundary?: string;
           lookahead_weeks?: number;
           mail_enabled?: boolean;
+          charge_cancellation_from?: string;
+          day_close_reminder_at?: string | null;
         };
         Relationships: [];
       };
@@ -358,6 +362,93 @@ export interface Database {
         };
         Relationships: [];
       };
+      workshops: {
+        Row: {
+          id: string;
+          group_id: string;
+          has_counter: boolean;
+          name: string;
+          sort_order: number;
+          is_active: boolean;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: { group_id: string; name: string; sort_order?: number; is_active?: boolean };
+        Update: { name?: string; sort_order?: number; is_active?: boolean };
+        Relationships: [];
+      };
+      walk_ins: {
+        Row: {
+          group_id: string;
+          workshop_id: string;
+          date: string;
+          count: number;
+          updated_by: string | null;
+          updated_at: Timestamp;
+        };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      incident_reports: {
+        Row: {
+          id: string;
+          group_id: string;
+          workshop_id: string;
+          occurred_at: Timestamp;
+          kind: string;
+          missing: string | null;
+          cancelled_at: string | null;
+          charge: boolean | null;
+          charged_at: Timestamp | null;
+          charged_by: string | null;
+          license_plate: string | null;
+          contract_number: string | null;
+          note: string | null;
+          reported_by: string | null;
+          import_key: string | null;
+          created_at: Timestamp;
+          updated_at: Timestamp;
+        };
+        Insert: {
+          group_id: string;
+          workshop_id: string;
+          occurred_at?: Timestamp;
+          kind: string;
+          missing?: string | null;
+          cancelled_at?: string | null;
+          charge?: boolean | null;
+          license_plate?: string | null;
+          contract_number?: string | null;
+          note?: string | null;
+        };
+        Update: {
+          group_id?: string;
+          workshop_id?: string;
+          occurred_at?: Timestamp;
+          kind?: string;
+          missing?: string | null;
+          cancelled_at?: string | null;
+          charge?: boolean | null;
+          license_plate?: string | null;
+          contract_number?: string | null;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
+      day_closures: {
+        Row: {
+          group_id: string;
+          has_counter: boolean;
+          date: string;
+          rentlink_checked: boolean;
+          closed_by: string | null;
+          closed_at: Timestamp;
+        };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           id: number;
@@ -408,6 +499,11 @@ export interface Database {
       apply_substitution_review: { Args: { changes: Json }; Returns: number };
       delete_employee: { Args: { p_employee_id: string }; Returns: Json };
       employee_sign_ins: { Args: { p_employee_id?: string }; Returns: Json };
+      adjust_walk_in: { Args: { p_workshop_id: string; p_date: string; p_delta: number }; Returns: number };
+      close_day: { Args: { p_group_id: string; p_date: string; p_rentlink_checked: boolean }; Returns: boolean };
+      reopen_day: { Args: { p_group_id: string; p_date: string }; Returns: number };
+      set_incident_charged: { Args: { p_id: string; p_charged: boolean }; Returns: number };
+      import_registrations: { Args: { plan: Json }; Returns: Json };
       log_export: { Args: { p_kind: string; p_employee_id: string | null }; Returns: undefined };
       register_push_subscription: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string }; Returns: undefined };
       return_vehicle_loan: {

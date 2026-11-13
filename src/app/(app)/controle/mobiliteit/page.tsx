@@ -11,7 +11,7 @@ import { formatPlate } from '@/lib/loans/plates';
 import { formatLoanMoment, isOverdue, loanDueDate, mobilityDayCheck, recentWeekdays, sortOpenLoans, type DayCheckState } from '@/lib/loans/status';
 import { DESTINATION_LABELS } from '@/lib/loans/types';
 
-export const metadata: Metadata = { title: 'Controle' };
+export const metadata: Metadata = { title: 'Controle Mobiliteit' };
 
 /** Zoveel werkdagen in de controle op Mobiliteit. */
 const DAYS = 10;
@@ -55,7 +55,7 @@ export default async function CheckPage() {
 
   return (
     <>
-      <PageHeader title="Controle" subtitle="Mobiliteit: wat er uit staat, en of Mobiliteit elke werkdag genoeg auto’s kreeg." />
+      <PageHeader title="Controle Mobiliteit" subtitle="Mobiliteit: wat er uit staat, en of Mobiliteit elke werkdag genoeg auto’s kreeg." />
 
       <section className="mb-6">
         <SectionTitle className="mb-2">Nu uit</SectionTitle>

@@ -3,12 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { bottomTabs, isActiveTab, moduleOf, modulesFor, type NavIcon, type NavTab, type NavViewer } from '@/lib/nav/modules';
+import { bottomTabs, isActiveTab, moduleOf, modulesFor, tabsOf, type NavIcon, type NavTab, type NavViewer } from '@/lib/nav/modules';
 import {
+  IconAlert,
   IconArchive,
   IconCalendar,
+  IconCar,
   IconCheck,
   IconClipboard,
+  IconCounter,
+  IconEuro,
   IconGrid,
   IconHome,
   IconPlus,
@@ -29,6 +33,10 @@ const ICONS: Record<NavIcon, ReactNode> = {
   plus: <IconPlus />,
   archive: <IconArchive />,
   user: <IconUser />,
+  counter: <IconCounter />,
+  alert: <IconAlert />,
+  euro: <IconEuro />,
+  car: <IconCar />,
 };
 
 /** Is deze link actief? Een onderdeel als het pad erbij hoort, een tab volgens isActiveTab. */
@@ -38,7 +46,7 @@ function useActive(viewer: NavViewer) {
   const current = moduleOf(path);
   const isActive = (item: NavTab) => {
     const asModule = modules.find((candidate) => candidate.href === item.href && candidate.label === item.label);
-    return asModule ? asModule.id === current : isActiveTab(item, path);
+    return asModule && asModule.tabs.length === 0 ? asModule.id === current : isActiveTab(item, path, tabsOf(modules, path));
   };
   return { path, modules, current, isActive };
 }
@@ -86,7 +94,7 @@ export function ModuleTabs({ viewer }: { viewer: NavViewer }) {
       {shown.tabs.length > 0 ? (
         <nav aria-label={`Menu van ${shown.label}`} className="flex items-center gap-1">
           {shown.tabs.map((tab) => {
-            const active = isActiveTab(tab, path);
+            const active = isActiveTab(tab, path, shown.tabs);
             return (
               <Link
                 key={tab.href}

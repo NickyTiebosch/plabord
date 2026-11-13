@@ -110,9 +110,9 @@ export default async function StartPage() {
     alerts.push({ href: '/beheer/afwezigheid', text: `${plural(attention.requests, 'aanvraag', 'aanvragen')} voor afwezigheid ${attention.requests === 1 ? 'wacht' : 'wachten'} op akkoord` });
   }
   if (viewer.isLead) {
-    if (loans.overdue > 0) alerts.push({ href: '/controle', text: `${plural(loans.overdue, 'auto staat', 'auto’s staan')} te lang uit` });
+    if (loans.overdue > 0) alerts.push({ href: '/controle/mobiliteit', text: `${plural(loans.overdue, 'auto staat', 'auto’s staan')} te lang uit` });
     for (const short of loans.shortBefore) {
-      alerts.push({ href: '/controle', text: `${short.groupName} gaf op ${short.label} ${short.count} van de ${short.required} auto’s aan Mobiliteit mee` });
+      alerts.push({ href: '/controle/mobiliteit', text: `${short.groupName} gaf op ${short.label} ${short.count} van de ${short.required} auto’s aan Mobiliteit mee` });
     }
   }
 
