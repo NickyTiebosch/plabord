@@ -268,8 +268,9 @@ describe('fase 5: de uitleen', () => {
     );
   });
 
-  it('laat alleen de beheerder en de teamleider corrigeren en verwijderen', async () => {
-    const id = (await handOut(bas, 'V02KZD')).rows[0]?.id ?? '';
+  it('laat een collega een registratie van een ander niet corrigeren of verwijderen; de teamleider wel', async () => {
+    // Sinds fase 6 (V59) kan wie aanmeldde het op dezelfde dag zelf; zie phase6.test.ts.
+    const id = (await handOut(ruben, 'V02KZD')).rows[0]?.id ?? '';
     await withSession(db, session(bas), async () => {
       expect((await db.query(`update public.vehicle_loans set model = 'Golf' where id = $1`, [id])).affectedRows).toBe(0);
       expect((await db.query('delete from public.vehicle_loans where id = $1', [id])).affectedRows).toBe(0);
