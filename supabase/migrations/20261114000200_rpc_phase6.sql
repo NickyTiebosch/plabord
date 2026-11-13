@@ -240,3 +240,24 @@ end;
 $$;
 revoke all on function public.import_registrations(jsonb) from public, anon, authenticated;
 grant execute on function public.import_registrations(jsonb) to authenticated;
+
+-- De herinnering voor het afsluiten van de dag (V61): hooguit één per vestiging per dag. Alleen de
+-- geplande taak (zonder sessie, met de secret key) schrijft hier; beheerder en teamleider mogen het zien.
+create table if not exists public.day_close_reminders (
+  group_id text not null,
+  has_counter boolean not null default true,
+  date date not null,
+  devices smallint not null default 0,
+  sent_at timestamptz not null default now(),
+  primary key (group_id, date),
+  constraint day_close_reminders_counter_only check (has_counter),
+  constraint day_close_reminders_group_fkey foreign key (group_id, has_counter)
+    references public.groups (id, has_counter) on update cascade on delete cascade
+);
+alter table public.day_close_reminders enable row level security;
+revoke all on table public.day_close_reminders from anon, authenticated;
+grant select on table public.day_close_reminders to authenticated;
+grant all on table public.day_close_reminders to service_role;
+drop policy if exists day_close_reminders_select on public.day_close_reminders;
+create policy day_close_reminders_select on public.day_close_reminders for select to authenticated
+  using ((select private.is_lead()));

@@ -1,28 +1,29 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { SubmitButton } from '@/components/client/form-controls';
 import { StatefulForm } from '@/components/client/stateful-form';
 import { Card, Choice, Field, Fieldset, PageHeader, SectionTitle, inputClass } from '@/components/ui';
 import { isUuid } from '@/lib/admin/forms';
-import { requireLeadWith } from '@/lib/auth/session';
+import { requireViewerWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { loadCurrentLoans, loadLoan, loadLoanGroups } from '@/lib/db/loan-queries';
 import { addDays, todayInAmsterdam } from '@/lib/engine/dates';
 import { formatPlate } from '@/lib/loans/plates';
 import { formatLoanMoment } from '@/lib/loans/status';
+import { canEditOwn } from '@/lib/registrations/status';
 import { localMoment } from '@/lib/loans/time';
 import { correctLoan, deleteLoan } from '../actions';
 import { HandOutFields, recentValues } from '../loan-fields';
 
 export const metadata: Metadata = { title: 'Registratie corrigeren' };
 
-/** Corrigeren (teamleider of beheerder, V47): alles van de registratie, en verwijderen. */
+/** Corrigeren (V47, V59): wie aanmeldde op dezelfde dag, of beheerder of teamleider. Alles van de registratie, en verwijderen. */
 export default async function CorrectLoanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const today = todayInAmsterdam(new Date());
-  const [, [loan, groups, recent, names]] = await requireLeadWith((supabase) =>
+  const [viewer, [loan, groups, recent, names]] = await requireViewerWith((supabase) =>
     Promise.all([
       loadLoan(supabase, id),
       loadLoanGroups(supabase),
@@ -31,6 +32,9 @@ export default async function CorrectLoanPage({ params }: { params: Promise<{ id
     ]),
   );
   if (!loan) notFound();
+  if (!canEditOwn({ ownerId: loan.handedOutBy, createdAt: loan.createdAt ?? '1970-01-01T00:00:00.000Z' }, viewer, today)) {
+    redirect('/mobiliteit?melding=niet-gevonden');
+  }
   const out = localMoment(loan.handedOutAt);
   const back = loan.returnedAt ? '/mobiliteit/archief' : '/mobiliteit';
   const personName = (personId: string | null) => (personId ? (names.get(personId) ?? 'oud-collega') : 'oud-collega');

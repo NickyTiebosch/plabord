@@ -449,6 +449,12 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      day_close_reminders: {
+        Row: { group_id: string; has_counter: boolean; date: string; devices: number; sent_at: Timestamp };
+        Insert: { group_id: string; date: string; devices?: number };
+        Update: { devices?: number };
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           id: number;

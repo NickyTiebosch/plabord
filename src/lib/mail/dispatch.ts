@@ -212,10 +212,10 @@ async function deliver(
   return { counts, failure: unusable ?? firstFailure };
 }
 
-type DeviceRow = { id: string; employee_id: string; endpoint: string; p256dh: string; auth: string };
+export type DeviceRow = { id: string; employee_id: string; endpoint: string; p256dh: string; auth: string };
 
 /** Stuurt één melding naar de toestellen; ruimt verdwenen abonnementen op. Geeft het aantal geslaagde. */
-async function pushToDevices(
+export async function pushToDevices(
   client: DbClient,
   send: PushSender,
   devices: readonly DeviceRow[],

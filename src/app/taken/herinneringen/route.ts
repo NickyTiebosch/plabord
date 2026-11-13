@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createAdminClient } from '@/lib/db/admin';
 import { runMailJob } from '@/lib/mail/dispatch';
+import { runCloseReminders } from '@/lib/registrations/reminder-job';
 import { siteBaseUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
@@ -27,8 +28,17 @@ function authorized(request: Request): boolean {
 async function runJob(request: Request) {
   if (!authorized(request)) return new Response('Niet toegestaan', { status: 401, headers: HEADERS });
   try {
-    const result = await runMailJob(createAdminClient(), { now: new Date(), appUrl: `${await siteBaseUrl()}/` });
-    return Response.json(result, { headers: HEADERS });
+    const client = createAdminClient();
+    const now = new Date();
+    const result = await runMailJob(client, { now, appUrl: `${await siteBaseUrl()}/` });
+    // Fase 6 (V61): de herinnering voor het afsluiten van de dag. Mislukt die, dan zijn de mails toch gedaan.
+    let dayClose = { groups: 0, devices: 0 };
+    try {
+      dayClose = await runCloseReminders(client, { now });
+    } catch (error) {
+      console.error('Herinnering dag afsluiten mislukt', error instanceof Error ? error.message : error);
+    }
+    return Response.json({ ...result, dayClose }, { headers: HEADERS });
   } catch (error) {
     console.error('Taak voor mails mislukt', error instanceof Error ? error.message : error);
     return new Response('Mislukt', { status: 500, headers: HEADERS });

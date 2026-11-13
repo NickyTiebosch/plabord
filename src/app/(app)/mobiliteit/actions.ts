@@ -4,12 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { dbErrorMessage } from '@/lib/admin/errors';
 import { isUuid, type ActionState } from '@/lib/admin/forms';
-import { requireLead, requireViewer, type Viewer } from '@/lib/auth/session';
+import { requireViewer, type Viewer } from '@/lib/auth/session';
 import { loadLoan, loadLoanGroups } from '@/lib/db/loan-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { correctionChanges, parseCorrectionForm, parseHandOutForm, parseReturnForm } from '@/lib/loans/forms';
 import { formatPlate } from '@/lib/loans/plates';
 import { formatLoanMoment } from '@/lib/loans/status';
+import { canEditOwn } from '@/lib/registrations/status';
 
 const LIST = '/mobiliteit';
 const ARCHIVE = '/mobiliteit/archief';
@@ -120,13 +121,19 @@ export async function undoReturn(formData: FormData): Promise<void> {
   back(LIST, result.data === 0 ? 'niet-gevonden' : 'ongedaan', { kenteken: plate });
 }
 
-/** Corrigeren (teamleider of beheerder): alles van de registratie. In het logboek staat wat er veranderde. */
+/** Mag deze kijker de registratie corrigeren (V59)? Wie aanmeldde op dezelfde dag, of beheerder of teamleider. RLS controleert het ook. */
+function mayCorrect(viewer: Viewer, loan: { handedOutBy: string | null; createdAt?: string }): boolean {
+  return canEditOwn({ ownerId: loan.handedOutBy, createdAt: loan.createdAt ?? '1970-01-01T00:00:00.000Z' }, viewer, todayInAmsterdam(new Date()));
+}
+
+/** Corrigeren: alles van de registratie. In het logboek staat wat er veranderde. */
 export async function correctLoan(_previous: ActionState, formData: FormData): Promise<ActionState> {
-  const viewer = await requireLead();
+  const viewer = await requireViewer();
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) return { error: 'Deze registratie bestaat niet meer.' };
   const [loan, groups] = await Promise.all([loadLoan(viewer.supabase, id), loadLoanGroups(viewer.supabase)]);
   if (!loan) return { error: 'Deze registratie bestaat niet meer.' };
+  if (!mayCorrect(viewer, loan)) return { error: 'Je kunt deze registratie niet meer corrigeren. Vraag het je teamleider.' };
   const parsed = parseCorrectionForm(formData, {
     now: new Date(),
     groupIds: groups.map((group) => group.id),
@@ -138,7 +145,7 @@ export async function correctLoan(_previous: ActionState, formData: FormData): P
     const stillOut = await stillOutMessage(viewer, input.plate, id);
     if (stillOut) return { error: stillOut };
   }
-  // Alleen wat echt verandert: zo staat in het logboek wat de teamleider aanpaste, en niets anders.
+  // Alleen wat echt verandert: zo staat in het logboek wat er is aangepast, en niets anders.
   const changes = correctionChanges(loan, input);
   if (Object.keys(changes).length === 0) back(loan.returnedAt ? ARCHIVE : LIST, 'niets-gewijzigd', { kenteken: loan.plate });
   const saved = await viewer.supabase.from('vehicle_loans').update(changes).eq('id', id).select('id');
@@ -147,13 +154,14 @@ export async function correctLoan(_previous: ActionState, formData: FormData): P
   back(loan.returnedAt ? ARCHIVE : LIST, 'gecorrigeerd', { kenteken: input.plate });
 }
 
-/** Verwijderen (teamleider of beheerder), bijvoorbeeld een dubbele of verkeerde registratie. */
+/** Verwijderen, bijvoorbeeld een dubbele of verkeerde registratie. Dezelfde regel als corrigeren (V59). */
 export async function deleteLoan(formData: FormData): Promise<void> {
-  const viewer = await requireLead();
+  const viewer = await requireViewer();
   const id = String(formData.get('id') ?? '');
   if (!isUuid(id)) back(LIST, 'niet-gevonden');
   const loan = await loadLoan(viewer.supabase, id);
   if (!loan) back(LIST, 'niet-gevonden');
+  if (!mayCorrect(viewer, loan)) back(LIST, 'verwijderen-mislukt', { kenteken: loan.plate });
   const removed = await viewer.supabase.from('vehicle_loans').delete().eq('id', id).select('id');
   const to = loan.returnedAt ? ARCHIVE : LIST;
   if (removed.error || !removed.data?.length) back(to, 'verwijderen-mislukt', { kenteken: loan.plate });
