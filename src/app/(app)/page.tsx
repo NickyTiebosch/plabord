@@ -2,18 +2,20 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SubmitButton } from '@/components/client/form-controls';
-import { IconChevronRight, IconClipboard, IconGrid, IconLogout, IconSettings } from '@/components/icons';
+import { IconAlert, IconCheck, IconChevronRight, IconClipboard, IconCounter, IconGrid, IconLogout, IconSettings } from '@/components/icons';
 import { AbsenceBadge, ScheduleLineView } from '@/components/schedule';
 import { Badge, Card, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
 import { requireViewer, type Viewer } from '@/lib/auth/session';
 import { loadPlanningOverview } from '@/lib/db/admin-queries';
 import { loadClosures, loadCurrentLoans, loadEndOfDay, loadFirstLoanDates, loadLoanGroups } from '@/lib/db/loan-queries';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
+import { loadCounterGroups, loadDayData, loadFirstClosedDates, loadWorkshops } from '@/lib/db/registration-queries';
 import { addDays, todayInAmsterdam } from '@/lib/engine/dates';
 import { computePersonalSchedule } from '@/lib/engine/schedule';
 import { parseTime } from '@/lib/engine/time';
 import type { IsoDate } from '@/lib/engine/types';
 import { loanSummary, recentWeekdays, type LoanSummary } from '@/lib/loans/status';
+import { completionGrid, incidentDate, pickGroup, recentDays, walkInRows } from '@/lib/registrations/status';
 import { buildMySchedule, type MyScheduleDay } from '@/lib/views/my-schedule';
 import { startShifts } from '@/lib/views/start';
 import { signOut } from '../actions';
@@ -33,6 +35,28 @@ async function loadLoans(viewer: Viewer, now: Date, today: IsoDate): Promise<Loa
   ]);
   const firstDates = await loadFirstLoanDates(viewer.supabase, groups.map((group) => group.id));
   return loanSummary(loans, groups, now, closures, parseTime(endOfDay) ?? '18:00', firstDates);
+}
+
+/** Binnenvallers, meldingen en dag afsluiten: de stand van vandaag voor de eigen vestiging, en de invulcontrole. */
+async function loadRegistrations(viewer: Viewer, today: IsoDate) {
+  const days = recentDays(today, 7);
+  const first = days.at(-1) ?? today;
+  const [groups, workshops, data, dayOff] = await Promise.all([
+    loadCounterGroups(viewer.supabase),
+    loadWorkshops(viewer.supabase),
+    loadDayData(viewer.supabase, first, today),
+    loadClosures(viewer.supabase, first, today),
+  ]);
+  const firstDates = await loadFirstClosedDates(viewer.supabase, groups.map((group) => group.id));
+  const group = pickGroup(groups, undefined, viewer.groupId);
+  const grid = completionGrid(groups, days, today, data, dayOff, firstDates);
+  return {
+    group,
+    walkIns: group ? walkInRows(workshops, data.walkIns, group.id, today).reduce((sum, row) => sum + row.count, 0) : 0,
+    incidents: group ? data.incidents.filter((item) => item.groupId === group.id && incidentDate(item) === today).length : 0,
+    closedToday: group ? data.closures.some((item) => item.groupId === group.id && item.date === today) : false,
+    openDays: grid.reduce((sum, row) => sum + row.open, 0),
+  };
 }
 
 /** Voor beheerder en teamleider: gaten in het rooster en afwezigheid die op akkoord wacht. */
@@ -94,10 +118,19 @@ export default async function StartPage() {
   const now = new Date();
   const today = todayInAmsterdam(now);
   const to = addDays(today, DAYS_AHEAD);
-  const [snapshot, loans, attention] = await Promise.all([
+  const [snapshot, loans, attention, registrations, toCharge] = await Promise.all([
     loadPlanningSnapshot(viewer.supabase, { from: today, to }),
     loadLoans(viewer, now, today),
     loadAttention(viewer, today),
+    loadRegistrations(viewer, today),
+    viewer.isLead
+      ? viewer.supabase
+          .from('incident_reports')
+          .select('id', { count: 'exact', head: true })
+          .eq('charge', true)
+          .is('charged_at', null)
+          .then((result) => result.count ?? 0)
+      : Promise.resolve(0),
   ]);
   const weeks = buildMySchedule(computePersonalSchedule(snapshot, viewer.employeeId, today, to), snapshot.groups, today);
   const shifts = startShifts(weeks);
@@ -115,6 +148,14 @@ export default async function StartPage() {
       alerts.push({ href: '/controle/mobiliteit', text: `${short.groupName} gaf op ${short.label} ${short.count} van de ${short.required} auto’s aan Mobiliteit mee` });
     }
   }
+
+  if (viewer.isLead && registrations.openDays > 0) {
+    alerts.push({ href: '/controle', text: `${plural(registrations.openDays, 'dag is', 'dagen zijn')} niet afgesloten` });
+  }
+  if (viewer.isLead && toCharge > 0) {
+    alerts.push({ href: '/meldingen/doorbelasten', text: `${plural(toCharge, 'annulering moet', 'annuleringen moeten')} nog worden doorbelast` });
+  }
+  const closedLine = registrations.closedToday ? 'De dag is afgesloten.' : 'De dag is nog niet afgesloten.';
 
   return (
     <>
@@ -191,6 +232,53 @@ export default async function StartPage() {
               </p>
             ))}
         </Tile>
+
+        {registrations.group ? (
+          <Tile
+            href="/binnenvallers"
+            icon={<IconCounter />}
+            title="Binnenvallers"
+            actions={
+              <LinkButton href="/binnenvallers" variant="primary">
+                Bijwerken
+              </LinkButton>
+            }
+          >
+            <p>
+              {registrations.group.name} vandaag: {registrations.walkIns}
+            </p>
+            <p>{closedLine}</p>
+          </Tile>
+        ) : null}
+
+        {registrations.group ? (
+          <Tile
+            href="/meldingen"
+            icon={<IconAlert />}
+            title="Meldingen"
+            actions={
+              <LinkButton href="/meldingen/nieuw" variant="primary">
+                Nieuwe melding
+              </LinkButton>
+            }
+          >
+            <p>
+              {registrations.group.name} vandaag: {plural(registrations.incidents, 'melding', 'meldingen')}
+            </p>
+            <p>{closedLine}</p>
+          </Tile>
+        ) : null}
+
+        {viewer.isLead ? (
+          <Tile href="/controle" icon={<IconCheck />} title="Controle">
+            <p>
+              {registrations.openDays === 0
+                ? 'Alle dagen zijn afgesloten.'
+                : `${plural(registrations.openDays, 'dag is', 'dagen zijn')} niet afgesloten.`}
+            </p>
+            <p>De invulcontrole, en Mobiliteit per werkdag.</p>
+          </Tile>
+        ) : null}
 
         {viewer.isLead ? (
           <Tile href="/beheer" icon={<IconSettings />} title="Beheer">
