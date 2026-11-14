@@ -167,4 +167,24 @@ begin
 end;
 $$;
 
+-- Fase 8: een paar auto's op het terrein in Den Bosch, waarvan één lang niet verzet.
+do $$
+begin
+  if to_regclass('public.vehicle_locations') is null then
+    return;
+  end if;
+  perform set_config('app.audit_source', 'setup', true);
+  insert into public.vehicle_locations (license_plate, group_id, spot_id, model, moved_by, moved_at)
+  select v.plate, 'den_bosch', s.id, v.model, '30000000-0000-4000-8000-000000000002'::uuid, now() - v.age
+  from (values
+    ('ZZ104X', 'S 18', 'Skoda Octavia', interval '2 hours'),
+    ('ZZ105X', 'S 20', 'VW Transporter', interval '1 day'),
+    ('ZZ102X', 'Achter', 'VW Golf', interval '3 days'),
+    ('ZZ103X', 'Zijkant', 'Audi Q3', interval '20 days')
+  ) as v(plate, spot, model, age)
+  join public.parking_spots s on s.group_id = 'den_bosch' and s.name = v.spot
+  on conflict do nothing;
+end;
+$$;
+
 commit;

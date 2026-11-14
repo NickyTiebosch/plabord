@@ -153,6 +153,7 @@ describe('gegevens van één medewerker (V20)', () => {
     ],
     walkIns: [{ groupId: 'den_bosch', workshopId: 'w-vw', date: '2026-10-07', count: 4, updatedBy: 'sanne', updatedAt: '2026-10-07T15:00:00Z' }],
     closures: [{ groupId: 'den_bosch', date: '2026-10-07', rentlinkChecked: true, closedBy: 'sanne', closedAt: '2026-10-07T16:10:00Z' }],
+    locations: [{ plate: 'GHP39K', groupId: 'den_bosch', spotName: 'Achter', movedAt: '2026-10-07T16:00:00Z' }],
   });
 
   it('bevat alles wat Planbord over die persoon bewaart, ook eerdere vaste diensten', () => {
@@ -169,6 +170,7 @@ describe('gegevens van één medewerker (V20)', () => {
       'Werkplaatsmeldingen',
       'Binnenvallers',
       'Dag afgesloten',
+      'Locatie',
       'Logboek',
     ]);
     expect(sheets[0]?.rows).toEqual([
@@ -197,7 +199,8 @@ describe('gegevens van één medewerker (V20)', () => {
     expect(JSON.stringify(sheets[9])).not.toContain('Klant niet gekomen');
     expect(sheets[10]?.rows).toEqual([['7-10-2026', 'Den Bosch', 'Volkswagen', '4', '7-10-2026 17:00']]);
     expect(sheets[11]?.rows).toEqual([['7-10-2026', 'Den Bosch', 'ja', '7-10-2026 18:10']]);
-    expect(sheets[12]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
+    expect(sheets[12]?.rows).toEqual([['GHP-39-K', 'Den Bosch', 'Achter', '7-10-2026 18:00']]);
+    expect(sheets[13]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
   });
 
   it('noemt geen collega’s', () => {

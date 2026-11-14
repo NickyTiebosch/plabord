@@ -14,6 +14,8 @@ import {
   IconCounter,
   IconEuro,
   IconChart,
+  IconPin,
+  IconSearch,
   IconGrid,
   IconHome,
   IconPlus,
@@ -39,6 +41,8 @@ const ICONS: Record<NavIcon, ReactNode> = {
   euro: <IconEuro />,
   car: <IconCar />,
   chart: <IconChart />,
+  pin: <IconPin />,
+  search: <IconSearch />,
 };
 
 /** Is deze link actief? Een onderdeel als het pad erbij hoort, een tab volgens isActiveTab. */

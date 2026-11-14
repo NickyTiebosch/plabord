@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SubmitButton } from '@/components/client/form-controls';
-import { IconAlert, IconChart, IconCheck, IconChevronRight, IconClipboard, IconCounter, IconGrid, IconLogout, IconSettings } from '@/components/icons';
+import { IconAlert, IconChart, IconCheck, IconChevronRight, IconClipboard, IconCounter, IconGrid, IconLogout, IconPin, IconSettings } from '@/components/icons';
 import { AbsenceBadge, ScheduleLineView } from '@/components/schedule';
 import { Badge, Card, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
 import { requireViewer, type Viewer } from '@/lib/auth/session';
@@ -11,6 +11,7 @@ import { loadClosures, loadCurrentLoans, loadEndOfDay, loadFirstLoanDates, loadL
 import { loadPlanningSnapshot } from '@/lib/db/queries';
 import { loadCounterGroups, loadDayData, loadFirstClosedDates, loadWorkshops, mapIncident } from '@/lib/db/registration-queries';
 import { loadIncidentBuckets, loadLoansBetween, loadSignalSettings } from '@/lib/db/report-queries';
+import { loadGroupsWithSpots } from '@/lib/db/location-queries';
 import { addDays, eachDay, startOfIsoWeek, todayInAmsterdam } from '@/lib/engine/dates';
 import { computePersonalSchedule } from '@/lib/engine/schedule';
 import { parseTime } from '@/lib/engine/time';
@@ -162,7 +163,7 @@ export default async function StartPage() {
   const now = new Date();
   const today = todayInAmsterdam(now);
   const to = addDays(today, DAYS_AHEAD);
-  const [snapshot, loans, attention, registrations, toCharge, signals] = await Promise.all([
+  const [snapshot, loans, attention, registrations, toCharge, signals, spotGroups] = await Promise.all([
     loadPlanningSnapshot(viewer.supabase, { from: today, to }),
     loadLoans(viewer, now, today),
     loadAttention(viewer, today),
@@ -176,7 +177,10 @@ export default async function StartPage() {
           .then((result) => result.count ?? 0)
       : Promise.resolve(0),
     loadSignals(viewer, today),
+    loadGroupsWithSpots(viewer.supabase),
   ]);
+  // Fase 8 (V73): Locatie voor wie op een vestiging met plekken werkt, en voor beheerder en teamleider.
+  const showLocations = viewer.isLead ? spotGroups.length > 0 : spotGroups.includes(viewer.groupId);
   const weeks = buildMySchedule(computePersonalSchedule(snapshot, viewer.employeeId, today, to), snapshot.groups, today);
   const shifts = startShifts(weeks);
 
@@ -313,6 +317,22 @@ export default async function StartPage() {
               {registrations.group.name} vandaag: {plural(registrations.incidents, 'melding', 'meldingen')}
             </p>
             <p>{closedLine}</p>
+          </Tile>
+        ) : null}
+
+        {showLocations ? (
+          <Tile
+            href="/locatie"
+            icon={<IconPin />}
+            title="Locatie"
+            actions={
+              <LinkButton href="/locatie#zetten" variant="primary">
+                Auto zetten
+              </LinkButton>
+            }
+          >
+            <p>Waar staat een auto op het terrein?</p>
+            <p>Zoeken op kenteken kan altijd, via het vergrootglas bovenaan.</p>
           </Tile>
         ) : null}
 

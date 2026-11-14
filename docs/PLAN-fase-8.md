@@ -1,6 +1,16 @@
 # Plan fase 8: locatie van huurauto's, en zoeken
 
-**Status: concept van 13 november 2026.** Vervangt `Locatie huurauto's Den Bosch.xlsx`.
+**Status: gebouwd op 14 november 2026**, op opdracht van de eigenaar ("bouw fase 6 t/m 8"). Vervangt `Locatie huurauto's Den Bosch.xlsx`.
+
+## Uitwerkingen tijdens de bouw
+- **Het oude bestand** is een lijst van kenteken en plek (S 18, S 20, S 22, Achter, Zijkant), geen raster met plekken als kolommen. De export volgt die lijst: per vestiging Kenteken, Plek, Model, Verzet door, Verzet op en Lang niet gezien (V78 aangepast).
+- **Startwaarden voor Den Bosch:** de plekken uit het bestand (Zijkant, Achter, S 18, S 20, S 22). De auto's zelf staan niet in de code; die lees je in onder Beheer → Plekken → **Lijst inlezen**. Onbekende plekken worden dan toegevoegd.
+- **Plekken toevoegen** kan met meerdere tegelijk, één per regel (bijvoorbeeld S 1 tot en met S 30).
+- **Zichtbaar:** het onderdeel Locatie staat in het menu voor wie op een vestiging met plekken werkt, en voor beheerder en teamleider zodra een vestiging plekken heeft. Zoeken op kenteken kan iedereen, via het vergrootglas of het zoekveld bovenaan.
+- **Tabs van Locatie:** Terrein en Zoeken.
+- **Gegevens per medewerker:** een tabblad Locatie met de auto's die die medewerker het laatst verzette.
+- **Niet gebouwd** uit de routekaart: de plek vragen bij een retourmelding van Mobiliteit, en de overdrachtsnotitie per vestiging. Die stonden niet in dit plan; zeg het als je ze wilt.
+
 
 ## 1. Besluiten
 

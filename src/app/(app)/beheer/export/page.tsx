@@ -67,6 +67,16 @@ export default async function ExportPage() {
           </a>
         </div>
       </Card>
+      <Card className="mt-4 space-y-3 p-4">
+        <SectionTitle>Locatie exporteren</SectionTitle>
+        <p className="text-sm text-slate-700">
+          Waar de huurauto’s nu staan, per vestiging een tabblad met kenteken en plek, zoals het oude bestand. Met model en wie de auto het
+          laatst verzette. Een teamleider kan dit ook, bij Locatie. Elke export komt in het logboek.
+        </p>
+        <a href="/locatie/export" download className={buttonClass('secondary')}>
+          Locatie downloaden
+        </a>
+      </Card>
     </>
   );
 }

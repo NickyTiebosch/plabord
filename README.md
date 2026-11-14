@@ -149,6 +149,20 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Instellingen → Signalen:** de grenzen per signaal; een leeg vak zet het uit.
 - Zie het plan van fase 7 (besluiten V66–V71).
 
+### Fase 8: locatie van huurauto's, en zoeken
+
+**Voor iedereen**
+- **Locatie** (`/locatie`), voor wie op een vestiging met plekken werkt: per plek de auto's die er staan.
+  - **Auto op een plek zetten:** een kenteken en een plek. Staat de auto al ergens, dan verhuist hij. Het model vult zichzelf aan als het kenteken bekend is uit Mobiliteit.
+  - **Verzetten** en **Weg** (van het terrein, bijvoorbeeld verhuurd) bij elke auto.
+  - Een auto die langer dan 14 dagen niet is verzet, krijgt het label *lang niet gezien*.
+- **Zoeken op kenteken** vanaf elke pagina (het vergrootglas, of het zoekveld bovenaan op de computer): waar de auto staat, de uitleen en de meldingen.
+
+**Voor beheerders**
+- **Beheer → Plekken:** per vestiging de plekken (meerdere tegelijk, één per regel), en **Lijst inlezen** voor het oude bestand.
+- **Export → Locatie downloaden** (ook voor de teamleider, bij Locatie).
+- Zie het plan van fase 8 (besluiten V72–V78).
+
 ### Uitleg voor collega's
 
 - **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan tien korte video's op, met de stappen eronder:
@@ -229,7 +243,7 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
    - Het script nog een keer draaien kan geen kwaad: bestaande tabellen en gegevens blijven staan.
-4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql), [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql), [`supabase/setup/fase-5.sql`](supabase/setup/fase-5.sql), [`supabase/setup/fase-6.sql`](supabase/setup/fase-6.sql) en [`supabase/setup/fase-7.sql`](supabase/setup/fase-7.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
+4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql), [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql), [`supabase/setup/fase-5.sql`](supabase/setup/fase-5.sql), [`supabase/setup/fase-6.sql`](supabase/setup/fase-6.sql), [`supabase/setup/fase-7.sql`](supabase/setup/fase-7.sql) en [`supabase/setup/fase-8.sql`](supabase/setup/fase-8.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
 
 ### Stap 2. Inloggen instellen
 
@@ -530,6 +544,7 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
   - Het logboek bewaart geen toelichting. Een melding verdwijnt 24 maanden na de datum vanzelf.
   - De herinnering om de dag af te sluiten noemt alleen de vestiging en de dag.
 - Rapporten en signalen (fase 7) tonen alleen aantallen per vestiging en werkplaats, nooit per medewerker. De maandtotalen bewaren geen kentekens, nummers of namen.
+- Locatie (fase 8) bewaart per auto alleen de huidige plek, het model en wie hem het laatst verzette. De geschiedenis staat in het logboek. Geen klantgegevens.
 - De teamleider (fase 5) ziet geen werkmails. Mails en pushmeldingen na een actie van een teamleider verstuurt de server met de secret key.
 - Pushmeldingen (fase 4):
   - je zet ze zelf aan, per toestel, en ze gaan alleen over je eigen rooster;

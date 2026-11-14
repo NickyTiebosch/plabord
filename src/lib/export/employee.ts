@@ -48,6 +48,8 @@ export interface EmployeeData {
   /** Fase 6: binnenvallers die deze medewerker het laatst bijwerkte. */
   walkIns?: readonly WalkIn[];
   workshops?: readonly Workshop[];
+  /** Fase 8: auto's die deze medewerker het laatst op een plek zette. */
+  locations?: readonly { plate: string; groupId: string; spotName: string; movedAt: string }[];
 }
 
 /** Tijdstip in Nederlandse tijd: "14-10-2026 13:05". */
@@ -232,6 +234,13 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
           closure.rentlinkChecked ? 'ja' : 'nee',
           formatExportMoment(closure.closedAt),
         ]),
+    },
+    {
+      sheet: 'Locatie',
+      header: ['Kenteken', 'Vestiging', 'Plek', 'Verzet op'],
+      rows: [...(data.locations ?? [])]
+        .sort(byDate((location) => location.movedAt))
+        .map((location) => [formatPlate(location.plate), groupName(location.groupId), location.spotName, formatExportMoment(location.movedAt)]),
     },
     {
       sheet: 'Logboek',

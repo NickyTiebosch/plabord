@@ -20,6 +20,10 @@ describe('de onderdelen (V53)', () => {
     expect(tabs(lead, 'rapporten')).toEqual(['Overzicht', 'Binnenvallers', 'Meldingen', 'Mobiliteit']);
     expect(tabs(employee, 'rapporten')).toEqual([]);
     expect(moduleOf('/rapporten/meldingen')).toBe('rapporten');
+    // Fase 8 (V73): Locatie alleen met plekken.
+    expect(labels(modulesFor({ isLead: false, locations: true }))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Meldingen', 'Locatie']);
+    expect(tabs({ isLead: false, locations: true } as typeof lead, 'locatie')).toEqual(['Terrein', 'Zoeken']);
+    expect(moduleOf('/zoeken')).toBe('locatie');
     expect(tabs(employee, 'meldingen')).toEqual(['Meldingen', 'Nieuw', 'Doorbelasten', 'Archief']);
   });
 

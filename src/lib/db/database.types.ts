@@ -469,6 +469,18 @@ export interface Database {
         Update: { devices?: number };
         Relationships: [];
       };
+      parking_spots: {
+        Row: { id: string; group_id: string; has_counter: boolean; name: string; sort_order: number; is_active: boolean; created_at: Timestamp; updated_at: Timestamp };
+        Insert: { group_id: string; name: string; sort_order?: number; is_active?: boolean };
+        Update: { name?: string; sort_order?: number; is_active?: boolean };
+        Relationships: [];
+      };
+      vehicle_locations: {
+        Row: { license_plate: string; id: string; group_id: string; spot_id: string; model: string | null; moved_by: string | null; moved_at: Timestamp };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       monthly_incident_totals: {
         Row: { month: string; group_id: string; workshop_id: string; kind: string; total: number; chargeable: number; charged: number; refreshed_at: Timestamp };
         Insert: Record<string, never>;
@@ -537,6 +549,9 @@ export interface Database {
       set_incident_charged: { Args: { p_id: string; p_charged: boolean }; Returns: number };
       import_registrations: { Args: { plan: Json }; Returns: Json };
       refresh_monthly_totals: { Args: Record<string, never>; Returns: number };
+      place_vehicle: { Args: { p_plate: string; p_spot_id: string; p_model: string | null }; Returns: undefined };
+      remove_vehicle: { Args: { p_plate: string }; Returns: boolean };
+      import_locations: { Args: { p_group_id: string; p_rows: Json }; Returns: number };
       report_walk_ins: {
         Args: { p_unit: string; p_from: string; p_to: string };
         Returns: { bucket: string; group_id: string; workshop_id: string; total: number }[];
