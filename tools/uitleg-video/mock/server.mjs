@@ -346,8 +346,15 @@ async function handleRest(req, res, url) {
       const params = [];
       const args = Object.entries(body).map(([k, v]) => { params.push(v === null ? null : typeof v === 'object' ? JSON.stringify(v) : v); return `${q(k)} => $${params.length}`; });
       // Een functie die niets teruggeeft (void) kan niet door to_json: dan gewoon aanroepen.
-      const isVoid = await db.query(`select p.prorettype = 'void'::regtype as v from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = $1 limit 1`, [fn]);
-      const call = isVoid.rows[0]?.v ? `select public.${q(fn)}(${args.join(', ')})` : `select to_json(public.${q(fn)}(${args.join(', ')})) as r`;
+      const isVoid = await db.query(`select p.prorettype = 'void'::regtype as v, p.proretset as set from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = $1 limit 1`, [fn]);
+      // Een functie die een tabel teruggeeft (fase 7: de rapporten): een lijst, met limit en offset zoals PostgREST.
+      const limit = url.searchParams.get('limit');
+      const offset = url.searchParams.get('offset');
+      const call = isVoid.rows[0]?.v
+        ? `select public.${q(fn)}(${args.join(', ')})`
+        : isVoid.rows[0]?.set
+          ? `select coalesce(json_agg(_r), '[]') as r from (select * from public.${q(fn)}(${args.join(', ')})${limit ? ` limit ${Number(limit)}` : ''}${offset ? ` offset ${Number(offset)}` : ''}) _r`
+          : `select to_json(public.${q(fn)}(${args.join(', ')})) as r`;
       const result = await withRole(role, jwtClaims, (tx) => tx.query(call, params));
       if (isVoid.rows[0]?.v) { res.writeHead(204); return res.end(); }
       return send(res, 200, JSON.stringify(result.rows[0]?.r ?? null));

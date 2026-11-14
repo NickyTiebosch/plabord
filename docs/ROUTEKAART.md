@@ -2,7 +2,7 @@
 
 **Status: volgorde goedgekeurd op 10 november 2026.** Dit document beschrijft het geheel. Per fase komt er een eigen plan (`docs/PLAN-fase-N.md`) dat je apart goedkeurt. Het plan van fase 5 is goedgekeurd.
 
-**Stand op 14 november 2026:** fase 5 is gebouwd en staat klaar om te testen (pull request #16, niet live). Fase 6 is grotendeels gebouwd; wat er nog moet, staat bovenaan `docs/PLAN-fase-6.md`. Voor fase 7 tot en met 11 staat er per fase een plan in concept, met onderaan de vragen voor de eigenaar. Waar een plan afwijkt van de beschrijving hieronder, geldt het plan.
+**Stand op 14 november 2026:** fase 5 is gebouwd en staat klaar om te testen (pull request #16, niet live). Fase 6, 7 en 8 zijn gebouwd (pull requests #17 en verder, niet live). Voor fase 9 tot en met 11 staat er per fase een plan in concept, met onderaan de vragen voor de eigenaar. Waar een plan afwijkt van de beschrijving hieronder, geldt het plan.
 
 ## Waar we naartoe gaan
 Planbord is nu de rooster- en verlofapp. Het wordt de plek waar het verhuurteam ook zijn dagelijkse registraties bijhoudt, en waar jij en de teamleider de cijfers en de controle zien. De losse Excel-bestanden verdwijnen één voor één.

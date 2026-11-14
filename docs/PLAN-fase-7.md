@@ -1,6 +1,20 @@
 # Plan fase 7: rapporten en signalen
 
-**Status: concept van 13 november 2026.** Bouwt voort op fase 6. Niets nieuws om in te vullen voor collega's: deze fase rekent met wat er al staat.
+**Status: gebouwd op 14 november 2026**, op opdracht van de eigenaar ("bouw fase 6 t/m 8"). Bouwt voort op fase 6. Niets nieuws om in te vullen voor collega's: deze fase rekent met wat er al staat.
+
+## Uitwerkingen tijdens de bouw
+- **Tabs:** Overzicht, Binnenvallers, Meldingen en Mobiliteit. Doorbelasten staat als twee tabellen in het rapport Meldingen in plaats van in een eigen tab, zodat de tabbalk op de telefoon past (Start plus vier tabs).
+- **Periodekeuze:** het aantal typ je in of kies je uit de lijst (week 4–26, maand 3–24, jaar 1–5). Losse maanden kies je met vinkjes, uit de laatste 24 maanden.
+- **Verschil (Overzicht):** de laatste periode tegen de periode ervoor. Loopt de laatste periode nog, dan staat dat erbij.
+- **Werkdagen** voor "gemiddeld per werkdag": maandag tot en met vrijdag, zonder sluitingsdagen, tot en met vandaag.
+- **Te lang uit:** dezelfde regel als bij Mobiliteit, voor Mobiliteit en de werkplaats samen.
+- **Dagen met te weinig auto's:** een streepje zolang een vestiging nog geen auto aan Mobiliteit meegaf.
+- **Signaal niet ingezet:** pas vanaf 3 auto's retour in de maand, anders zegt het percentage niets.
+- **Signalen** staan onder Let op op Start, na wat er nu te doen is. Lukt het laden niet, dan blijft Start gewoon werken.
+- **Maandtotalen:** de geplande taak werkt elk uur de laatste 24 maanden bij. Ze staan niet in het logboek: het zijn afgeleide cijfers, geen invoer. Bij week geen totalen: weken ouder dan 23 maanden tonen 0.
+- **Excel:** elke tabel een tabblad, plus een tabblad Over dit rapport.
+- **Nepdatabase** (`tools/uitleg-video/mock/server.mjs`) kan nu ook functies aanroepen die een tabel teruggeven.
+
 
 ## 1. Besluiten
 

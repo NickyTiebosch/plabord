@@ -114,6 +114,13 @@ const FIELD_LABELS: Record<string, string> = {
   rentlink_checked: 'RentLink gecontroleerd',
   charge_cancellation_from: 'doorbelasten vanaf',
   day_close_reminder_at: 'herinnering dag afsluiten',
+  // Fase 7.
+  signal_incident_factor: 'signaal meldingen (keer het gemiddelde)',
+  signal_incident_min: 'signaal meldingen (minstens)',
+  signal_unclosed_days: 'signaal dagen niet afgesloten',
+  signal_charge_days: 'signaal dagen op de doorbelastlijst',
+  signal_short_days: 'signaal dagen te weinig auto’s',
+  signal_unused_percent: 'signaal niet ingezet (%)',
 };
 
 const KINDS: Record<string, string> = {
@@ -248,6 +255,7 @@ const EXPORT_LABELS: Record<string, string> = {
   loans: 'Mobiliteit geëxporteerd',
   walk_ins: 'Binnenvallers geëxporteerd',
   incidents: 'Meldingen geëxporteerd',
+  reports: 'Rapport geëxporteerd',
 };
 
 /** Wat er bij volledig verwijderen (fase 3, V21) met de medewerker verdween, als aantallen. */

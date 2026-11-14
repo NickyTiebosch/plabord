@@ -15,7 +15,9 @@ import { composeMail, personalDaysFor } from '@/lib/mail/messages';
 import { reminderTargets } from '@/lib/mail/reminders';
 import { composePush } from '@/lib/push/messages';
 import { vapidPublicKey } from '@/lib/push/send';
-import { saveMobility, saveNorms, saveRanks, saveSettings, sendTestMailAction, sendTestPushAction, setMailEnabled } from './actions';
+import { saveMobility, saveNorms, saveRanks, saveSettings, saveSignals, sendTestMailAction, sendTestPushAction, setMailEnabled } from './actions';
+import { loadSignalSettings } from '@/lib/db/report-queries';
+import { INCIDENT_BASE_WEEKS, SIGNAL_BOUNDS, type SignalSettings } from '@/lib/reports/signals';
 
 export const metadata: Metadata = { title: 'Instellingen' };
 
@@ -24,7 +26,7 @@ const numberClass = 'block w-16 min-h-11 rounded-lg border border-slate-300 bg-w
 export default async function SettingsPage() {
   const preview = previewReminderDate(todayInAmsterdam(new Date()));
   const pushReady = vapidPublicKey() !== null;
-  const [{ email }, [settings, groups, norms, mailSetting, snapshot, loanGroups]] = await requireAdminWith((supabase) =>
+  const [{ email }, [settings, groups, norms, mailSetting, snapshot, loanGroups, signals]] = await requireAdminWith((supabase) =>
     Promise.all([
       loadSettings(supabase),
       loadGroups(supabase),
@@ -32,6 +34,7 @@ export default async function SettingsPage() {
       supabase.from('settings').select('mail_enabled').maybeSingle(),
       loadPlanningSnapshot(supabase, { from: preview.date, to: preview.date }),
       loadLoanGroups(supabase),
+      loadSignalSettings(supabase),
     ]),
   );
   const mailEnabled = Boolean(mailSetting.data?.mail_enabled);
@@ -274,7 +277,46 @@ export default async function SettingsPage() {
             <SubmitButton>Opslaan</SubmitButton>
           </StatefulForm>
         </Card>
+
+        <Card id="signalen" className="scroll-mt-20 p-4 lg:col-span-2">
+          <SectionTitle className="mb-1">Signalen</SectionTitle>
+          <p className="mb-3 text-sm text-slate-600">
+            Signalen staan onder Let op op Start, voor beheerder en teamleider. Er gaat geen mail of pushmelding uit. Laat een vak leeg om
+            dat signaal uit te zetten.
+          </p>
+          <StatefulForm action={saveSignals} className="space-y-3">
+            <ul className="divide-y divide-slate-100 text-sm text-slate-800">
+              <SignalLine label={`Een werkplaats heeft deze week meer meldingen dan … keer het gemiddelde van de ${INCIDENT_BASE_WEEKS} weken ervoor`} name="incidentFactor" settings={signals} />
+              <SignalLine label="… en minstens zoveel meldingen" name="incidentMin" settings={signals} required />
+              <SignalLine label="Een vestiging sloot deze week minstens … dagen niet af" name="unclosedDays" settings={signals} />
+              <SignalLine label="Een annulering staat langer dan … dagen op de doorbelastlijst" name="chargeDays" settings={signals} />
+              <SignalLine label="Een vestiging gaf deze week op minstens … dagen te weinig auto’s aan Mobiliteit" name="shortDays" settings={signals} />
+              <SignalLine label="Meer dan … procent van de auto’s voor Mobiliteit is deze maand niet ingezet (vanaf 3 auto’s retour)" name="unusedPercent" settings={signals} />
+            </ul>
+            <SubmitButton>Signalen opslaan</SubmitButton>
+          </StatefulForm>
+        </Card>
       </div>
     </>
+  );
+}
+
+function SignalLine({ label, name, settings, required = false }: { label: string; name: keyof SignalSettings; settings: SignalSettings; required?: boolean }) {
+  const [min, max] = SIGNAL_BOUNDS[name];
+  return (
+    <li className="flex items-center justify-between gap-3 py-2">
+      <label htmlFor={`signal-${name}`}>{label}</label>
+      <input
+        id={`signal-${name}`}
+        name={name}
+        type="number"
+        min={min}
+        max={max}
+        required={required}
+        defaultValue={settings[name] ?? ''}
+        placeholder="uit"
+        className={numberClass}
+      />
+    </li>
   );
 }

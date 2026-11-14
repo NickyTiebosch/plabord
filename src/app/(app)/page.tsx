@@ -2,20 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { SubmitButton } from '@/components/client/form-controls';
-import { IconAlert, IconCheck, IconChevronRight, IconClipboard, IconCounter, IconGrid, IconLogout, IconSettings } from '@/components/icons';
+import { IconAlert, IconChart, IconCheck, IconChevronRight, IconClipboard, IconCounter, IconGrid, IconLogout, IconSettings } from '@/components/icons';
 import { AbsenceBadge, ScheduleLineView } from '@/components/schedule';
 import { Badge, Card, LinkButton, PageHeader, SectionTitle } from '@/components/ui';
 import { requireViewer, type Viewer } from '@/lib/auth/session';
 import { loadPlanningOverview } from '@/lib/db/admin-queries';
 import { loadClosures, loadCurrentLoans, loadEndOfDay, loadFirstLoanDates, loadLoanGroups } from '@/lib/db/loan-queries';
 import { loadPlanningSnapshot } from '@/lib/db/queries';
-import { loadCounterGroups, loadDayData, loadFirstClosedDates, loadWorkshops } from '@/lib/db/registration-queries';
-import { addDays, todayInAmsterdam } from '@/lib/engine/dates';
+import { loadCounterGroups, loadDayData, loadFirstClosedDates, loadWorkshops, mapIncident } from '@/lib/db/registration-queries';
+import { loadIncidentBuckets, loadLoansBetween, loadSignalSettings } from '@/lib/db/report-queries';
+import { addDays, eachDay, startOfIsoWeek, todayInAmsterdam } from '@/lib/engine/dates';
 import { computePersonalSchedule } from '@/lib/engine/schedule';
 import { parseTime } from '@/lib/engine/time';
 import type { IsoDate } from '@/lib/engine/types';
 import { loanSummary, recentWeekdays, type LoanSummary } from '@/lib/loans/status';
 import { completionGrid, incidentDate, pickGroup, recentDays, walkInRows } from '@/lib/registrations/status';
+import { reportSignals, signalsSince, type Signal } from '@/lib/reports/signals';
 import { buildMySchedule, type MyScheduleDay } from '@/lib/views/my-schedule';
 import { startShifts } from '@/lib/views/start';
 import { signOut } from '../actions';
@@ -69,6 +71,48 @@ async function loadAttention(viewer: Viewer, today: IsoDate): Promise<{ gaps: nu
   return { gaps: planning.gaps.length, requests: requests.count ?? 0 };
 }
 
+/**
+ * Signalen (fase 7, V69), voor beheerder en teamleider. Lukt het laden niet (bijvoorbeeld omdat de
+ * database van fase 7 er nog niet is), dan geen signalen: Start moet altijd werken.
+ */
+async function loadSignals(viewer: Viewer, today: IsoDate): Promise<Signal[]> {
+  if (!viewer.isLead) return [];
+  try {
+    const since = signalsSince(today);
+    const monday = startOfIsoWeek(today);
+    const [settings, groups, counterGroups, workshops, weekly, data, dayOff, charges, loans, endOfWeek] = await Promise.all([
+      loadSignalSettings(viewer.supabase),
+      loadLoanGroups(viewer.supabase),
+      loadCounterGroups(viewer.supabase),
+      loadWorkshops(viewer.supabase),
+      loadIncidentBuckets(viewer.supabase, 'week', since.weeks, today),
+      loadDayData(viewer.supabase, monday, today),
+      loadClosures(viewer.supabase, since.loans, today),
+      viewer.supabase.from('incident_reports').select('*').eq('charge', true).is('charged_at', null).limit(1000),
+      loadLoansBetween(viewer.supabase, since.loans, today),
+      Promise.resolve(eachDay(monday, today)),
+    ]);
+    const [firstClosed, firstLoans] = await Promise.all([
+      loadFirstClosedDates(viewer.supabase, counterGroups.map((group) => group.id)),
+      loadFirstLoanDates(viewer.supabase, groups.map((group) => group.id)),
+    ]);
+    return reportSignals({
+      today,
+      settings,
+      groups,
+      workshops,
+      weeklyIncidents: weekly,
+      completion: completionGrid(counterGroups, endOfWeek, today, data, dayOff, firstClosed),
+      openCharges: (charges.data ?? []).map(mapIncident),
+      loans,
+      closures: dayOff,
+      firstLoanDates: firstLoans,
+    });
+  } catch {
+    return [];
+  }
+}
+
 function DayLines({ day }: { day: MyScheduleDay }) {
   return (
     <div className="space-y-1">
@@ -118,7 +162,7 @@ export default async function StartPage() {
   const now = new Date();
   const today = todayInAmsterdam(now);
   const to = addDays(today, DAYS_AHEAD);
-  const [snapshot, loans, attention, registrations, toCharge] = await Promise.all([
+  const [snapshot, loans, attention, registrations, toCharge, signals] = await Promise.all([
     loadPlanningSnapshot(viewer.supabase, { from: today, to }),
     loadLoans(viewer, now, today),
     loadAttention(viewer, today),
@@ -131,6 +175,7 @@ export default async function StartPage() {
           .is('charged_at', null)
           .then((result) => result.count ?? 0)
       : Promise.resolve(0),
+    loadSignals(viewer, today),
   ]);
   const weeks = buildMySchedule(computePersonalSchedule(snapshot, viewer.employeeId, today, to), snapshot.groups, today);
   const shifts = startShifts(weeks);
@@ -155,6 +200,8 @@ export default async function StartPage() {
   if (viewer.isLead && toCharge > 0) {
     alerts.push({ href: '/meldingen/doorbelasten', text: `${plural(toCharge, 'annulering moet', 'annuleringen moeten')} nog worden doorbelast` });
   }
+  // Fase 7: de signalen, na wat er nu te doen is.
+  alerts.push(...signals.filter((signal) => !alerts.some((alert) => alert.text === signal.text)));
   const closedLine = registrations.closedToday ? 'De dag is afgesloten.' : 'De dag is nog niet afgesloten.';
 
   return (
@@ -277,6 +324,13 @@ export default async function StartPage() {
                 : `${plural(registrations.openDays, 'dag is', 'dagen zijn')} niet afgesloten.`}
             </p>
             <p>De invulcontrole, en Mobiliteit per werkdag.</p>
+          </Tile>
+        ) : null}
+
+        {viewer.isLead ? (
+          <Tile href="/rapporten" icon={<IconChart />} title="Rapporten">
+            <p>Binnenvallers, meldingen en Mobiliteit per week, maand of jaar.</p>
+            <p>{signals.length === 0 ? 'Geen signalen.' : `${plural(signals.length, 'signaal', 'signalen')} onder Let op.`}</p>
           </Tile>
         ) : null}
 

@@ -205,3 +205,12 @@ export function IconCar(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+/** Rapporten (fase 7): staven. */
+export function IconChart(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" />
+    </Icon>
+  );
+}
