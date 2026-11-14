@@ -54,6 +54,10 @@ export const AUDIT_ENTITIES: Record<string, string> = {
   walk_ins: 'Binnenvallers',
   incident_reports: 'Werkplaatsmeldingen',
   day_closures: 'Dag afgesloten',
+  // Fase 8.
+  parking_spots: 'Plekken',
+  vehicle_locations: 'Locatie',
+  handover_notes: 'Overdracht',
   export: 'Exports',
 };
 
@@ -114,6 +118,9 @@ const FIELD_LABELS: Record<string, string> = {
   rentlink_checked: 'RentLink gecontroleerd',
   charge_cancellation_from: 'doorbelasten vanaf',
   day_close_reminder_at: 'herinnering dag afsluiten',
+  // Fase 8.
+  spot_id: 'plek',
+  model: 'model',
   // Fase 7.
   signal_incident_factor: 'signaal meldingen (keer het gemiddelde)',
   signal_incident_min: 'signaal meldingen (minstens)',
@@ -151,6 +158,8 @@ interface Lookups {
    * werkplaats en dag halen we bij de regel zelf (binnenvallers, meldingen, afgesloten dagen).
    */
   context?: (entity: string, id: string | null | undefined) => Record<string, unknown> | null;
+  /** Fase 8: de naam van een plek. */
+  spotName?: (id: string | null | undefined) => string;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -171,6 +180,7 @@ function formatValue(field: string, value: unknown, lookups: Lookups): string {
   if (field === 'weekday') return weekdayShort(Number(value) as Weekday);
   if (field === 'kind') return isIncidentKind(value) ? INCIDENT_KIND_LABELS[value] : (KINDS[String(value)] ?? String(value));
   if (field === 'workshop_id') return lookups.workshopName?.(String(value)) ?? 'werkplaats';
+  if (field === 'spot_id') return lookups.spotName?.(String(value)) ?? 'plek';
   if (field === 'missing') return isMissing(value) ? MISSING_LABELS[value] : String(value);
   if (field === 'charged_at' && typeof value === 'string') return 'ja';
   if (field === 'handled_at' && typeof value === 'string') return 'ja';
@@ -187,7 +197,7 @@ function formatValue(field: string, value: unknown, lookups: Lookups): string {
 }
 
 /** Velden die alleen bijhouden wie het laatst iets deed: dat staat al bij "wie" in het logboek. */
-const BOOKKEEPING_FIELDS = new Set(['updated_by', 'closed_by', 'closed_at', 'charged_by']);
+const BOOKKEEPING_FIELDS = new Set(['updated_by', 'closed_by', 'closed_at', 'charged_by', 'moved_by', 'moved_at']);
 
 function changesText(row: AuditRow, lookups: Lookups): string | null {
   const details = record(row.details);
@@ -249,6 +259,9 @@ const VERBS: Record<string, [string, string, string]> = {
   walk_ins: ['Binnenvallers geteld', 'Binnenvallers bijgewerkt', 'Binnenvallers verwijderd'],
   incident_reports: ['Melding gemaakt', 'Melding gewijzigd', 'Melding verwijderd'],
   day_closures: ['Dag afgesloten', 'Dag afsluiten gewijzigd', 'Dag heropend'],
+  parking_spots: ['Plek toegevoegd', 'Plek gewijzigd', 'Plek verwijderd'],
+  vehicle_locations: ['Auto op een plek gezet', 'Auto verzet', 'Auto weg van het terrein'],
+  handover_notes: ['Overdracht geschreven', 'Overdracht gewijzigd', 'Overdracht verwijderd'],
 };
 
 const EXPORT_LABELS: Record<string, string> = {
@@ -256,6 +269,8 @@ const EXPORT_LABELS: Record<string, string> = {
   walk_ins: 'Binnenvallers geëxporteerd',
   incidents: 'Meldingen geëxporteerd',
   reports: 'Rapport geëxporteerd',
+  locations: 'Locatie geëxporteerd',
+  handover: 'Overdracht geëxporteerd',
 };
 
 /** Wat er bij volledig verwijderen (fase 3, V21) met de medewerker verdween, als aantallen. */
@@ -456,6 +471,29 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
             ]
               .filter(Boolean)
               .join(', ');
+      break;
+    }
+    case 'parking_spots':
+      detail =
+        row.action === 'update'
+          ? changesText(row, lookups)
+          : [formatValue('group_id', details.group_id, lookups), typeof details.name === 'string' ? details.name : null].filter(Boolean).join(', ');
+      break;
+    case 'handover_notes':
+      // Fase 8: zonder de tekst van de notitie.
+      if (row.action === 'delete' && row.source === 'opruimen') what = 'Overdracht opgeruimd (ouder dan 7 dagen)';
+      detail = row.action === 'update' ? null : formatValue('group_id', details.group_id, lookups);
+      break;
+    case 'vehicle_locations': {
+      // Fase 8: kenteken, vestiging en plek. Bij verzetten: van welke plek naar welke.
+      const which = row.action === 'update' ? (lookups.context?.(row.entity, row.entity_id) ?? null) : details;
+      const plate = which?.license_plate ? formatValue('license_plate', which.license_plate, lookups) : null;
+      if (row.action === 'update') {
+        detail = [plate, changesText(row, lookups)].filter(Boolean).join(': ') || null;
+      } else {
+        if (row.action === 'insert' && row.source === 'import') what = 'Auto ingelezen op een plek';
+        detail = [plate, formatValue('group_id', details.group_id, lookups), formatValue('spot_id', details.spot_id, lookups)].filter(Boolean).join(', ');
+      }
       break;
     }
     case 'vehicle_loans': {

@@ -56,7 +56,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
 - Een pagina laadt haar gegevens met `requireViewerWith` of `requireAdminWith` (besluit V31): tegelijk met de controle wie er kijkt, niet erna. Hebben de gegevens de kijker nodig, dan eerst `requireViewer()`.
-- Onderdelen (besluit V53): Start (`/`), Planbord, Mobiliteit (`/mobiliteit`, besluit V54: de uitleen van auto's), Binnenvallers (`/binnenvallers`), Meldingen (`/meldingen`), Controle (`/controle`, voor beheerder en teamleider), Rapporten (`/rapporten`, fase 7, voor beheerder en teamleider) en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
+- Onderdelen (besluit V53): Start (`/`), Planbord, Mobiliteit (`/mobiliteit`, besluit V54: de uitleen van auto's), Binnenvallers (`/binnenvallers`), Meldingen (`/meldingen`), Locatie (`/locatie`, fase 8, alleen met plekken), Controle (`/controle`, voor beheerder en teamleider), Rapporten (`/rapporten`, fase 7, voor beheerder en teamleider) en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
 - Geen AI of taalmodel in de roosterlogica.
 - Geen trackers, analytics, externe fonts of scripts van derden. Ook geen Vercel Analytics of Speed Insights.
@@ -81,12 +81,15 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Mobiliteit (V54): iedere actieve medewerker leest en meldt aan, voor elke vestiging met een balie. In de database heet het `vehicle_loans`, in de code `loans`.
 - Binnenvallers en meldingen (fase 6): `workshops`, `walk_ins`, `incident_reports` en `day_closures`, in de code `registrations`. Iedere actieve medewerker leest, telt, meldt en sluit de dag af. Wie iets meldde of aanmeldde, mag het op dezelfde dag zelf corrigeren (V59); daarna doet de teamleider dat. Werkplaatsen beheert de beheerder. Binnenvallers tellen gaat alleen via `adjust_walk_in`, zodat twee collega's elkaars tik niet overschrijven.
 - Rapporten (fase 7): `report_walk_ins` en `report_incidents` tellen op per week, maand of jaar, alleen voor `is_lead()`. De maandtotalen (`monthly_incident_totals`, `monthly_loan_totals`) houden de cijfers vast als meldingen en uitleen na 24 maanden verdwijnen; alleen de geplande taak werkt ze bij (`refresh_monthly_totals`, service role).
+- Locatie (fase 8): `parking_spots` beheert de beheerder; `vehicle_locations` bewaart alleen waar een auto nu staat, de geschiedenis staat in het logboek. Schrijven gaat via `place_vehicle`, `remove_vehicle` en (beheerder) `import_locations`. Zoeken op kenteken (`/zoeken`) toont alleen wat Planbord zelf weet.
 - Voor RPC-functies in `public`: `revoke execute ... from public, anon` en geef alleen `grant` aan wie ze echt nodig heeft.
 
 ## Privacy (harde regels)
 - Sla alleen op wat de planning en de registraties van het verhuurwerk nodig hebben: naam, werkmail, groep, rol, waar iemand mag invallen, vaste diensten, afwezigheid en invallen.
   - Sinds fase 4 ook de push-abonnementen van de eigen toestellen van een medewerker (besluit V28).
   - Sinds fase 6 binnenvallers (aantallen per werkplaats per dag), meldingen (soort, werkplaats, tijdstip, kenteken, contract- of reserveringsnummer, doorbelasten en een korte toelichting) en wie een dag afsloot. Nooit klantnamen. Het logboek bewaart geen bijzonderheden van een melding. Een melding verdwijnt 24 maanden na de datum.
+  - Sinds fase 8 waar een huurauto op het terrein staat: kenteken, plek, model en wie hem het laatst verzette. Geen klantgegevens.
+  - Sinds fase 8 de overdracht per vestiging: een korte notitie (hooguit 300 tekens) met wie hem schreef. Na 7 dagen weg; het logboek bewaart de tekst niet. Klantgegevens zijn niet nodig.
   - Sinds fase 5 de uitleen (besluit V41): kenteken, model, kilometerstand, bestemming, aan wie (persoon of afdeling), wie meegaf en terugnam, tijdstippen, ingezet ja of nee en een korte opmerking. Nooit klantnamen of andere klantgegevens. Het logboek bewaart geen vrije tekst van de uitleen. Een registratie verdwijnt 24 maanden na retour.
 - Afwezigheid heeft géén reden, soort of vrij tekstveld. Alles heet "Afwezig".
 - Rapporten en signalen (fase 7) tonen aantallen per vestiging en werkplaats, nooit per medewerker.
@@ -124,7 +127,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - Dat geldt ook voor schermafbeeldingen, video's en de PDF van de uitleg (besluit V30): alleen het verzonnen team.
 
 ## Teststrategie
-- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/`, (fase 5) `src/lib/loans/` en (fase 6) `src/lib/registrations/` en (fase 7) `src/lib/reports/`. Een test staat naast de code als `*.test.ts`.
+- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/`, (fase 5) `src/lib/loans/`, (fase 6) `src/lib/registrations/`, (fase 7) `src/lib/reports/` en (fase 8) `src/lib/locations/` en `src/lib/handover/`. Een test staat naast de code als `*.test.ts`.
 - Tests versturen nooit een echte mail of push: het versturen gaat via een transport dat je in tests vervangt.
 - Er is één gedeelde, fictieve teamfixture: `src/lib/engine/__fixtures__/team.ts`. Die heeft dezelfde opbouw als het echte team (zie SPEC, "Tests").
 - De databasetests in `supabase/tests/` draaien alle migraties op PGlite, met een nagebootst `auth`-schema en de rollen `anon`, `authenticated` en `service_role`. Ze controleren:

@@ -3,7 +3,7 @@
  * Puur: wie kijkt en welk pad open staat komen binnen als parameter. Een nieuw onderdeel
  * (binnenvallers, meldingen, uitloop) komt hier als extra regel bij.
  */
-export type ModuleId = 'start' | 'planbord' | 'mobiliteit' | 'binnenvallers' | 'meldingen' | 'controle' | 'rapporten' | 'beheer';
+export type ModuleId = 'start' | 'planbord' | 'mobiliteit' | 'binnenvallers' | 'meldingen' | 'locatie' | 'controle' | 'rapporten' | 'beheer';
 export type NavIcon =
   | 'home'
   | 'grid'
@@ -19,7 +19,9 @@ export type NavIcon =
   | 'alert'
   | 'euro'
   | 'car'
-  | 'chart';
+  | 'chart'
+  | 'pin'
+  | 'search';
 
 export interface NavTab {
   href: string;
@@ -35,6 +37,8 @@ export interface NavModule extends NavTab {
 
 export interface NavViewer {
   isLead: boolean;
+  /** Fase 8 (V73): heeft de eigen vestiging plekken (of, voor beheerder en teamleider, een vestiging)? */
+  locations?: boolean;
 }
 
 const LOANS = '/mobiliteit';
@@ -91,6 +95,19 @@ export function modulesFor(viewer: NavViewer): NavModule[] {
       { href: '/meldingen/archief', label: 'Archief', icon: 'archive' },
     ],
   });
+  // Fase 8 (V72, V73): waar staat een auto. Alleen als er plekken zijn.
+  if (viewer.locations) {
+    modules.push({
+      id: 'locatie',
+      href: '/locatie',
+      label: 'Locatie',
+      icon: 'pin',
+      tabs: [
+        { href: '/locatie', label: 'Terrein', icon: 'pin' },
+        { href: '/zoeken', label: 'Zoeken', icon: 'search' },
+      ],
+    });
+  }
   if (viewer.isLead) {
     // Alles wat beheerder en teamleider nakijken, op één plek (V55).
     modules.push({
@@ -128,6 +145,7 @@ export function moduleOf(path: string): ModuleId {
   if (under(path, LOANS)) return 'mobiliteit';
   if (under(path, '/binnenvallers')) return 'binnenvallers';
   if (under(path, '/meldingen')) return 'meldingen';
+  if (under(path, '/locatie') || under(path, '/zoeken')) return 'locatie';
   if (under(path, '/controle')) return 'controle';
   if (under(path, '/rapporten')) return 'rapporten';
   if (under(path, '/beheer')) return 'beheer';
@@ -136,7 +154,7 @@ export function moduleOf(path: string): ModuleId {
 }
 
 /** Tabs die het begin van een onderdeel zijn: actief op alles wat niet bij een andere tab hoort. */
-const ROOT_TABS = [LOANS, '/binnenvallers', '/meldingen', '/controle', '/rapporten'];
+const ROOT_TABS = [LOANS, '/binnenvallers', '/meldingen', '/locatie', '/controle', '/rapporten'];
 
 /** Is deze tab actief? Het rooster heeft een pad per vestiging; de eerste tab van een onderdeel vangt de rest. */
 export function isActiveTab(tab: NavTab, path: string, siblings: readonly NavTab[] = []): boolean {

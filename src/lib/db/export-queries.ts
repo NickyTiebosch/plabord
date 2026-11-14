@@ -58,6 +58,12 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
     client.from('walk_ins').select('*').eq('updated_by', employeeId),
     loadWorkshops(client),
   ]);
+  // Fase 8: de auto's die deze medewerker het laatst verzette. Zonder fase 8 in de database: geen.
+  const [locations, spots, handover] = await Promise.all([
+    client.from('vehicle_locations').select('license_plate, group_id, spot_id, moved_at').eq('moved_by', employeeId),
+    client.from('parking_spots').select('id, name'),
+    client.from('handover_notes').select('group_id, created_at, body').eq('created_by', employeeId),
+  ]);
   const counters = counterGroupsByEmployee(must(eligibility, 'de inzetbaarheid'));
   const name = employee.data.name;
   const lookups = {
@@ -96,6 +102,13 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
     closures: must(closures, 'de afgesloten dagen').map(mapDayClosure),
     walkIns: must(walkIns, 'de binnenvallers').map(mapWalkIn),
     workshops,
+    locations: (locations.data ?? []).map((row) => ({
+      plate: row.license_plate,
+      groupId: row.group_id,
+      spotName: spots.data?.find((spot) => spot.id === row.spot_id)?.name ?? '',
+      movedAt: row.moved_at,
+    })),
+    handover: (handover.data ?? []).map((row) => ({ groupId: row.group_id, createdAt: row.created_at, body: row.body })),
     // Wie iets deed, staat er niet in: alleen wat er wanneer met deze gegevens gebeurde.
     log: must(log, 'het logboek').map((row) => {
       const view = describeAudit(row as AuditRow, lookups);

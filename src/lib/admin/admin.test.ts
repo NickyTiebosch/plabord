@@ -417,6 +417,18 @@ describe('logboek', () => {
     expect(describeAudit(row({ entity: 'export', details: { kind: 'walk_ins' } }), more)).toMatchObject({ what: 'Binnenvallers geëxporteerd' });
     // Fase 7.
     expect(describeAudit(row({ entity: 'export', details: { kind: 'reports' } }), more)).toMatchObject({ what: 'Rapport geëxporteerd' });
+    // Fase 8.
+    const spots = { ...more, spotName: (id: string | null | undefined) => ({ a: 'Achter', z: 'Zijkant' })[id ?? ''] ?? 'verwijderde plek' };
+    const place = { entity: 'vehicle_locations', entity_id: 'l1', details: { license_plate: 'GHP39K', group_id: 'breda', spot_id: 'a' } };
+    expect(describeAudit(row(place), spots)).toMatchObject({ what: 'Auto op een plek gezet', detail: 'GHP-39-K, Breda, Achter' });
+    expect(
+      describeAudit(
+        row({ ...place, action: 'update', changed_fields: ['moved_at', 'moved_by', 'spot_id'], details: { spot_id: { old: 'a', new: 'z' } } }),
+        { ...spots, context: () => ({ license_plate: 'GHP39K' }) },
+      ),
+    ).toMatchObject({ what: 'Auto verzet', detail: 'GHP-39-K: plek: Achter → Zijkant' });
+    expect(describeAudit(row({ ...place, action: 'delete' }), spots)).toMatchObject({ what: 'Auto weg van het terrein' });
+    expect(describeAudit(row({ entity: 'handover_notes', details: { group_id: 'breda' } }), spots)).toMatchObject({ what: 'Overdracht geschreven', detail: 'Breda' });
     expect(
       describeAudit(row({ entity: 'settings', action: 'update', changed_fields: ['signal_charge_days'], details: { signal_charge_days: { old: 14, new: 21 } } }), more),
     ).toMatchObject({ detail: 'signaal dagen op de doorbelastlijst: 14 → 21' });

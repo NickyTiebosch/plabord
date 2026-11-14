@@ -269,3 +269,13 @@ Gebouwd op 14 november 2026 (`docs/PLAN-fase-7.md`, besluiten V66–V71).
 - **Signalen** op Start: vaste regels met instelbare grenzen. Geen mail of push.
 - **Privacy:** alleen aantallen per vestiging en werkplaats, nooit per medewerker. Maandtotalen zonder kentekens, nummers of namen.
 
+## Aanvulling fase 8 (november 2026): locatie en zoeken
+
+Gebouwd op 14 november 2026 (`docs/PLAN-fase-8.md`, besluiten V72–V78).
+
+- **Locatie:** per vestiging de plekken op het terrein, en per auto waar die nu staat. Zetten en verzetten met een kenteken en een plek; weg van het terrein met één tik. Vervangt het bestand Locatie huurauto's.
+- **Zoeken op kenteken** vanaf elke pagina: plek, uitleen en meldingen. Geen wagenkaart en geen kopie van Rentwise.
+- **Plek bij retour** van Mobiliteit, met één tik.
+- **Overdracht per vestiging:** een korte notitie voor de collega van morgen, 7 dagen zichtbaar.
+- **Privacy:** kenteken, plek, model en wie het laatst verzette. Geen klantgegevens. De geschiedenis staat in het logboek.
+

@@ -7,12 +7,13 @@ import { loadEmployeeNames } from '@/lib/db/admin-queries';
 import { loadClosures, loadCurrentLoans, loadEndOfDay, loadLoanGroups } from '@/lib/db/loan-queries';
 import { addDays, todayInAmsterdam } from '@/lib/engine/dates';
 import { parseTime } from '@/lib/engine/time';
-import { formatPlate } from '@/lib/loans/plates';
+import { formatPlate, normalizePlate } from '@/lib/loans/plates';
 import { formatLoanMoment, isOverdue, sortOpenLoans } from '@/lib/loans/status';
 import { canEditOwn } from '@/lib/registrations/status';
 import { localMoment } from '@/lib/loans/time';
 import { DESTINATION_LABELS, type VehicleLoan } from '@/lib/loans/types';
-import { returnNotUsed, undoReturn } from './actions';
+import { placeAfterReturn, returnNotUsed, undoReturn } from './actions';
+import { loadSpots } from '@/lib/db/location-queries';
 import { LoanFlash, type FlashParams } from './flash';
 
 export const metadata: Metadata = { title: 'Mobiliteit' };
@@ -34,13 +35,15 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const now = new Date();
   const today = todayInAmsterdam(now);
-  const [viewer, [groups, loans, names, closures, endOfDay]] = await requireViewerWith((supabase) =>
+  const [viewer, [groups, loans, names, closures, endOfDay, spots]] = await requireViewerWith((supabase) =>
     Promise.all([
       loadLoanGroups(supabase),
       loadCurrentLoans(supabase, addDays(today, -LOOKBACK_DAYS)),
       loadEmployeeNames(supabase),
       loadClosures(supabase, addDays(today, -LOOKBACK_DAYS), today),
       loadEndOfDay(supabase),
+      // Fase 8: de plekken, om na een retour te vragen waar de auto staat. Zonder fase 8: geen.
+      loadSpots(supabase).catch(() => []),
     ]),
   );
   const groupName = (id: string) => groups.find((group) => group.id === id)?.name ?? id;
@@ -54,6 +57,16 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
     .filter((loan) => loan.returnedAt && localMoment(loan.returnedAt).date === today)
     .sort((a, b) => ((a.returnedAt ?? '') < (b.returnedAt ?? '') ? 1 : -1));
   const end = parseTime(endOfDay) ?? '18:00';
+  // Net retour gemeld: waar staat de auto nu? Alleen als de vestiging plekken heeft.
+  const justReturned =
+    params.melding === 'retour' || params.melding === 'retour-niet-ingezet'
+      ? returnedToday.find((loan) => loan.plate === normalizePlate(params.kenteken ?? ''))
+      : undefined;
+  const returnSpots = justReturned
+    ? spots
+        .filter((spot) => spot.groupId === justReturned.groupId && spot.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'nl', { numeric: true }))
+    : [];
 
   return (
     <>
@@ -67,6 +80,27 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
         }
       />
       <LoanFlash params={params} />
+      {justReturned && returnSpots.length > 0 ? (
+        <Card className="mb-4 p-4">
+          <p className="mb-3 text-sm font-medium text-slate-900">
+            Waar staat <span className="font-mono">{formatPlate(justReturned.plate)}</span> nu?
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {returnSpots.map((spot) => (
+              <form key={spot.id} action={placeAfterReturn}>
+                <input type="hidden" name="kenteken" value={justReturned.plate} />
+                <input type="hidden" name="spotId" value={spot.id} />
+                <SubmitButton size="sm" variant="secondary">
+                  {spot.name}
+                </SubmitButton>
+              </form>
+            ))}
+            <Link href="/mobiliteit" className="inline-flex min-h-9 items-center px-2 text-sm text-slate-600 underline underline-offset-2">
+              Niet op het terrein
+            </Link>
+          </div>
+        </Card>
+      ) : null}
 
       <section className="mb-6" aria-labelledby="nu-uit">
         <SectionTitle className="mb-2">

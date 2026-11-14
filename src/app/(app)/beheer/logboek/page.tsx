@@ -54,21 +54,32 @@ export default async function AuditLogPage({
         .map((row) => row.entity_id as string),
     ),
   ];
-  const [walkInIds, incidentIds, closureIds] = [contextIds('walk_ins'), contextIds('incident_reports'), contextIds('day_closures')];
-  const [workshops, walkInRows, incidentRows, closureRows] = await Promise.all([
+  const [walkInIds, incidentIds, closureIds, locationIds] = [
+    contextIds('walk_ins'),
+    contextIds('incident_reports'),
+    contextIds('day_closures'),
+    contextIds('vehicle_locations'),
+  ];
+  const [workshops, walkInRows, incidentRows, closureRows, spotRows, locationRows] = await Promise.all([
     supabase.from('workshops').select('id, name'),
     walkInIds.length > 0 ? supabase.from('walk_ins').select('id, group_id, workshop_id, date').in('id', walkInIds) : null,
     incidentIds.length > 0 ? supabase.from('incident_reports').select('id, group_id, workshop_id, kind, occurred_at').in('id', incidentIds) : null,
     closureIds.length > 0 ? supabase.from('day_closures').select('id, group_id, date').in('id', closureIds) : null,
+    // Fase 8: de namen van de plekken, en bij verzetten het kenteken.
+    supabase.from('parking_spots').select('id, name'),
+    locationIds.length > 0 ? supabase.from('vehicle_locations').select('id, license_plate').in('id', locationIds) : null,
   ]);
   const contexts = new Map<string, Record<string, unknown>>();
-  for (const row of [...(walkInRows?.data ?? []), ...(incidentRows?.data ?? []), ...(closureRows?.data ?? [])]) contexts.set(row.id, row);
+  for (const row of [...(walkInRows?.data ?? []), ...(incidentRows?.data ?? []), ...(closureRows?.data ?? []), ...(locationRows?.data ?? [])]) {
+    contexts.set(row.id, row);
+  }
   const lookups = {
     employeeName: (id: string | null | undefined) => (id ? (names.get(id) ?? 'verwijderde medewerker') : 'onbekend'),
     groupName: (id: string | null | undefined) => groups.find((group) => group.id === id)?.name ?? String(id ?? ''),
     substitution: (id: string | null | undefined) => (id ? (slots.get(id) ?? null) : null),
     workshopName: (id: string | null | undefined) => workshops.data?.find((workshop) => workshop.id === id)?.name ?? 'verwijderde werkplaats',
     context: (_entity: string, id: string | null | undefined) => (id ? (contexts.get(id) ?? null) : null),
+    spotName: (id: string | null | undefined) => spotRows.data?.find((spot) => spot.id === id)?.name ?? 'verwijderde plek',
   };
   const rows = (result.data ?? []).map((row) => describeAudit(row as AuditRow, lookups));
   const total = result.count ?? rows.length;

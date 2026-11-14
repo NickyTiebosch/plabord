@@ -376,5 +376,8 @@ describe('fase 5: testgegevens voor het testproject', () => {
     expect(phase6.rows[0]?.walk_ins).toBeGreaterThan(0);
     expect(phase6.rows[0]?.closures).toBeGreaterThan(0);
     expect(phase6.rows[0]?.incidents).toBe(5);
+    // Fase 8: auto's op het terrein.
+    const parked = await db.query<{ n: number }>(`select count(*)::int as n from public.vehicle_locations`);
+    expect(parked.rows[0]?.n).toBe(4);
   });
 });

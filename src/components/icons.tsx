@@ -214,3 +214,23 @@ export function IconChart(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+/** Locatie (fase 8): een speld op de kaart. */
+export function IconPin(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 21s-6-5.5-6-11a6 6 0 1 1 12 0c0 5.5-6 11-6 11z" />
+      <circle cx="12" cy="10" r="2.2" />
+    </Icon>
+  );
+}
+
+/** Zoeken (fase 8): een vergrootglas. */
+export function IconSearch(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="6" />
+      <path d="M20 20l-4.5-4.5" />
+    </Icon>
+  );
+}

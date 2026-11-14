@@ -8,7 +8,7 @@ import { requireViewer, type Viewer } from '@/lib/auth/session';
 import { loadLoan, loadLoanGroups } from '@/lib/db/loan-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
 import { correctionChanges, parseCorrectionForm, parseHandOutForm, parseReturnForm } from '@/lib/loans/forms';
-import { formatPlate } from '@/lib/loans/plates';
+import { formatPlate, normalizePlate } from '@/lib/loans/plates';
 import { formatLoanMoment } from '@/lib/loans/status';
 import { canEditOwn } from '@/lib/registrations/status';
 
@@ -103,6 +103,19 @@ export async function returnNotUsed(formData: FormData): Promise<void> {
   const plate = String(formData.get('kenteken') ?? '');
   if (result.error) back(LIST, 'retour-mislukt', { kenteken: plate });
   back(LIST, result.data === 0 ? 'al-retour' : 'retour-niet-ingezet', { kenteken: plate });
+}
+
+/**
+ * Na een retour: waar staat de auto nu (fase 8)? Eén tik op een plek zet hem bij Locatie. Lukt het
+ * niet, dan blijft de retour gewoon staan.
+ */
+export async function placeAfterReturn(formData: FormData): Promise<void> {
+  const viewer = await requireViewer();
+  const plate = normalizePlate(String(formData.get('kenteken') ?? ''));
+  const spotId = formData.get('spotId');
+  if (!plate || !isUuid(spotId)) back(LIST, 'plaatsen-mislukt');
+  const result = await viewer.supabase.rpc('place_vehicle', { p_plate: plate, p_spot_id: spotId, p_model: null });
+  back(LIST, result.error ? 'plaatsen-mislukt' : 'geplaatst', { kenteken: plate });
 }
 
 /** Retour ongedaan maken (V47): wie het meldde, vandaag; daarna de teamleider of beheerder. */
