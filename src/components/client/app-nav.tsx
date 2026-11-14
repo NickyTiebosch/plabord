@@ -13,6 +13,7 @@ import {
   IconClipboard,
   IconCounter,
   IconEuro,
+  IconChart,
   IconGrid,
   IconHome,
   IconPlus,
@@ -37,6 +38,7 @@ const ICONS: Record<NavIcon, ReactNode> = {
   alert: <IconAlert />,
   euro: <IconEuro />,
   car: <IconCar />,
+  chart: <IconChart />,
 };
 
 /** Is deze link actief? Een onderdeel als het pad erbij hoort, een tab volgens isActiveTab. */

@@ -60,5 +60,12 @@
       "20261114000100_registrations.sql",
       "20261114000200_rpc_phase6.sql"
     ]
+  },
+  "fase-7": {
+    "title": "Fase 7: rapporten en signalen",
+    "note": "Draai eerst fase-1.sql tot en met fase-6.sql. Deze bundel voegt twee tabellen met maandtotalen, zes instellingen voor de signalen en functies voor de rapporten toe; de app van fase 6 merkt er niets van.",
+    "migrations": [
+      "20261115000100_reports.sql"
+    ]
   }
 }

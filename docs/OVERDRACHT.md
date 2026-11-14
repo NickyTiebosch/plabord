@@ -76,6 +76,7 @@ Alles uit Planbord kan naar Excel, in de opbouw waarmee het team werkte. Daarna 
 | Mobiliteit: Registratie (nu uit) en Archief (retour) | Beheer → Export → **Mobiliteit downloaden**, of Mobiliteit → Archief | beheerder en teamleider |
 | Binnenvallers: per vestiging een tabblad, per dag een regel | Beheer → Export → **Binnenvallers downloaden**, of Binnenvallers → Overzicht | beheerder en teamleider |
 | Meldingen: per vestiging een tabblad, en Doorbelasten | Beheer → Export → **Meldingen downloaden**, of Meldingen → Archief | beheerder en teamleider |
+| Rapporten: elke tabel een tabblad | Rapporten → het rapport → **Download (Excel)** | beheerder en teamleider |
 | Alles over één medewerker (inzageverzoek) | Beheer → Medewerkers → de naam → **Gegevens downloaden** | beheerder |
 
 Elke export staat in het logboek.
@@ -123,7 +124,7 @@ Na het wijzigen: **Deployments → Redeploy** van de nieuwste productieversie, w
 ## Controle na de overdracht
 
 - [ ] Inloggen met een code werkt, en de mail met de code komt uit de nieuwe mailbox.
-- [ ] Start, Mijn rooster, Rooster, Verlof, Mobiliteit, Binnenvallers en Meldingen tonen de bekende gegevens.
+- [ ] Start, Mijn rooster, Rooster, Verlof, Mobiliteit, Binnenvallers, Meldingen en Rapporten tonen de bekende gegevens.
 - [ ] Beheer → Instellingen → **Testmail naar mij** en **Testmelding naar mij** werken.
 - [ ] Na een uur: Beheer → Mails toont dat de geplande taak draaide.
 - [ ] Een export werkt en staat in het logboek.

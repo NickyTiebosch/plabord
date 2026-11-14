@@ -3,7 +3,7 @@
  * Puur: wie kijkt en welk pad open staat komen binnen als parameter. Een nieuw onderdeel
  * (binnenvallers, meldingen, uitloop) komt hier als extra regel bij.
  */
-export type ModuleId = 'start' | 'planbord' | 'mobiliteit' | 'binnenvallers' | 'meldingen' | 'controle' | 'beheer';
+export type ModuleId = 'start' | 'planbord' | 'mobiliteit' | 'binnenvallers' | 'meldingen' | 'controle' | 'rapporten' | 'beheer';
 export type NavIcon =
   | 'home'
   | 'grid'
@@ -18,7 +18,8 @@ export type NavIcon =
   | 'counter'
   | 'alert'
   | 'euro'
-  | 'car';
+  | 'car'
+  | 'chart';
 
 export interface NavTab {
   href: string;
@@ -102,6 +103,19 @@ export function modulesFor(viewer: NavViewer): NavModule[] {
         { href: '/controle/mobiliteit', label: 'Mobiliteit', icon: 'car' },
       ],
     });
+    // Fase 7 (V66): de rapporten, per week, maand of jaar.
+    modules.push({
+      id: 'rapporten',
+      href: '/rapporten',
+      label: 'Rapporten',
+      icon: 'chart',
+      tabs: [
+        { href: '/rapporten', label: 'Overzicht', icon: 'chart' },
+        { href: '/rapporten/binnenvallers', label: 'Binnenvallers', icon: 'counter' },
+        { href: '/rapporten/meldingen', label: 'Meldingen', icon: 'alert' },
+        { href: '/rapporten/mobiliteit', label: 'Mobiliteit', icon: 'car' },
+      ],
+    });
     modules.push({ id: 'beheer', href: '/beheer', label: 'Beheer', icon: 'settings', tabs: [] });
   }
   return modules;
@@ -115,13 +129,14 @@ export function moduleOf(path: string): ModuleId {
   if (under(path, '/binnenvallers')) return 'binnenvallers';
   if (under(path, '/meldingen')) return 'meldingen';
   if (under(path, '/controle')) return 'controle';
+  if (under(path, '/rapporten')) return 'rapporten';
   if (under(path, '/beheer')) return 'beheer';
   if (['/mijn-rooster', '/rooster', '/verlof', '/agenda'].some((prefix) => under(path, prefix))) return 'planbord';
   return 'start';
 }
 
 /** Tabs die het begin van een onderdeel zijn: actief op alles wat niet bij een andere tab hoort. */
-const ROOT_TABS = [LOANS, '/binnenvallers', '/meldingen', '/controle'];
+const ROOT_TABS = [LOANS, '/binnenvallers', '/meldingen', '/controle', '/rapporten'];
 
 /** Is deze tab actief? Het rooster heeft een pad per vestiging; de eerste tab van een onderdeel vangt de rest. */
 export function isActiveTab(tab: NavTab, path: string, siblings: readonly NavTab[] = []): boolean {

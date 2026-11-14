@@ -135,6 +135,20 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Beheer → Export:** binnenvallers en meldingen, in de opbouw van de oude bestanden.
 - Zie het plan van fase 6 (besluiten V55–V65).
 
+### Fase 7: rapporten en signalen
+
+**Voor beheerder en teamleider**
+- **Rapporten** (`/rapporten`): Overzicht, Binnenvallers, Meldingen en Mobiliteit.
+  - Kies per week, per maand of per jaar, hoeveel perioden, of losse maanden met vinkjes, en een vestiging. De keuze staat in het adres: een rapport kun je delen of bewaren als favoriet.
+  - Grafieken en tabellen, met het verschil met de periode ervoor. Meldingen ook per 100 binnenvallers, zodat drukke en rustige werkplaatsen eerlijk te vergelijken zijn.
+  - **Download (Excel)** bij elk rapport, met dezelfde cijfers. Elke download staat in het logboek.
+  - Alleen aantallen per vestiging en werkplaats, nooit per medewerker.
+- **Signalen** onder Let op op Start, bijvoorbeeld een werkplaats met veel meer meldingen dan gewoonlijk, of annuleringen die al lang op de doorbelastlijst staan. Geen mail of push.
+
+**Voor beheerders**
+- **Instellingen → Signalen:** de grenzen per signaal; een leeg vak zet het uit.
+- Zie het plan van fase 7 (besluiten V66–V71).
+
 ### Uitleg voor collega's
 
 - **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan tien korte video's op, met de stappen eronder:
@@ -215,7 +229,7 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
    - Het script nog een keer draaien kan geen kwaad: bestaande tabellen en gegevens blijven staan.
-4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql), [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql), [`supabase/setup/fase-5.sql`](supabase/setup/fase-5.sql) en [`supabase/setup/fase-6.sql`](supabase/setup/fase-6.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
+4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql), [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql), [`supabase/setup/fase-5.sql`](supabase/setup/fase-5.sql), [`supabase/setup/fase-6.sql`](supabase/setup/fase-6.sql) en [`supabase/setup/fase-7.sql`](supabase/setup/fase-7.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
 
 ### Stap 2. Inloggen instellen
 
@@ -515,6 +529,7 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
   - Geen klantnamen of andere klantgegevens; bij de toelichting staat dat ze niet nodig zijn.
   - Het logboek bewaart geen toelichting. Een melding verdwijnt 24 maanden na de datum vanzelf.
   - De herinnering om de dag af te sluiten noemt alleen de vestiging en de dag.
+- Rapporten en signalen (fase 7) tonen alleen aantallen per vestiging en werkplaats, nooit per medewerker. De maandtotalen bewaren geen kentekens, nummers of namen.
 - De teamleider (fase 5) ziet geen werkmails. Mails en pushmeldingen na een actie van een teamleider verstuurt de server met de secret key.
 - Pushmeldingen (fase 4):
   - je zet ze zelf aan, per toestel, en ze gaan alleen over je eigen rooster;

@@ -41,6 +41,12 @@ export interface Database {
           mail_enabled: boolean;
           charge_cancellation_from: string;
           day_close_reminder_at: string | null;
+          signal_incident_factor: number | null;
+          signal_incident_min: number;
+          signal_unclosed_days: number | null;
+          signal_charge_days: number | null;
+          signal_short_days: number | null;
+          signal_unused_percent: number | null;
           updated_at: Timestamp;
         };
         Insert: { id?: boolean };
@@ -54,6 +60,12 @@ export interface Database {
           mail_enabled?: boolean;
           charge_cancellation_from?: string;
           day_close_reminder_at?: string | null;
+          signal_incident_factor?: number | null;
+          signal_incident_min?: number;
+          signal_unclosed_days?: number | null;
+          signal_charge_days?: number | null;
+          signal_short_days?: number | null;
+          signal_unused_percent?: number | null;
         };
         Relationships: [];
       };
@@ -457,6 +469,18 @@ export interface Database {
         Update: { devices?: number };
         Relationships: [];
       };
+      monthly_incident_totals: {
+        Row: { month: string; group_id: string; workshop_id: string; kind: string; total: number; chargeable: number; charged: number; refreshed_at: Timestamp };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      monthly_loan_totals: {
+        Row: { month: string; group_id: string; destination: string; total: number; used: number; unused: number; refreshed_at: Timestamp };
+        Insert: Record<string, never>;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       audit_log: {
         Row: {
           id: number;
@@ -512,6 +536,15 @@ export interface Database {
       reopen_day: { Args: { p_group_id: string; p_date: string }; Returns: number };
       set_incident_charged: { Args: { p_id: string; p_charged: boolean }; Returns: number };
       import_registrations: { Args: { plan: Json }; Returns: Json };
+      refresh_monthly_totals: { Args: Record<string, never>; Returns: number };
+      report_walk_ins: {
+        Args: { p_unit: string; p_from: string; p_to: string };
+        Returns: { bucket: string; group_id: string; workshop_id: string; total: number }[];
+      };
+      report_incidents: {
+        Args: { p_unit: string; p_from: string; p_to: string };
+        Returns: { bucket: string; group_id: string; workshop_id: string; kind: string; total: number; chargeable: number; charged: number }[];
+      };
       log_export: { Args: { p_kind: string; p_employee_id: string | null }; Returns: undefined };
       register_push_subscription: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string }; Returns: undefined };
       return_vehicle_loan: {

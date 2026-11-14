@@ -415,6 +415,11 @@ describe('logboek', () => {
     });
     expect(describeAudit(row({ entity: 'export', details: { kind: 'incidents' } }), more)).toMatchObject({ what: 'Meldingen geëxporteerd' });
     expect(describeAudit(row({ entity: 'export', details: { kind: 'walk_ins' } }), more)).toMatchObject({ what: 'Binnenvallers geëxporteerd' });
+    // Fase 7.
+    expect(describeAudit(row({ entity: 'export', details: { kind: 'reports' } }), more)).toMatchObject({ what: 'Rapport geëxporteerd' });
+    expect(
+      describeAudit(row({ entity: 'settings', action: 'update', changed_fields: ['signal_charge_days'], details: { signal_charge_days: { old: 14, new: 21 } } }), more),
+    ).toMatchObject({ detail: 'signaal dagen op de doorbelastlijst: 14 → 21' });
   });
 
   it('beschrijft de uitleen zonder vrije tekst, en de teamleider (fase 5)', () => {

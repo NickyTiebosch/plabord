@@ -260,3 +260,12 @@ Toegevoegd op 13 november 2026 (`docs/PLAN-fase-6.md`, besluiten V55–V65), geb
 - Wie iets meldde, corrigeert het op dezelfde dag zelf; daarna de teamleider of beheerder.
 - **Privacy:** aantallen, en per melding soort, tijdstip, kenteken, contract- of reserveringsnummer, doorbelasten en een korte toelichting. Nooit klantgegevens. Een melding verdwijnt na 24 maanden.
 - **Export** in de opbouw van de oude bestanden, per vestiging een tabblad.
+
+## Aanvulling fase 7 (november 2026): rapporten en signalen
+
+Gebouwd op 14 november 2026 (`docs/PLAN-fase-7.md`, besluiten V66–V71).
+
+- **Rapporten** voor beheerder en teamleider: binnenvallers, meldingen (ook per 100 binnenvallers en doorbelasten) en Mobiliteit, per week, maand of jaar, met losse maanden en per vestiging. Met grafieken, het verschil met de periode ervoor, en een Excel-download.
+- **Signalen** op Start: vaste regels met instelbare grenzen. Geen mail of push.
+- **Privacy:** alleen aantallen per vestiging en werkplaats, nooit per medewerker. Maandtotalen zonder kentekens, nummers of namen.
+

@@ -8,7 +8,7 @@ const labels = (items: { label: string }[]) => items.map((item) => item.label);
 describe('de onderdelen (V53)', () => {
   it('toont Mobiliteit aan iedereen (V54), en Beheer alleen aan beheerder en teamleider', () => {
     expect(labels(modulesFor(employee))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Meldingen']);
-    expect(labels(modulesFor(lead))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Meldingen', 'Controle', 'Beheer']);
+    expect(labels(modulesFor(lead))).toEqual(['Start', 'Planbord', 'Mobiliteit', 'Binnenvallers', 'Meldingen', 'Controle', 'Rapporten', 'Beheer']);
   });
 
   it('geeft Controle als eigen onderdeel aan beheerder en teamleider, met de invulcontrole en Mobiliteit (V55)', () => {
@@ -16,6 +16,10 @@ describe('de onderdelen (V53)', () => {
     expect(tabs(employee, 'mobiliteit')).toEqual(['Nu uit', 'Aanmelden', 'Archief']);
     expect(tabs(lead, 'controle')).toEqual(['Invulcontrole', 'Mobiliteit']);
     expect(tabs(employee, 'controle')).toEqual([]);
+    // Fase 7 (V66): de rapporten, alleen voor beheerder en teamleider.
+    expect(tabs(lead, 'rapporten')).toEqual(['Overzicht', 'Binnenvallers', 'Meldingen', 'Mobiliteit']);
+    expect(tabs(employee, 'rapporten')).toEqual([]);
+    expect(moduleOf('/rapporten/meldingen')).toBe('rapporten');
     expect(tabs(employee, 'meldingen')).toEqual(['Meldingen', 'Nieuw', 'Doorbelasten', 'Archief']);
   });
 
@@ -47,6 +51,8 @@ describe('de onderdelen (V53)', () => {
     expect(active(employee, 'meldingen', '/meldingen/doorbelasten')).toEqual(['Doorbelasten']);
     expect(active(lead, 'controle', '/controle')).toEqual(['Invulcontrole']);
     expect(active(lead, 'controle', '/controle/mobiliteit')).toEqual(['Mobiliteit']);
+    expect(active(lead, 'rapporten', '/rapporten')).toEqual(['Overzicht']);
+    expect(active(lead, 'rapporten', '/rapporten/mobiliteit')).toEqual(['Mobiliteit']);
     expect(active(employee, 'planbord', '/rooster/breda')).toEqual(['Rooster']);
   });
 

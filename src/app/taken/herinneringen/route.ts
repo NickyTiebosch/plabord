@@ -19,7 +19,7 @@ function authorized(request: Request): boolean {
 
 /**
  * De geplande taak voor mails (fase 3): mislukte mails opnieuw proberen, om 16:00 de herinneringen
- * voor morgen (V15), en de wachtrij opruimen. Geen sessie: daarom met de secret key (besluit V17).
+ * voor morgen (V15), de wachtrij opruimen, en (fase 7) de maandtotalen van de rapporten bijwerken. Geen sessie: daarom met de secret key (besluit V17).
  * Het antwoord bevat alleen aantallen.
  *
  * Vercel Cron roept dit elk uur aan (vercel.json, besluit V32): met GET, en met CRON_SECRET als
@@ -38,7 +38,17 @@ async function runJob(request: Request) {
     } catch (error) {
       console.error('Herinnering dag afsluiten mislukt', error instanceof Error ? error.message : error);
     }
-    return Response.json({ ...result, dayClose }, { headers: HEADERS });
+    // Fase 7: de maandtotalen voor de rapporten bijwerken, zodat de jaarcijfers blijven kloppen als
+    // meldingen en uitleen na 24 maanden verdwijnen.
+    let monthlyTotals = 0;
+    try {
+      const refreshed = await client.rpc('refresh_monthly_totals');
+      if (refreshed.error) throw new Error(refreshed.error.message);
+      monthlyTotals = refreshed.data ?? 0;
+    } catch (error) {
+      console.error('Maandtotalen bijwerken mislukt', error instanceof Error ? error.message : error);
+    }
+    return Response.json({ ...result, dayClose, monthlyTotals }, { headers: HEADERS });
   } catch (error) {
     console.error('Taak voor mails mislukt', error instanceof Error ? error.message : error);
     return new Response('Mislukt', { status: 500, headers: HEADERS });

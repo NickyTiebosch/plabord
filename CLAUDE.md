@@ -56,7 +56,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
 - Een pagina laadt haar gegevens met `requireViewerWith` of `requireAdminWith` (besluit V31): tegelijk met de controle wie er kijkt, niet erna. Hebben de gegevens de kijker nodig, dan eerst `requireViewer()`.
-- Onderdelen (besluit V53): Start (`/`), Planbord, Mobiliteit (`/mobiliteit`, besluit V54: de uitleen van auto's), Binnenvallers (`/binnenvallers`), Meldingen (`/meldingen`), Controle (`/controle`, voor beheerder en teamleider) en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
+- Onderdelen (besluit V53): Start (`/`), Planbord, Mobiliteit (`/mobiliteit`, besluit V54: de uitleen van auto's), Binnenvallers (`/binnenvallers`), Meldingen (`/meldingen`), Controle (`/controle`, voor beheerder en teamleider), Rapporten (`/rapporten`, fase 7, voor beheerder en teamleider) en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
 - Geen AI of taalmodel in de roosterlogica.
 - Geen trackers, analytics, externe fonts of scripts van derden. Ook geen Vercel Analytics of Speed Insights.
@@ -80,6 +80,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Teamleider (fase 5, V43): afwezigheid, invallen, roosterwijzigingen voor één dag en genegeerde gaten gebruiken `is_lead()`, net als de registraties. Medewerkers, accounts, vaste diensten, sluitingsdagen, normen en instellingen blijven `is_admin()`. In de app: `requireLead()` en `requireLeadWith()`.
 - Mobiliteit (V54): iedere actieve medewerker leest en meldt aan, voor elke vestiging met een balie. In de database heet het `vehicle_loans`, in de code `loans`.
 - Binnenvallers en meldingen (fase 6): `workshops`, `walk_ins`, `incident_reports` en `day_closures`, in de code `registrations`. Iedere actieve medewerker leest, telt, meldt en sluit de dag af. Wie iets meldde of aanmeldde, mag het op dezelfde dag zelf corrigeren (V59); daarna doet de teamleider dat. Werkplaatsen beheert de beheerder. Binnenvallers tellen gaat alleen via `adjust_walk_in`, zodat twee collega's elkaars tik niet overschrijven.
+- Rapporten (fase 7): `report_walk_ins` en `report_incidents` tellen op per week, maand of jaar, alleen voor `is_lead()`. De maandtotalen (`monthly_incident_totals`, `monthly_loan_totals`) houden de cijfers vast als meldingen en uitleen na 24 maanden verdwijnen; alleen de geplande taak werkt ze bij (`refresh_monthly_totals`, service role).
 - Voor RPC-functies in `public`: `revoke execute ... from public, anon` en geef alleen `grant` aan wie ze echt nodig heeft.
 
 ## Privacy (harde regels)
@@ -88,6 +89,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - Sinds fase 6 binnenvallers (aantallen per werkplaats per dag), meldingen (soort, werkplaats, tijdstip, kenteken, contract- of reserveringsnummer, doorbelasten en een korte toelichting) en wie een dag afsloot. Nooit klantnamen. Het logboek bewaart geen bijzonderheden van een melding. Een melding verdwijnt 24 maanden na de datum.
   - Sinds fase 5 de uitleen (besluit V41): kenteken, model, kilometerstand, bestemming, aan wie (persoon of afdeling), wie meegaf en terugnam, tijdstippen, ingezet ja of nee en een korte opmerking. Nooit klantnamen of andere klantgegevens. Het logboek bewaart geen vrije tekst van de uitleen. Een registratie verdwijnt 24 maanden na retour.
 - Afwezigheid heeft géén reden, soort of vrij tekstveld. Alles heet "Afwezig".
+- Rapporten en signalen (fase 7) tonen aantallen per vestiging en werkplaats, nooit per medewerker.
 - Beheerders zien per medewerker wanneer die voor het laatst inlogde en op hoeveel toestellen meldingen aanstaan (besluit V38).
   - Het tijdstip komt uit Supabase Auth, via `public.employee_sign_ins()`, die alleen beheerders mogen aanroepen. Planbord slaat daarvoor niets extra op en legt geen gebruik van de app vast.
 - E-mailadressen staan alleen in `employee_accounts`.
@@ -101,6 +103,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
     - (fase 3) de geplande taak voor mails: herinneringen versturen (sinds fase 4 ook als push), mislukte mails opnieuw proberen en een gemailde vervallen inval afhandelen. Die taak heeft geen sessie en leest dan de werkmails (besluit V17 in het plan van fase 3);
     - (fase 3) een medewerker volledig verwijderen;
     - (fase 6) de herinnering om de dag af te sluiten (V61), in dezelfde geplande taak;
+    - (fase 7) de maandtotalen van de rapporten bijwerken, in dezelfde geplande taak;
     - (fase 5) de mails en pushmeldingen na een actie van een teamleider: die mag de werkmails en toestellen van collega's zelf niet lezen (besluit V43). De actie zelf gaat met de sessie van de teamleider.
 - Een agendatoken bestaat uit minstens 32 willekeurige bytes. De database bewaart alleen de SHA-256-hash.
 - Het logboek legt vast wie wat wanneer deed. Het is alleen zichtbaar voor beheerders.
@@ -121,7 +124,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - Dat geldt ook voor schermafbeeldingen, video's en de PDF van de uitleg (besluit V30): alleen het verzonnen team.
 
 ## Teststrategie
-- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/`, (fase 5) `src/lib/loans/` en (fase 6) `src/lib/registrations/`. Een test staat naast de code als `*.test.ts`.
+- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/`, (fase 5) `src/lib/loans/` en (fase 6) `src/lib/registrations/` en (fase 7) `src/lib/reports/`. Een test staat naast de code als `*.test.ts`.
 - Tests versturen nooit een echte mail of push: het versturen gaat via een transport dat je in tests vervangt.
 - Er is één gedeelde, fictieve teamfixture: `src/lib/engine/__fixtures__/team.ts`. Die heeft dezelfde opbouw als het echte team (zie SPEC, "Tests").
 - De databasetests in `supabase/tests/` draaien alle migraties op PGlite, met een nagebootst `auth`-schema en de rollen `anon`, `authenticated` en `service_role`. Ze controleren:

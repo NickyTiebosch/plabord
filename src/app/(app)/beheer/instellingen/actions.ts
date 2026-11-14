@@ -8,6 +8,7 @@ import { must } from '@/lib/db/queries';
 import { sendTestMail, sendTestPush } from '@/lib/mail/dispatch';
 import { testMailErrorText } from '@/lib/mail/labels';
 import { siteBaseUrl } from '@/lib/site-url';
+import { parseSignalForm } from '@/lib/reports/signals';
 
 export async function saveSettings(_previous: ActionState, formData: FormData): Promise<ActionState> {
   const { supabase } = await requireAdmin();
@@ -81,6 +82,28 @@ export async function saveMobility(_previous: ActionState, formData: FormData): 
   }
   revalidatePath('/', 'layout');
   return { ok: true, message: 'Mobiliteit opgeslagen.' };
+}
+
+/** De grenzen van de signalen op Start (fase 7, V69). Leeg = dat signaal staat uit. */
+export async function saveSignals(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase } = await requireAdmin();
+  const parsed = parseSignalForm(formData);
+  if (!parsed.ok) return { error: parsed.error };
+  const { settings } = parsed;
+  const saved = await supabase
+    .from('settings')
+    .update({
+      signal_incident_factor: settings.incidentFactor,
+      signal_incident_min: settings.incidentMin,
+      signal_unclosed_days: settings.unclosedDays,
+      signal_charge_days: settings.chargeDays,
+      signal_short_days: settings.shortDays,
+      signal_unused_percent: settings.unusedPercent,
+    })
+    .eq('id', true);
+  if (saved.error) return { error: dbErrorMessage(saved.error) };
+  revalidatePath('/', 'layout');
+  return { ok: true, message: 'Signalen opgeslagen.' };
 }
 
 /** Meldingen (mail en push) aan of uit (fase 3, V18; fase 4, V27). Staat in het logboek. */

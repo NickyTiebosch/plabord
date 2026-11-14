@@ -165,13 +165,19 @@ describe('database zonder automatische rechten', () => {
       'import_registrations',
       'log_export',
       'move_shift',
+      'refresh_monthly_totals',
       'register_push_subscription',
       'reopen_day',
+      'report_incidents',
+      'report_walk_ins',
       'return_vehicle_loan',
       'set_incident_charged',
       'set_shift_override',
       'undo_vehicle_loan_return',
     ]);
-    expect(result.rows.filter((row) => !row.authenticated || row.anon)).toEqual([]);
+    // De maandtotalen (fase 7) werkt alleen de geplande taak bij, met de secret key.
+    const serviceOnly = ['refresh_monthly_totals'];
+    expect(result.rows.filter((row) => serviceOnly.includes(row.proname) && (row.authenticated || row.anon))).toEqual([]);
+    expect(result.rows.filter((row) => !serviceOnly.includes(row.proname) && (!row.authenticated || row.anon))).toEqual([]);
   });
 });
