@@ -1,6 +1,6 @@
 # CLAUDE.md: vaste afspraken voor Planbord
 
-Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de plek voor de registraties van verhuur (te beginnen met Mobiliteit: de auto's die verhuur uitleent). De opdracht in `docs/SPEC.md` is leidend. Het plan per fase staat in `docs/PLAN-fase-N.md`, het geheel in `docs/ROUTEKAART.md`. Wijkt dit bestand af van de spec, dan geldt de spec en pas je dit bestand aan.
+Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de plek voor de registraties van verhuur: Mobiliteit (de auto's die verhuur uitleent, fase 5), en Binnenvallers en Meldingen (fase 6). De opdracht in `docs/SPEC.md` is leidend. Het plan per fase staat in `docs/PLAN-fase-N.md`, het geheel in `docs/ROUTEKAART.md`. Wijkt dit bestand af van de spec, dan geldt de spec en pas je dit bestand aan.
 
 ## Werkwijze
 - Werk fase voor fase. Schrijf pas code als de eigenaar het plan van die fase heeft goedgekeurd. Begin pas aan een volgende fase na "ga verder met fase X".
@@ -56,7 +56,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Lees een omgevingsvariabele pas uit in de functie die haar gebruikt, nooit bovenin een module. De build moet slagen zonder sleutels.
 - Schrijfacties lopen via server actions met de sessie van de gebruiker. Valideer de invoer op de server en controleer de rechten twee keer: in de action én via RLS.
 - Een pagina laadt haar gegevens met `requireViewerWith` of `requireAdminWith` (besluit V31): tegelijk met de controle wie er kijkt, niet erna. Hebben de gegevens de kijker nodig, dan eerst `requireViewer()`.
-- Onderdelen (besluit V53): Start (`/`), Planbord, Mobiliteit (`/mobiliteit`, besluit V54: de uitleen van auto's) en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
+- Onderdelen (besluit V53): Start (`/`), Planbord, Mobiliteit (`/mobiliteit`, besluit V54: de uitleen van auto's), Binnenvallers (`/binnenvallers`), Meldingen (`/meldingen`), Controle (`/controle`, voor beheerder en teamleider) en Beheer. Welke onderdelen en tabs iemand ziet, staat in `src/lib/nav/modules.ts`; een nieuw onderdeel komt daar bij, met een tegel op Start.
 - Mobile-first: ontwerp eerst voor een telefoon, met grote tikvlakken en weinig JavaScript op de client.
 - Geen AI of taalmodel in de roosterlogica.
 - Geen trackers, analytics, externe fonts of scripts van derden. Ook geen Vercel Analytics of Speed Insights.
@@ -79,11 +79,13 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
 - Hulpfuncties voor policies staan in schema `private`, als `security definer` met `set search_path = ''`. Het gaat om `private.current_employee_id()`, `private.is_admin()` en (fase 5) `private.is_lead()`: beheerder of teamleider.
 - Teamleider (fase 5, V43): afwezigheid, invallen, roosterwijzigingen voor één dag en genegeerde gaten gebruiken `is_lead()`, net als de registraties. Medewerkers, accounts, vaste diensten, sluitingsdagen, normen en instellingen blijven `is_admin()`. In de app: `requireLead()` en `requireLeadWith()`.
 - Mobiliteit (V54): iedere actieve medewerker leest en meldt aan, voor elke vestiging met een balie. In de database heet het `vehicle_loans`, in de code `loans`.
+- Binnenvallers en meldingen (fase 6): `workshops`, `walk_ins`, `incident_reports` en `day_closures`, in de code `registrations`. Iedere actieve medewerker leest, telt, meldt en sluit de dag af. Wie iets meldde of aanmeldde, mag het op dezelfde dag zelf corrigeren (V59); daarna doet de teamleider dat. Werkplaatsen beheert de beheerder. Binnenvallers tellen gaat alleen via `adjust_walk_in`, zodat twee collega's elkaars tik niet overschrijven.
 - Voor RPC-functies in `public`: `revoke execute ... from public, anon` en geef alleen `grant` aan wie ze echt nodig heeft.
 
 ## Privacy (harde regels)
 - Sla alleen op wat de planning en de registraties van het verhuurwerk nodig hebben: naam, werkmail, groep, rol, waar iemand mag invallen, vaste diensten, afwezigheid en invallen.
   - Sinds fase 4 ook de push-abonnementen van de eigen toestellen van een medewerker (besluit V28).
+  - Sinds fase 6 binnenvallers (aantallen per werkplaats per dag), meldingen (soort, werkplaats, tijdstip, kenteken, contract- of reserveringsnummer, doorbelasten en een korte toelichting) en wie een dag afsloot. Nooit klantnamen. Het logboek bewaart geen bijzonderheden van een melding. Een melding verdwijnt 24 maanden na de datum.
   - Sinds fase 5 de uitleen (besluit V41): kenteken, model, kilometerstand, bestemming, aan wie (persoon of afdeling), wie meegaf en terugnam, tijdstippen, ingezet ja of nee en een korte opmerking. Nooit klantnamen of andere klantgegevens. Het logboek bewaart geen vrije tekst van de uitleen. Een registratie verdwijnt 24 maanden na retour.
 - Afwezigheid heeft géén reden, soort of vrij tekstveld. Alles heet "Afwezig".
 - Beheerders zien per medewerker wanneer die voor het laatst inlogde en op hoeveel toestellen meldingen aanstaan (besluit V38).
@@ -98,6 +100,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
     - agendafeeds serveren;
     - (fase 3) de geplande taak voor mails: herinneringen versturen (sinds fase 4 ook als push), mislukte mails opnieuw proberen en een gemailde vervallen inval afhandelen. Die taak heeft geen sessie en leest dan de werkmails (besluit V17 in het plan van fase 3);
     - (fase 3) een medewerker volledig verwijderen;
+    - (fase 6) de herinnering om de dag af te sluiten (V61), in dezelfde geplande taak;
     - (fase 5) de mails en pushmeldingen na een actie van een teamleider: die mag de werkmails en toestellen van collega's zelf niet lezen (besluit V43). De actie zelf gaat met de sessie van de teamleider.
 - Een agendatoken bestaat uit minstens 32 willekeurige bytes. De database bewaart alleen de SHA-256-hash.
 - Het logboek legt vast wie wat wanneer deed. Het is alleen zichtbaar voor beheerders.
@@ -110,6 +113,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - Uitzondering: een uitnodiging die een beheerder zelf verstuurt, gaat ook als de schakelaar uit staat (besluit V33).
 - Pushmeldingen (fase 4) volgen dezelfde regels als mails.
   - Alleen naar de eigen toestellen van de medewerker, en alleen over het eigen rooster.
+  - Uitzondering (fase 6, V61): de herinnering om de dag af te sluiten gaat naar iedereen die die dag volgens het rooster op die vestiging werkt. Ze noemt alleen de vestiging en de dag, geen namen en geen inhoud van meldingen. Ze valt onder de schakelaar "Meldingen versturen" en gaat hooguit één keer per vestiging per dag.
   - De inhoud is versleuteld per toestel. Nooit namen van anderen of een reden van afwezigheid.
   - Een push-abonnement zien alleen de medewerker zelf en beheerders (om te versturen). Elders alleen aantallen, nooit het adres of de sleutels.
   - Alleen naar https-adressen van de bekende pushdiensten: Apple, Google, Mozilla en Microsoft.
@@ -117,7 +121,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - Dat geldt ook voor schermafbeeldingen, video's en de PDF van de uitleg (besluit V30): alleen het verzonnen team.
 
 ## Teststrategie
-- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/` en (fase 5) `src/lib/loans/`. Een test staat naast de code als `*.test.ts`.
+- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/`, (fase 5) `src/lib/loans/` en (fase 6) `src/lib/registrations/`. Een test staat naast de code als `*.test.ts`.
 - Tests versturen nooit een echte mail of push: het versturen gaat via een transport dat je in tests vervangt.
 - Er is één gedeelde, fictieve teamfixture: `src/lib/engine/__fixtures__/team.ts`. Die heeft dezelfde opbouw als het echte team (zie SPEC, "Tests").
 - De databasetests in `supabase/tests/` draaien alle migraties op PGlite, met een nagebootst `auth`-schema en de rollen `anon`, `authenticated` en `service_role`. Ze controleren:

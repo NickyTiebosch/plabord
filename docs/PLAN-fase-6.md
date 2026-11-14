@@ -1,30 +1,20 @@
 # Plan fase 6: binnenvallers, meldingen en de invulcontrole
 
-**Status: concept van 13 november 2026.** De eigenaar heeft gevraagd alle plannen te schrijven en uit te voeren, en niet per fase op akkoord te wachten. Daarom staan de keuzes hieronder als besluit, met de reden erbij. Wil je er een anders, zeg het dan; ik pas het aan. Dit plan bouwt voort op fase 5. Het geheel staat in `docs/ROUTEKAART.md`; de vaste afspraken in `CLAUDE.md`.
+**Status: gebouwd op 14 november 2026.** Concept van 13 november, uitgevoerd op verzoek van de eigenaar. De eigenaar heeft gevraagd alle plannen te schrijven en uit te voeren, en niet per fase op akkoord te wachten. Daarom staan de keuzes hieronder als besluit, met de reden erbij. Wil je er een anders, zeg het dan; ik pas het aan. Dit plan bouwt voort op fase 5. Het geheel staat in `docs/ROUTEKAART.md`; de vaste afspraken in `CLAUDE.md`.
 
-## Stand van de bouw (13 november 2026)
-De eigenaar heeft de Excel-bestanden aangeleverd. De bouw gaat verder met Opus 5.5; dit is wat er staat en wat er nog moet.
+## Stand van de bouw (14 november 2026)
+Gebouwd op de tak `fase-6`, met een pull request naar `fase-5`. Op 14 november gaf de eigenaar opdracht fase 6 tot en met 8 te bouwen; dat geldt als akkoord op dit plan.
 
-**Gebouwd en getest** (tak `fase-6`; lint, typecheck, 566 tests en de build slagen):
-- het datamodel met rechten en databasetests (`supabase/migrations/20261114000100_registrations.sql` en `…000200_rpc_phase6.sql`, bundel `fase-6.sql`);
-- de pure logica in `src/lib/registrations/` met tests;
-- de onderdelen Binnenvallers, Meldingen en Controle in de navigatie;
-- Binnenvallers (tellers en overzicht), Meldingen (lijst, formulier, wijzigen, archief, doorbelastlijst), dag afsluiten, de invulcontrole, de tegels op Start en Beheer → Werkplaatsen;
-- zelf corrigeren op dezelfde dag, ook bij Mobiliteit (V59);
-- de herinnering in de geplande taak (V61).
-
-**Nog te doen, in deze volgorde:**
-1. **De schermen doorlopen** op telefoon en computer met de nepdatabase (`tools/uitleg-video/mock/server.mjs`), als medewerker, teamleider en beheerder. Dat is voor fase 6 nog niet gedaan. Let op de tellers (plus en min), het formulier dat velden toont per soort melding, en zijwaarts scrollen in de rasters.
-2. **Historie inlezen (V63):** een parser in `src/lib/import/` voor de twee bestanden, een pagina onder Beheer → Import met eerst een voorbeeld, en de functie `import_registrations` die er al is. Opbouw van de bestanden:
-   - *Binnenvallers Registratie:* tabbladen Den Bosch, Eindhoven en Breda; rij 1 een titel, rij 2 de koppen (Datum, de werkplaatsen, Totaal dag, Opmerkingen). Een leeg vak is niets ingevuld, `x` is 0. De kolom Opmerkingen lezen we niet in.
-   - *WPL meldingen dagregistratie:* de drie tabbladen `Invoer …`; rij 3 de koppen (Datum, Werkplaats, Soort melding, Wat ontbrak?, Tijdstip annulering, Kenteken, Contract-/res.nr, Bijzonderheden, Doorbelasten?, Ingevuld door). Ingevuld door is een voornaam: koppelen aan een medewerker als de naam precies één keer voorkomt, anders leeg. `import_key` = tabblad en rijnummer.
-3. **De export (V64):** `src/lib/export/` met Binnenvallers (per vestiging een tabblad, dezelfde kolommen als het oude bestand) en Meldingen (per vestiging een tabblad en een tabblad Doorbelasten), routes `/binnenvallers/export` en `/meldingen/export`, knoppen onder Beheer → Export.
-4. **Logboek en gegevens per medewerker:** de teksten in `src/lib/admin/audit.ts` voor de vier nieuwe tabellen, en de tabbladen Meldingen en Dag afgesloten in `src/lib/export/employee.ts`.
-5. **Testgegevens:** `supabase/setup/testdata.sql` uitbreiden met verzonnen binnenvallers, meldingen en afgesloten dagen.
-6. **Documentatie:** `CLAUDE.md` (privacyregels: meldingen, en dat de herinnering voor het afsluiten niet over het eigen rooster gaat), `README.md`, `docs/SPEC.md`, `docs/OVERDRACHT.md`.
-7. **Pull request** van `fase-6` naar `fase-5` (of naar `main` als fase 5 dan live is), met de SQL-stappen voor het testproject en het testlijstje.
-
-Afwijking van V61 die tijdens de bouw is gekozen: de invulcontrole telt per vestiging vanaf de eerste dag die de vestiging **afsluit**, niet vanaf de eerste registratie. Anders staat na het inlezen van de historie alles rood.
+### Uitwerkingen tijdens de bouw
+- **Invulcontrole (V61):** telt per vestiging vanaf de eerste dag die de vestiging in Planbord **afsluit**, niet vanaf de eerste registratie. Anders staat na het inlezen van de historie alles rood. Een zaterdag telt alleen als er die dag iets is geregistreerd of afgesloten.
+- **Historie inlezen (V63):** onder Beheer → Import → **Historie inlezen**. De tabbladen heten Den Bosch, Eindhoven en Breda, met de koppen op rij 4. Het oude bestand zegt niet of een annulering al is doorbelast. Daarom staat er een vinkje (standaard aan): annuleringen met Doorbelasten op ja komen binnen als doorbelast, door wie inleest. Uitzetten zet ze op de doorbelastlijst.
+  - Een annulering zonder tijdstip en zonder Doorbelasten komt binnen als niet doorbelasten, met een opmerking in de voorvertoning.
+  - Een melding krijgt als tijdstip het tijdstip van de annulering, anders 12:00.
+  - Een onbekende werkplaats houdt het inlezen tegen; voeg hem eerst toe onder Beheer → Werkplaatsen.
+  - Op de echte bestanden: 2.174 binnenvallers op 265 dagen (gelijk aan de jaartotalen in het bestand) en 138 meldingen, zonder fouten.
+- **Logboek:** `walk_ins` en `day_closures` kregen een `id`, zodat bij een wijziging staat welke werkplaats, vestiging en dag het was.
+- **Gegevens per medewerker:** drie tabbladen in plaats van twee: Werkplaatsmeldingen, Binnenvallers en Dag afgesloten. Zonder kenteken, contractnummer en bijzonderheden: dat zijn geen gegevens over die persoon. Het tabblad heet Werkplaatsmeldingen, omdat Meldingen al de toestellen met pushmeldingen zijn.
+- **De doorbelastlijst** is voor iedereen te zien; alleen teamleider en beheerder zetten iets op doorbelast.
 
 ## 1. Besluiten
 

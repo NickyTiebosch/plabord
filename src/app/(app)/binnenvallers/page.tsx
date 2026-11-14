@@ -78,7 +78,7 @@ export default async function WalkInsPage({ searchParams }: { searchParams: Prom
                   <input type="hidden" name="back" value={back} />
                   <SubmitButton variant="secondary" className="size-12 !px-0 text-xl" >
                     <span aria-hidden="true">−</span>
-                    <span className="sr-only">Eén minder bij {workshop.name}</span>
+                    <span className="sr-only">Eén minder voor {workshop.name}</span>
                   </SubmitButton>
                 </form>
                 <p className="w-10 text-center text-xl font-semibold tabular-nums text-slate-900" aria-label={`${count} bij ${workshop.name}`}>
@@ -91,7 +91,7 @@ export default async function WalkInsPage({ searchParams }: { searchParams: Prom
                   <input type="hidden" name="back" value={back} />
                   <SubmitButton className="size-12 !px-0 text-xl">
                     <span aria-hidden="true">+</span>
-                    <span className="sr-only">Eén erbij bij {workshop.name}</span>
+                    <span className="sr-only">Eén erbij voor {workshop.name}</span>
                   </SubmitButton>
                 </form>
               </li>
