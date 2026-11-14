@@ -18,6 +18,7 @@ const ITEMS: AdminNavItem[] = [
   { href: '/beheer/invallen', label: 'Invallen', lead: true },
   { href: '/beheer/medewerkers', label: 'Medewerkers' },
   { href: '/beheer/sluitingsdagen', label: 'Sluitingsdagen' },
+  { href: '/beheer/werkplaatsen', label: 'Werkplaatsen' },
   { href: '/beheer/instellingen', label: 'Instellingen' },
   { href: '/beheer/import', label: 'Import' },
   { href: '/beheer/export', label: 'Export' },

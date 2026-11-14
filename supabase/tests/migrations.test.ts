@@ -155,15 +155,20 @@ describe('database zonder automatische rechten', () => {
         order by p.proname`,
     );
     expect(result.rows.map((row) => row.proname)).toEqual([
+      'adjust_walk_in',
       'apply_import',
       'apply_substitution_review',
       'claim_account',
+      'close_day',
       'delete_employee',
       'employee_sign_ins',
+      'import_registrations',
       'log_export',
       'move_shift',
       'register_push_subscription',
+      'reopen_day',
       'return_vehicle_loan',
+      'set_incident_charged',
       'set_shift_override',
       'undo_vehicle_loan_return',
     ]);

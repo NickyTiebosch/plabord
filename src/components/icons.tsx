@@ -165,3 +165,43 @@ export function IconUser(props: SVGProps<SVGSVGElement>) {
     </Icon>
   );
 }
+
+/** Binnenvallers (fase 6): een teller. */
+export function IconCounter(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M8 10v4M6 12h4M14 12h4" />
+    </Icon>
+  );
+}
+
+/** Meldingen (fase 6): een driehoek met een uitroepteken. */
+export function IconAlert(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M12 4 2.5 20h19z" />
+      <path d="M12 10v4M12 17v.5" />
+    </Icon>
+  );
+}
+
+/** Doorbelasten (fase 6): een euroteken. */
+export function IconEuro(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M17 6.5A6.5 6.5 0 1 0 17 17.5M4 10.5h9M4 13.5h9" />
+    </Icon>
+  );
+}
+
+/** Mobiliteit (fase 6): een auto. */
+export function IconCar(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 16v-3l2-5h12l2 5v3M3 16h18v2H3z" />
+      <circle cx="7.5" cy="16" r="1.2" />
+      <circle cx="16.5" cy="16" r="1.2" />
+    </Icon>
+  );
+}

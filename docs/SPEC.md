@@ -249,3 +249,14 @@ Toegevoegd op 10 november 2026 (besluit V41 in `docs/PLAN-fase-5.md`). Planbord 
 **Testomgeving en overdracht**
 - Previews gebruiken een eigen Supabase-project (besluit V42). Het live Planbord verandert pas na akkoord van de eigenaar.
 - Planbord moet zonder de eigenaar verder kunnen: elk onderdeel heeft een Excel-export, en `docs/OVERDRACHT.md` beschrijft hoe het naar andere accounts gaat (besluit V51).
+
+## Aanvulling fase 6 (november 2026): binnenvallers, meldingen en de invulcontrole
+
+Toegevoegd op 13 november 2026 (`docs/PLAN-fase-6.md`, besluiten V55–V65), gebouwd op 14 november.
+
+- Twee nieuwe onderdelen voor iedere vestiging: **Binnenvallers** (per werkplaats een teller per dag) en **Meldingen** (één formulier per melding, met de doorbelastlijst). Ze vervangen de Excel-bestanden Binnenvallers Registratie en WPL meldingen dagregistratie; de historie daaruit is in te lezen.
+- **Dag afsluiten** per vestiging, met het vinkje dat de contracten in RentLink zijn gecontroleerd. Een **herinnering** (pushmelding) om 16:00 aan wie die dag op de vestiging werkt, als de dag nog open is.
+- **Controle** (beheerder en teamleider): de invulcontrole per vestiging per werkdag, en de controle van Mobiliteit.
+- Wie iets meldde, corrigeert het op dezelfde dag zelf; daarna de teamleider of beheerder.
+- **Privacy:** aantallen, en per melding soort, tijdstip, kenteken, contract- of reserveringsnummer, doorbelasten en een korte toelichting. Nooit klantgegevens. Een melding verdwijnt na 24 maanden.
+- **Export** in de opbouw van de oude bestanden, per vestiging een tabblad.

@@ -131,6 +131,28 @@ describe('gegevens van één medewerker (V20)', () => {
     ],
     devices: [{ createdAt: '2026-10-02T13:00:00Z', lastSuccessAt: '2026-10-03T14:00:00Z' }, { createdAt: '2026-10-05T08:00:00Z', lastSuccessAt: null }],
     log: [{ when: 'do 1 okt 2026 10:00', what: 'Afwezigheid ingevoerd – Sanne', detail: '14 okt, hele dag, goedgekeurd' }],
+    workshops: [{ id: 'w-vw', groupId: 'den_bosch', name: 'Volkswagen', sortOrder: 1, isActive: true }],
+    incidents: [
+      {
+        id: 'i1',
+        groupId: 'den_bosch',
+        workshopId: 'w-vw',
+        occurredAt: '2026-10-07T10:30:00Z',
+        kind: 'cancellation',
+        missing: null,
+        cancelledAt: '12:30',
+        charge: true,
+        chargedAt: '2026-10-08T08:00:00Z',
+        chargedBy: 'sanne',
+        plate: 'GHP39K',
+        contractNumber: '681613',
+        note: 'Klant niet gekomen',
+        reportedBy: 'sanne',
+        createdAt: '2026-10-07T10:30:00Z',
+      },
+    ],
+    walkIns: [{ groupId: 'den_bosch', workshopId: 'w-vw', date: '2026-10-07', count: 4, updatedBy: 'sanne', updatedAt: '2026-10-07T15:00:00Z' }],
+    closures: [{ groupId: 'den_bosch', date: '2026-10-07', rentlinkChecked: true, closedBy: 'sanne', closedAt: '2026-10-07T16:10:00Z' }],
   });
 
   it('bevat alles wat Planbord over die persoon bewaart, ook eerdere vaste diensten', () => {
@@ -144,6 +166,9 @@ describe('gegevens van één medewerker (V20)', () => {
       'Mails',
       'Meldingen',
       'Mobiliteit',
+      'Werkplaatsmeldingen',
+      'Binnenvallers',
+      'Dag afgesloten',
       'Logboek',
     ]);
     expect(sheets[0]?.rows).toEqual([
@@ -167,7 +192,12 @@ describe('gegevens van één medewerker (V20)', () => {
       ['Toestel 2', '5-10-2026 10:00', ''],
     ]);
     expect(sheets[8]?.rows).toEqual([]);
-    expect(sheets[9]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
+    // Fase 6: zonder kenteken, contractnummer en bijzonderheden.
+    expect(sheets[9]?.rows).toEqual([['7-10-2026', 'Den Bosch', 'Volkswagen', 'Annulering door werkplaats', 'gemeld en op doorbelast gezet']]);
+    expect(JSON.stringify(sheets[9])).not.toContain('Klant niet gekomen');
+    expect(sheets[10]?.rows).toEqual([['7-10-2026', 'Den Bosch', 'Volkswagen', '4', '7-10-2026 17:00']]);
+    expect(sheets[11]?.rows).toEqual([['7-10-2026', 'Den Bosch', 'ja', '7-10-2026 18:10']]);
+    expect(sheets[12]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
   });
 
   it('noemt geen collega’s', () => {

@@ -9,6 +9,7 @@ import { addDays, todayInAmsterdam } from '@/lib/engine/dates';
 import { parseTime } from '@/lib/engine/time';
 import { formatPlate } from '@/lib/loans/plates';
 import { formatLoanMoment, isOverdue, sortOpenLoans } from '@/lib/loans/status';
+import { canEditOwn } from '@/lib/registrations/status';
 import { localMoment } from '@/lib/loans/time';
 import { DESTINATION_LABELS, type VehicleLoan } from '@/lib/loans/types';
 import { returnNotUsed, undoReturn } from './actions';
@@ -105,7 +106,7 @@ export default async function LoansPage({ searchParams }: { searchParams: Promis
                           Retour · niet ingezet
                         </SubmitButton>
                       </form>
-                      {viewer.isLead ? (
+                      {canEditOwn({ ownerId: loan.handedOutBy, createdAt: loan.createdAt ?? '1970-01-01T00:00:00.000Z' }, viewer, today) ? (
                         <LinkButton href={`/mobiliteit/${loan.id}`} variant="ghost" size="sm">
                           Corrigeren
                         </LinkButton>

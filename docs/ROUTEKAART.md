@@ -2,6 +2,8 @@
 
 **Status: volgorde goedgekeurd op 10 november 2026.** Dit document beschrijft het geheel. Per fase komt er een eigen plan (`docs/PLAN-fase-N.md`) dat je apart goedkeurt. Het plan van fase 5 is goedgekeurd.
 
+**Stand op 14 november 2026:** fase 5 is gebouwd en staat klaar om te testen (pull request #16, niet live). Fase 6 is grotendeels gebouwd; wat er nog moet, staat bovenaan `docs/PLAN-fase-6.md`. Voor fase 7 tot en met 11 staat er per fase een plan in concept, met onderaan de vragen voor de eigenaar. Waar een plan afwijkt van de beschrijving hieronder, geldt het plan.
+
 ## Waar we naartoe gaan
 Planbord is nu de rooster- en verlofapp. Het wordt de plek waar het verhuurteam ook zijn dagelijkse registraties bijhoudt, en waar jij en de teamleider de cijfers en de controle zien. De losse Excel-bestanden verdwijnen één voor één.
 
@@ -28,7 +30,7 @@ Deze gelden voor elke fase.
    - er zit niets persoonlijks in de code: mailbox, adres en sleutels zijn instellingen;
    - `docs/OVERDRACHT.md` beschrijft stap voor stap hoe het naar een ander Vercel- en Supabase-account gaat;
    - een onderdeel is pas af als het in de export en in het overdrachtsdocument staat.
-6. **Zo min mogelijk gegevens.** Geen klantnamen, geen rijbewijs- of adresgegevens. Bij vrije tekst staat erbij dat klantgegevens niet nodig zijn.
+6. **Zo min mogelijk gegevens.** Geen rijbewijs- of adresgegevens. Bij vrije tekst staat erbij dat klantgegevens niet nodig zijn. Eén uitzondering, besloten door de eigenaar op 13 november 2026 (V80 in het plan van fase 9): huurder, bestuurder en telefoon uit de Rentwise-export, afgeschermd en met een korte bewaartermijn.
 7. **Geen AI in de app.** Controles en signalen zijn vaste regels: dezelfde gegevens geven altijd dezelfde uitkomst.
 8. **Geen koppeling met Rentwise.** Rentwise blijft de bron voor contracten en de vloot. Planbord leest hooguit een export in die iemand uploadt.
 

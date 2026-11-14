@@ -268,8 +268,9 @@ describe('fase 5: de uitleen', () => {
     );
   });
 
-  it('laat alleen de beheerder en de teamleider corrigeren en verwijderen', async () => {
-    const id = (await handOut(bas, 'V02KZD')).rows[0]?.id ?? '';
+  it('laat een collega een registratie van een ander niet corrigeren of verwijderen; de teamleider wel', async () => {
+    // Sinds fase 6 (V59) kan wie aanmeldde het op dezelfde dag zelf; zie phase6.test.ts.
+    const id = (await handOut(ruben, 'V02KZD')).rows[0]?.id ?? '';
     await withSession(db, session(bas), async () => {
       expect((await db.query(`update public.vehicle_loans set model = 'Golf' where id = $1`, [id])).affectedRows).toBe(0);
       expect((await db.query('delete from public.vehicle_loans where id = $1', [id])).affectedRows).toBe(0);
@@ -366,5 +367,14 @@ describe('fase 5: testgegevens voor het testproject', () => {
     expect(counts.rows[0]?.employees).toBeGreaterThanOrEqual(20);
     expect(counts.rows[0]?.loans).toBeGreaterThan(0);
     expect(counts.rows[0]?.open).toBeGreaterThan(0);
+    // Fase 6: binnenvallers, afgesloten dagen en meldingen.
+    const phase6 = await db.query<{ walk_ins: number; closures: number; incidents: number }>(
+      `select (select count(*)::int from public.walk_ins) as walk_ins,
+              (select count(*)::int from public.day_closures) as closures,
+              (select count(*)::int from public.incident_reports where id::text like '33000000-%') as incidents`,
+    );
+    expect(phase6.rows[0]?.walk_ins).toBeGreaterThan(0);
+    expect(phase6.rows[0]?.closures).toBeGreaterThan(0);
+    expect(phase6.rows[0]?.incidents).toBe(5);
   });
 });

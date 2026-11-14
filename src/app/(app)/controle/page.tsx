@@ -1,183 +1,176 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Badge, Card, EmptyState, PageHeader, SectionTitle, cx } from '@/components/ui';
+import { DayCloseCard, RegistrationFlash } from '@/components/registrations';
+import { Card, PageHeader, SectionTitle, cx } from '@/components/ui';
 import { requireLeadWith } from '@/lib/auth/session';
 import { loadEmployeeNames } from '@/lib/db/admin-queries';
-import { loadClosures, loadCurrentLoans, loadEndOfDay, loadFirstLoanDates, loadLoanGroups } from '@/lib/db/loan-queries';
-import { todayInAmsterdam } from '@/lib/engine/dates';
+import { loadClosures } from '@/lib/db/loan-queries';
+import { loadCounterGroups, loadDayData, loadFirstClosedDates, loadWorkshops } from '@/lib/db/registration-queries';
+import { isIsoDate, todayInAmsterdam } from '@/lib/engine/dates';
 import { formatDayShort } from '@/lib/engine/format';
-import { parseTime } from '@/lib/engine/time';
-import { formatPlate } from '@/lib/loans/plates';
-import { formatLoanMoment, isOverdue, loanDueDate, mobilityDayCheck, recentWeekdays, sortOpenLoans, type DayCheckState } from '@/lib/loans/status';
-import { DESTINATION_LABELS } from '@/lib/loans/types';
+import { completionGrid, incidentDate, recentDays, walkInRows, type DayState } from '@/lib/registrations/status';
+import { INCIDENT_KIND_LABELS } from '@/lib/registrations/types';
 
-export const metadata: Metadata = { title: 'Controle' };
+export const metadata: Metadata = { title: 'Invulcontrole' };
 
-/** Zoveel werkdagen in de controle op Mobiliteit. */
-const DAYS = 10;
+/** Zoveel dagen (ma–za) in het raster. */
+const DAYS = 12;
 
-const CELL: Record<DayCheckState, { className: string; text: (count: number) => string; label: string }> = {
-  ok: { className: 'bg-emerald-50 text-emerald-800', text: (count) => String(count), label: 'in orde' },
-  short: { className: 'bg-rose-50 font-semibold text-rose-700', text: (count) => String(count), label: 'te weinig' },
-  pending: { className: 'bg-amber-50 text-amber-800', text: (count) => String(count), label: 'vandaag nog open' },
-  closed: { className: 'bg-slate-50 text-slate-400', text: () => 'dicht', label: 'gesloten' },
-  before: { className: 'text-slate-300', text: () => '–', label: 'nog niet in Planbord' },
+const CELL: Record<DayState, { className: string; text: string; label: string }> = {
+  closed: { className: 'bg-emerald-50 text-emerald-800', text: '✓', label: 'afgesloten' },
+  pending: { className: 'bg-amber-50 text-amber-800', text: '…', label: 'vandaag, nog niet afgesloten' },
+  open: { className: 'bg-rose-50 font-semibold text-rose-700', text: '✕', label: 'niet afgesloten' },
+  shut: { className: 'bg-slate-50 text-slate-400', text: 'dicht', label: 'gesloten' },
+  weekend: { className: 'text-slate-300', text: '–', label: 'zaterdag zonder registraties' },
+  before: { className: 'text-slate-300', text: '–', label: 'nog niet in Planbord' },
 };
 
 /**
- * Controle (fase 5, V48), voor beheerder en teamleider: wat er nu uit staat en wat te lang uit
- * staat, en per vestiging of Mobiliteit elke werkdag genoeg auto's kreeg.
+ * De invulcontrole (fase 6, V61), voor beheerder en teamleider: per vestiging per dag of de dag is
+ * afgesloten. Een tik op een vakje toont wat er die dag is geregistreerd.
  */
-export default async function CheckPage() {
-  const now = new Date();
-  const today = todayInAmsterdam(now);
-  // Vandaag vooraan: op de telefoon staat dan zonder scrollen in beeld wat er nu speelt.
-  const days = recentWeekdays(today, DAYS).reverse();
+export default async function CompletionPage({ searchParams }: { searchParams: Promise<{ vestiging?: string; dag?: string; melding?: string }> }) {
+  const params = await searchParams;
+  const today = todayInAmsterdam(new Date());
+  const days = recentDays(today, DAYS);
   const first = days.at(-1) ?? today;
-  const [viewer, [groups, loans, closures, endOfDay, names]] = await requireLeadWith((supabase) =>
+  const [viewer, [groups, workshops, data, dayOff, names]] = await requireLeadWith((supabase) =>
     Promise.all([
-      loadLoanGroups(supabase),
-      loadCurrentLoans(supabase, first),
+      loadCounterGroups(supabase),
+      loadWorkshops(supabase),
+      loadDayData(supabase, first, today),
       loadClosures(supabase, first, today),
-      loadEndOfDay(supabase),
       loadEmployeeNames(supabase),
     ]),
   );
-  const end = parseTime(endOfDay) ?? '18:00';
-  const groupName = (id: string) => groups.find((group) => group.id === id)?.name ?? id;
-  const open = sortOpenLoans(
-    loans.filter((loan) => !loan.returnedAt),
-    null,
-  );
-  const overdue = open.filter((loan) => isOverdue(loan, now, closures, end));
-  const firstDates = await loadFirstLoanDates(viewer.supabase, groups.map((group) => group.id));
-  const rows = mobilityDayCheck(loans, groups, days, today, closures, firstDates);
+  const firstDates = await loadFirstClosedDates(viewer.supabase, groups.map((group) => group.id));
+  const rows = completionGrid(groups, days, today, data, dayOff, firstDates);
+  const totalOpen = rows.reduce((sum, row) => sum + row.open, 0);
+
+  const group = groups.find((item) => item.id === params.vestiging) ?? null;
+  const date = params.dag && isIsoDate(params.dag) && days.includes(params.dag) ? params.dag : null;
+  const detail = group && date ? { group, date } : null;
+  const closure = detail ? (data.closures.find((item) => item.groupId === detail.group.id && item.date === detail.date) ?? null) : null;
+  const dayIncidents = detail ? data.incidents.filter((item) => item.groupId === detail.group.id && incidentDate(item) === detail.date) : [];
+  const dayWalkIns = detail ? walkInRows(workshops, data.walkIns, detail.group.id, detail.date).filter((row) => row.count > 0) : [];
+  const workshopName = (id: string) => workshops.find((workshop) => workshop.id === id)?.name ?? 'Onbekende werkplaats';
 
   return (
     <>
-      <PageHeader title="Controle" subtitle="Mobiliteit: wat er uit staat, en of Mobiliteit elke werkdag genoeg auto’s kreeg." />
+      <PageHeader
+        title="Invulcontrole"
+        subtitle={totalOpen === 0 ? 'Alle dagen zijn afgesloten.' : `${totalOpen} ${totalOpen === 1 ? 'dag is' : 'dagen zijn'} niet afgesloten.`}
+      />
+      <RegistrationFlash code={params.melding} />
 
-      <section className="mb-6">
-        <SectionTitle className="mb-2">Nu uit</SectionTitle>
-        <Card className="p-4">
-          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            {groups.map((group) => {
-              const count = open.filter((loan) => loan.groupId === group.id).length;
-              return (
-                <li key={group.id}>
-                  <span className="text-slate-600">{group.name}: </span>
-                  <span className="font-semibold text-slate-900">{count}</span>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="mt-2 text-sm">
-            <Link href="/mobiliteit" className="font-medium text-brand-800 underline underline-offset-2">
-              Naar Mobiliteit
-            </Link>
-          </p>
-        </Card>
-      </section>
-
-      <section className="mb-6">
-        <SectionTitle className="mb-1">Te lang uit</SectionTitle>
-        <p className="mb-2 text-sm text-slate-600">
-          Niet retour gemeld aan het eind ({end}) van de eerstvolgende werkdag na het meegeven. Voor de werkplaats is dat de maandag na het
-          weekend; sluitingsdagen tellen niet mee.
-        </p>
-        {overdue.length === 0 ? (
-          <EmptyState title="Geen auto staat te lang uit." />
-        ) : (
-          <Card>
-            <ul className="divide-y divide-slate-100">
-              {overdue.map((loan) => (
-                <li key={loan.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-slate-900">
-                      <span className="font-mono tracking-wide">{formatPlate(loan.plate)}</span>
-                      <span className="font-normal text-slate-600"> · {loan.model}</span>
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      {groupName(loan.groupId)} · aan {loan.handedTo} · sinds {formatLoanMoment(loan.handedOutAt, today)} · door{' '}
-                      {loan.handedOutBy ? (names.get(loan.handedOutBy) ?? 'oud-collega') : 'oud-collega'}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    <Badge tone="brand">{DESTINATION_LABELS[loan.destination]}</Badge>
-                    <Badge tone="warning">terug uiterlijk {formatDayShort(loanDueDate(loan, closures))}</Badge>
-                  </div>
-                </li>
+      <Card className="relative mb-2 overflow-x-auto">
+        <table className="w-full min-w-max text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-slate-600">
+              <th scope="col" className="sticky left-0 bg-white px-3 py-2 text-left font-medium">
+                Vestiging
+              </th>
+              {days.map((day) => (
+                <th key={day} scope="col" className="px-1 py-2 text-center font-medium whitespace-nowrap">
+                  {day === today ? 'vandaag' : formatDayShort(day)}
+                </th>
               ))}
-            </ul>
-          </Card>
-        )}
-      </section>
-
-      <section>
-        <SectionTitle className="mb-1">Mobiliteit per werkdag</SectionTitle>
-        <p className="mb-2 text-sm text-slate-600">
-          Hoeveel auto’s elke vestiging per werkdag aan Mobiliteit meegaf. Rood: minder dan de ondergrens. Meer mag altijd. Een streepje:
-          die vestiging registreerde toen nog niet in Planbord.
-        </p>
-        {rows.length === 0 ? (
-          <EmptyState title="Er is geen ondergrens ingesteld.">
-            {viewer.isAdmin ? (
-              <Link href="/beheer/instellingen#mobiliteit" className="underline">
-                Stel per vestiging het aantal in bij Instellingen.
-              </Link>
-            ) : (
-              'De beheerder stelt dat per vestiging in.'
-            )}
-          </EmptyState>
-        ) : (
-          // relative: de verborgen teksten (sr-only) in de cellen blijven zo binnen het scrollvak, anders wordt de hele pagina breder.
-          <Card className="relative overflow-x-auto">
-            <table className="w-full min-w-max text-sm">
-              <caption className="sr-only">Auto’s aan Mobiliteit per vestiging per werkdag</caption>
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                  <th scope="col" className="sticky left-0 bg-white px-3 py-2 font-medium">
-                    Vestiging
-                  </th>
-                  {days.map((date) => (
-                    <th key={date} scope="col" className={cx('px-2 py-2 text-center font-medium', date === today && 'text-brand-800')}>
-                      {formatDayShort(date)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.groupId} className="border-b border-slate-100 last:border-0">
-                    <th scope="row" className="sticky left-0 bg-white px-3 py-2 text-left font-medium text-slate-900">
-                      {row.groupName}
-                      <span className="block text-xs font-normal text-slate-500">minstens {row.required}</span>
-                    </th>
-                    {row.cells.map((cell) => (
-                      <td key={cell.date} className="px-1 py-1 text-center">
-                        <span
-                          className={cx('inline-flex min-h-9 min-w-10 items-center justify-center rounded-md px-2', CELL[cell.state].className)}
-                          title={`${cell.label}: ${cell.count} van minstens ${row.required}`}
-                        >
-                          {CELL[cell.state].text(cell.count)}
-                          <span className="sr-only"> ({CELL[cell.state].label})</span>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((row) => (
+              <tr key={row.groupId}>
+                <th scope="row" className="sticky left-0 bg-white px-3 py-2 text-left font-medium whitespace-nowrap text-slate-900">
+                  {row.groupName}
+                </th>
+                {row.cells.map((cell) => {
+                  const style = CELL[cell.state];
+                  const selected = detail?.group.id === row.groupId && detail.date === cell.date;
+                  return (
+                    <td key={cell.date} className="p-1 text-center">
+                      <Link
+                        href={`/controle?vestiging=${row.groupId}&dag=${cell.date}#dag`}
+                        scroll={false}
+                        className={cx(
+                          'flex min-h-11 min-w-11 flex-col items-center justify-center rounded-lg px-1',
+                          style.className,
+                          selected && 'ring-2 ring-brand-600',
+                        )}
+                      >
+                        <span aria-hidden="true">{style.text}</span>
+                        <span className="sr-only">
+                          {row.groupName}, {cell.label}: {style.label}
                         </span>
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        {cell.walkIns + cell.incidents > 0 ? (
+                          <span className="text-[10px] font-normal text-slate-500" aria-hidden="true">
+                            {cell.walkIns}·{cell.incidents}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+      <p className="mb-6 text-xs text-slate-500">
+        ✓ afgesloten · … vandaag nog open · ✕ niet afgesloten · – telt niet mee. De kleine cijfers: binnenvallers · meldingen. Een
+        vestiging telt mee vanaf de eerste dag die ze in Planbord afsluit. Tik op een vakje voor de dag.
+      </p>
+
+      {detail ? (
+        <section id="dag" className="scroll-mt-20 space-y-4">
+          <SectionTitle>
+            {detail.group.name}, {detail.date === today ? 'vandaag' : formatDayShort(detail.date)}
+          </SectionTitle>
+          <Card className="space-y-3 p-4 text-sm">
+            <div>
+              <p className="font-medium text-slate-900">Binnenvallers</p>
+              {dayWalkIns.length === 0 ? (
+                <p className="text-slate-500">Geen.</p>
+              ) : (
+                <p className="text-slate-700">{dayWalkIns.map((row) => `${row.workshop.name} ${row.count}`).join(' · ')}</p>
+              )}
+            </div>
+            <div>
+              <p className="font-medium text-slate-900">Meldingen</p>
+              {dayIncidents.length === 0 ? (
+                <p className="text-slate-500">Geen.</p>
+              ) : (
+                <ul className="text-slate-700">
+                  {dayIncidents.map((incident) => (
+                    <li key={incident.id}>
+                      {workshopName(incident.workshopId)}: {INCIDENT_KIND_LABELS[incident.kind]}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <p className="flex flex-wrap gap-x-4 gap-y-1">
+              <Link href={`/binnenvallers?vestiging=${detail.group.id}&dag=${detail.date}`} className="font-medium text-brand-800 underline underline-offset-2">
+                Binnenvallers van deze dag
+              </Link>
+              <Link
+                href={`/meldingen/archief?vestiging=${detail.group.id}&van=${detail.date}&tot=${detail.date}`}
+                className="font-medium text-brand-800 underline underline-offset-2"
+              >
+                Meldingen van deze dag
+              </Link>
+            </p>
           </Card>
-        )}
-        {viewer.isAdmin && rows.length > 0 ? (
-          <p className="mt-2 text-sm">
-            <Link href="/beheer/instellingen#mobiliteit" className="text-brand-800 underline underline-offset-2">
-              Ondergrens per vestiging aanpassen
-            </Link>
-          </p>
-        ) : null}
-      </section>
+          <DayCloseCard
+            group={detail.group}
+            date={detail.date}
+            today={today}
+            closure={closure}
+            closedByName={closure?.closedBy ? (names.get(closure.closedBy) ?? null) : null}
+            canReopen
+            back={`/controle?vestiging=${detail.group.id}&dag=${detail.date}`}
+          />
+        </section>
+      ) : null}
     </>
   );
 }

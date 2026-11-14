@@ -370,6 +370,53 @@ describe('logboek', () => {
     });
   });
 
+  it('beschrijft binnenvallers, meldingen en dag afsluiten, met plek en dag bij een wijziging (fase 6)', () => {
+    const more = {
+      ...lookups,
+      workshopName: (id: string | null | undefined) => (id === 'w1' ? 'Audi' : 'verwijderde werkplaats'),
+      context: (entity: string, id: string | null | undefined) =>
+        entity === 'walk_ins' && id === 'wi1'
+          ? { group_id: 'breda', workshop_id: 'w1', date: '2026-10-12' }
+          : entity === 'incident_reports' && id === 'm1'
+            ? { group_id: 'breda', workshop_id: 'w1', kind: 'cancellation', occurred_at: '2026-10-12T10:30:00+00:00' }
+            : entity === 'day_closures' && id === 'd1'
+              ? { group_id: 'breda', date: '2026-10-12' }
+              : null,
+    };
+    const row = (overrides: Partial<AuditRow>): AuditRow => ({ ...base, employee_id: null, ...overrides });
+    expect(
+      describeAudit(row({ entity: 'walk_ins', entity_id: 'wi1', details: { group_id: 'breda', workshop_id: 'w1', date: '2026-10-12', count: 3 } }), more),
+    ).toMatchObject({ what: 'Binnenvallers geteld', detail: 'Breda, Audi, 12 okt 2026: 3' });
+    expect(
+      describeAudit(row({ entity: 'walk_ins', entity_id: 'wi1', action: 'update', changed_fields: ['count', 'updated_by'], details: { count: { old: 3, new: 4 } } }), more),
+    ).toMatchObject({ what: 'Binnenvallers bijgewerkt', detail: 'Breda, Audi, 12 okt 2026: aantal: 3 → 4' });
+    const melding = {
+      entity: 'incident_reports',
+      entity_id: 'm1',
+      details: { kind: 'cancellation', group_id: 'breda', workshop_id: 'w1', occurred_at: '2026-10-12T10:30:00+00:00', license_plate: 'GHP39K', contract_number: '681613', charge: true },
+    };
+    expect(describeAudit(row(melding), more)).toMatchObject({
+      what: 'Melding gemaakt',
+      detail: 'Annulering door werkplaats, Breda, Audi, 12 okt 2026 12:30, GHP-39-K, contract 681613',
+    });
+    expect(describeAudit(row({ ...melding, source: 'import' }), more)).toMatchObject({ what: 'Melding ingelezen uit Excel' });
+    expect(
+      describeAudit(row({ ...melding, action: 'update', changed_fields: ['charged_at', 'charged_by'], details: { charged_at: { old: null, new: '2026-10-13T08:00:00Z' } } }), more),
+    ).toMatchObject({ what: 'Melding doorbelast', detail: 'Annulering door werkplaats, Breda, Audi, 12 okt 2026 12:30' });
+    expect(
+      describeAudit(row({ entity: 'day_closures', entity_id: 'd1', details: { group_id: 'breda', date: '2026-10-12', rentlink_checked: true } }), more),
+    ).toMatchObject({ what: 'Dag afgesloten', detail: 'Breda, 12 okt 2026, RentLink gecontroleerd: ja' });
+    expect(
+      describeAudit(row({ entity: 'day_closures', entity_id: 'd1', action: 'update', changed_fields: ['rentlink_checked'], details: { rentlink_checked: { old: false, new: true } } }), more),
+    ).toMatchObject({ detail: 'Breda, 12 okt 2026: RentLink gecontroleerd: nee → ja' });
+    expect(describeAudit(row({ entity: 'day_closures', entity_id: 'd1', action: 'delete', details: { group_id: 'breda', date: '2026-10-12' } }), more)).toMatchObject({
+      what: 'Dag heropend',
+      detail: 'Breda, 12 okt 2026',
+    });
+    expect(describeAudit(row({ entity: 'export', details: { kind: 'incidents' } }), more)).toMatchObject({ what: 'Meldingen geëxporteerd' });
+    expect(describeAudit(row({ entity: 'export', details: { kind: 'walk_ins' } }), more)).toMatchObject({ what: 'Binnenvallers geëxporteerd' });
+  });
+
   it('beschrijft de uitleen zonder vrije tekst, en de teamleider (fase 5)', () => {
     const loan = { ...base, entity: 'vehicle_loans', entity_id: 'v1', employee_id: null };
     expect(

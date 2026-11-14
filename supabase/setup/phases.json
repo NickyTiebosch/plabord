@@ -52,5 +52,13 @@
       "20261113000100_loan_groups.sql",
       "20261113000200_loans_for_all.sql"
     ]
+  },
+  "fase-6": {
+    "title": "Fase 6: binnenvallers, meldingen en dag afsluiten",
+    "note": "Draai eerst fase-1.sql tot en met fase-5.sql. Deze bundel voegt vier tabellen, twee instellingen en functies toe; de app van fase 5 merkt er niets van.",
+    "migrations": [
+      "20261114000100_registrations.sql",
+      "20261114000200_rpc_phase6.sql"
+    ]
   }
 }

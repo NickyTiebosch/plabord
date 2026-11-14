@@ -30,6 +30,7 @@ export function mapVehicleLoan(row: Tables<'vehicle_loans'>): VehicleLoan {
     wasUsed: row.was_used,
     note: row.note,
     returnNote: row.return_note,
+    createdAt: iso(row.created_at),
   };
 }
 

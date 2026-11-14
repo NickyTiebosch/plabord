@@ -1,0 +1,54 @@
+# Plan fase 8: locatie van huurauto's, en zoeken
+
+**Status: concept van 13 november 2026.** Vervangt `Locatie huurauto's Den Bosch.xlsx`.
+
+## 1. Besluiten
+
+### V72. Onderdeel Locatie
+In de zijbalk komt **Locatie**, voor iedere collega. Het adres is `/locatie`. Het beantwoordt één vraag: waar staat deze auto?
+
+### V73. Plekken per vestiging
+De beheerder legt per vestiging de plekken vast (Beheer → Plekken): een naam en een volgorde, bijvoorbeeld Zijkant, Achter, Showroom, Wasstraat. De startlijst voor Den Bosch komt uit de koppen van het huidige bestand. Eindhoven en Breda beginnen leeg; het onderdeel is voor hen pas zichtbaar als er plekken zijn.
+
+### V74. Een auto op een plek zetten
+- Tik op een plek en vul het kenteken in, of zoek het kenteken en kies de plek. Twee tikken en een kenteken.
+- Een auto staat op één plek tegelijk. Zet je hem ergens anders, dan verdwijnt hij vanzelf van de oude plek.
+- **Weg** haalt de auto van het terrein, bijvoorbeeld als hij is verhuurd.
+- Bij elke auto staat wie hem het laatst verzette en wanneer. Een auto die langer dan 14 dagen niet is verzet, krijgt een grijs label "lang niet gezien", zodat de lijst niet stilletjes veroudert.
+
+### V75. Model en merk
+Het model vult Planbord zelf in als het kenteken bekend is uit Mobiliteit of, vanaf fase 9, uit de Rentwise-export. Anders vul je het één keer in.
+
+### V76. Zoeken op kenteken, door heel Planbord
+Bovenaan elke pagina komt een zoekveld. Een kenteken (of een deel ervan) toont alles wat Planbord van die auto weet:
+- waar hij nu staat;
+- of hij uit staat via Mobiliteit, en de laatste keren;
+- meldingen op dit kenteken;
+- vanaf fase 9: de status in de Uitloop en de laatste overeenkomsten.
+
+Een **wagenkaart** per auto (een eigen dossier dat je bijhoudt) bouwen we niet; de eigenaar vond dat overbodig. De zoekpagina toont alleen wat er al is.
+
+### V77. Rechten, logboek en bewaren
+- Iedere collega leest en verzet. Plekken beheren doet de beheerder.
+- Elke verplaatsing staat in het logboek. De tabel bewaart alleen de huidige plek; de geschiedenis staat in het logboek.
+- Geen klantgegevens.
+
+### V78. Export
+Beheer → Export → **Locatie downloaden**: per vestiging een tabblad met de plekken als kolommen, zoals het huidige bestand.
+
+## 2. Datamodel
+| Tabel | Inhoud | Schrijven |
+|---|---|---|
+| `parking_spots` | vestiging, naam, volgorde, actief | beheerder |
+| `vehicle_locations` | kenteken (uniek), vestiging, plek, model, wie en wanneer | iedereen, via een functie `place_vehicle` |
+
+## 3. Bouwvolgorde
+1. Datamodel, rechten en tests.
+2. Plekken beheren.
+3. Het scherm Locatie: per plek de auto's, verzetten en weg.
+4. Zoeken op kenteken.
+5. De startlijst inlezen uit het Excel-bestand, de export, documentatie en de pull request.
+
+## 4. Vragen voor de eigenaar
+1. Klopt het dat alleen Den Bosch zo'n lijst bijhoudt, en dat Eindhoven en Breda er later bij kunnen?
+2. Het huidige bestand heeft kolommen als Zijkant. Zijn dat alle plekken, of gebruik je er in de praktijk meer?

@@ -1,8 +1,8 @@
 # Planbord
 
-De rooster- en verlofapp van het verhuurteam. Planbord vervangt de Excel: wie werkt wanneer en waar, wie is afwezig, en welke dagen zijn we dicht. Sinds fase 5 houdt het team er ook registraties in bij, te beginnen met de uitleen van auto's.
+De rooster- en verlofapp van het verhuurteam. Planbord vervangt de Excel: wie werkt wanneer en waar, wie is afwezig, en welke dagen zijn we dicht. Sinds fase 5 houdt het team er ook registraties in bij: de uitleen van auto's (Mobiliteit), binnenvallers en werkplaatsmeldingen.
 
-De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md) tot en met [`docs/PLAN-fase-5.md`](docs/PLAN-fase-5.md); wat er na fase 5 komt, staat in [`docs/ROUTEKAART.md`](docs/ROUTEKAART.md). Hoe Planbord naar andere accounts overgaat, staat in [`docs/OVERDRACHT.md`](docs/OVERDRACHT.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
+De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in [`docs/PLAN-fase-1.md`](docs/PLAN-fase-1.md) en verder; het geheel staat in [`docs/ROUTEKAART.md`](docs/ROUTEKAART.md). Hoe Planbord naar andere accounts overgaat, staat in [`docs/OVERDRACHT.md`](docs/OVERDRACHT.md). De vaste afspraken voor de code staan in [`CLAUDE.md`](CLAUDE.md).
 
 ## Wat kan Planbord
 
@@ -115,6 +115,26 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
 - **Export → Uitleen downloaden:** Registratie en Archief, in de opbouw van het oude Excel-bestand.
 - Zie het plan van fase 5 (besluiten V41–V51).
 
+### Fase 6: binnenvallers, meldingen en de invulcontrole
+
+**Voor iedereen**
+- **Binnenvallers:** per vestiging en werkplaats een teller met plus en min, de hele dag bij te werken. Een andere dag kan tot 7 dagen terug. Het **Overzicht** toont de laatste drie weken.
+- **Meldingen:** één formulier per melding, met dezelfde keuzes als het oude bestand: contract/rijbewijs niet in orde (wat ontbrak), verkeerde auto meegegeven, annulering door de werkplaats (met tijdstip; vanaf 11:00 wordt het doorbelast) en te laat retour. Daarbij kenteken, contract- of reserveringsnummer en een korte toelichting.
+- **Doorbelasten:** alle annuleringen die doorbelast moeten worden, de open bovenaan.
+- **Dag afsluiten:** aan het eind van de dag, met het vinkje dat de contracten in RentLink zijn gecontroleerd. Om 16:00 krijgt wie die dag op de vestiging werkt een herinnering als de dag nog open is.
+- Wie een melding maakte of een auto aanmeldde, kan die op dezelfde dag zelf corrigeren.
+
+**Voor de teamleider**
+- **Controle → Invulcontrole:** per vestiging per werkdag of de dag is afgesloten, met de binnenvallers en meldingen van die dag.
+- **Doorbelast** zetten, meldingen van anderen corrigeren, een dag heropenen, en binnenvallers en meldingen downloaden als Excel.
+
+**Voor beheerders**
+- **Beheer → Werkplaatsen:** per vestiging de werkplaatsen, met de werkplaatsen uit de oude bestanden als start.
+- **Beheer → Instellingen:** vanaf hoe laat een annulering wordt doorbelast, en hoe laat de herinnering gaat (of uit).
+- **Beheer → Import → Historie inlezen:** de oude bestanden Binnenvallers Registratie en WPL meldingen dagregistratie, één keer.
+- **Beheer → Export:** binnenvallers en meldingen, in de opbouw van de oude bestanden.
+- Zie het plan van fase 6 (besluiten V55–V65).
+
 ### Uitleg voor collega's
 
 - **De pagina `/uitleg`**, te openen zonder in te loggen. Er staan tien korte video's op, met de stappen eronder:
@@ -195,7 +215,7 @@ Volg de stappen op volgorde. Reken op ongeveer een uur. De namen in de dashboard
 3. Plak de hele inhoud van [`supabase/setup/fase-1.sql`](supabase/setup/fase-1.sql) en klik op **Run**.
    - Je ziet *Success. No rows returned*.
    - Het script nog een keer draaien kan geen kwaad: bestaande tabellen en gegevens blijven staan.
-4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql), [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql) en [`supabase/setup/fase-5.sql`](supabase/setup/fase-5.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
+4. Doe daarna hetzelfde met [`supabase/setup/fase-2.sql`](supabase/setup/fase-2.sql), [`supabase/setup/fase-3.sql`](supabase/setup/fase-3.sql), [`supabase/setup/fase-4.sql`](supabase/setup/fase-4.sql), [`supabase/setup/fase-5.sql`](supabase/setup/fase-5.sql) en [`supabase/setup/fase-6.sql`](supabase/setup/fase-6.sql). Gebruik voor elk bestand een nieuwe query, en houd die volgorde aan.
 
 ### Stap 2. Inloggen instellen
 
@@ -491,6 +511,10 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
   - Geen klantnamen of andere klantgegevens; bij de opmerking staat dat ze niet nodig zijn.
   - Iedere collega ziet de uitleen. Het logboek bewaart daarvan geen vrije tekst: niet aan wie, en geen opmerkingen.
   - Een registratie verdwijnt 24 maanden na retour vanzelf.
+- Binnenvallers en meldingen (fase 6) bewaren aantallen per werkplaats, en per melding de soort, het tijdstip, kenteken, contract- of reserveringsnummer, doorbelasten en een korte toelichting.
+  - Geen klantnamen of andere klantgegevens; bij de toelichting staat dat ze niet nodig zijn.
+  - Het logboek bewaart geen toelichting. Een melding verdwijnt 24 maanden na de datum vanzelf.
+  - De herinnering om de dag af te sluiten noemt alleen de vestiging en de dag.
 - De teamleider (fase 5) ziet geen werkmails. Mails en pushmeldingen na een actie van een teamleider verstuurt de server met de secret key.
 - Pushmeldingen (fase 4):
   - je zet ze zelf aan, per toestel, en ze gaan alleen over je eigen rooster;

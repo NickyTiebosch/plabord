@@ -9,6 +9,7 @@ import { parseTime } from '../engine/time';
 import type { AbsencePart, AbsenceStatus, DayPart, Role, Weekday } from '../engine/types';
 import { formatPlate } from '../loans/plates';
 import { DESTINATION_LABELS, isDestination } from '../loans/types';
+import { INCIDENT_KIND_LABELS, MISSING_LABELS, isIncidentKind, isMissing } from '../registrations/types';
 
 export interface AuditRow {
   id: number;
@@ -48,6 +49,11 @@ export const AUDIT_ENTITIES: Record<string, string> = {
   shift_overrides: 'Roosterwijzigingen',
   gap_dismissals: 'Genegeerde gaten',
   vehicle_loans: 'Mobiliteit',
+  // Fase 6.
+  workshops: 'Werkplaatsen',
+  walk_ins: 'Binnenvallers',
+  incident_reports: 'Werkplaatsmeldingen',
+  day_closures: 'Dag afgesloten',
   export: 'Exports',
 };
 
@@ -96,6 +102,18 @@ const FIELD_LABELS: Record<string, string> = {
   handed_out_at: 'meegegeven',
   returned_at: 'retour',
   was_used: 'ingezet',
+  // Fase 6.
+  workshop_id: 'werkplaats',
+  count: 'aantal',
+  occurred_at: 'moment',
+  missing: 'wat ontbrak',
+  cancelled_at: 'tijdstip annulering',
+  charge: 'doorbelasten',
+  charged_at: 'doorbelast',
+  contract_number: 'contractnummer',
+  rentlink_checked: 'RentLink gecontroleerd',
+  charge_cancellation_from: 'doorbelasten vanaf',
+  day_close_reminder_at: 'herinnering dag afsluiten',
 };
 
 const KINDS: Record<string, string> = {
@@ -119,6 +137,13 @@ interface Lookups {
   groupName: (id: string | null | undefined) => string;
   /** Vestiging, datum en dagdeel van een inval: bij een wijziging staan die niet in het logboek zelf. */
   substitution?: (id: string | null | undefined) => Record<string, unknown> | null;
+  /** Fase 6: de naam van een werkplaats. */
+  workshopName?: (id: string | null | undefined) => string;
+  /**
+   * Fase 6: bij een wijziging staan alleen de gewijzigde velden in het logboek. Vestiging,
+   * werkplaats en dag halen we bij de regel zelf (binnenvallers, meldingen, afgesloten dagen).
+   */
+  context?: (entity: string, id: string | null | undefined) => Record<string, unknown> | null;
 }
 
 function record(value: unknown): Record<string, unknown> {
@@ -137,11 +162,14 @@ function formatValue(field: string, value: unknown, lookups: Lookups): string {
     return ABSENCE_STATUS_LABELS[value as AbsenceStatus] ?? SUBSTITUTION_STATUS_LABELS[String(value)] ?? String(value);
   }
   if (field === 'weekday') return weekdayShort(Number(value) as Weekday);
-  if (field === 'kind') return KINDS[String(value)] ?? String(value);
+  if (field === 'kind') return isIncidentKind(value) ? INCIDENT_KIND_LABELS[value] : (KINDS[String(value)] ?? String(value));
+  if (field === 'workshop_id') return lookups.workshopName?.(String(value)) ?? 'werkplaats';
+  if (field === 'missing') return isMissing(value) ? MISSING_LABELS[value] : String(value);
+  if (field === 'charged_at' && typeof value === 'string') return 'ja';
   if (field === 'handled_at' && typeof value === 'string') return 'ja';
   if (field === 'license_plate') return formatPlate(String(value));
   if (field === 'destination') return isDestination(value) ? DESTINATION_LABELS[value] : String(value);
-  if ((field === 'handed_out_at' || field === 'returned_at') && typeof value === 'string') {
+  if ((field === 'handed_out_at' || field === 'returned_at' || field === 'occurred_at') && typeof value === 'string') {
     const moment = amsterdamDateTime(new Date(value));
     return `${formatDate(moment.date)} ${moment.time}`;
   }
@@ -151,9 +179,12 @@ function formatValue(field: string, value: unknown, lookups: Lookups): string {
   return String(value);
 }
 
+/** Velden die alleen bijhouden wie het laatst iets deed: dat staat al bij "wie" in het logboek. */
+const BOOKKEEPING_FIELDS = new Set(['updated_by', 'closed_by', 'closed_at', 'charged_by']);
+
 function changesText(row: AuditRow, lookups: Lookups): string | null {
   const details = record(row.details);
-  const changed = row.changed_fields ?? [];
+  const changed = (row.changed_fields ?? []).filter((field) => !BOOKKEEPING_FIELDS.has(field));
   if (changed.length === 0) return null;
   return changed
     .map((field) => {
@@ -207,6 +238,16 @@ const VERBS: Record<string, [string, string, string]> = {
   shift_overrides: ['Roosterwijziging voor één dag', 'Roosterwijziging aangepast', 'Terug naar de vaste dienst'],
   gap_dismissals: ['Gat genegeerd', 'Genegeerd gat bijgewerkt', 'Gat teruggezet'],
   vehicle_loans: ['Auto aangemeld', 'Registratie gecorrigeerd', 'Registratie verwijderd'],
+  workshops: ['Werkplaats toegevoegd', 'Werkplaats gewijzigd', 'Werkplaats verwijderd'],
+  walk_ins: ['Binnenvallers geteld', 'Binnenvallers bijgewerkt', 'Binnenvallers verwijderd'],
+  incident_reports: ['Melding gemaakt', 'Melding gewijzigd', 'Melding verwijderd'],
+  day_closures: ['Dag afgesloten', 'Dag afsluiten gewijzigd', 'Dag heropend'],
+};
+
+const EXPORT_LABELS: Record<string, string> = {
+  loans: 'Mobiliteit geëxporteerd',
+  walk_ins: 'Binnenvallers geëxporteerd',
+  incidents: 'Meldingen geëxporteerd',
 };
 
 /** Wat er bij volledig verwijderen (fase 3, V21) met de medewerker verdween, als aantallen. */
@@ -337,10 +378,78 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
       what =
         details.kind === 'employee'
           ? `Gegevens gedownload – ${lookups.employeeName(row.employee_id)}`
-          : details.kind === 'loans'
-            ? 'Mobiliteit geëxporteerd'
-            : 'Planning geëxporteerd';
+          : (EXPORT_LABELS[String(details.kind)] ?? 'Planning geëxporteerd');
       break;
+    case 'workshops':
+      detail =
+        row.action === 'update'
+          ? changesText(row, lookups)
+          : [formatValue('group_id', details.group_id, lookups), typeof details.name === 'string' ? details.name : null].filter(Boolean).join(', ');
+      break;
+    case 'walk_ins': {
+      // "Breda, Volkswagen, 12 okt 2026: 3", of bij bijwerken "Breda, Volkswagen, 12 okt 2026: aantal: 2 → 3".
+      const place = row.action === 'update' ? (lookups.context?.(row.entity, row.entity_id) ?? null) : details;
+      const where = place
+        ? [
+            formatValue('group_id', place.group_id, lookups),
+            formatValue('workshop_id', place.workshop_id, lookups),
+            formatValue('date', place.date, lookups),
+          ].join(', ')
+        : null;
+      const change = row.action === 'update' ? changesText(row, lookups) : String(details.count ?? '?');
+      detail = [where, change].filter(Boolean).join(': ') || null;
+      break;
+    }
+    case 'incident_reports': {
+      // Zonder bijzonderheden (vrije tekst). Wel soort, werkplaats, kenteken en contractnummer.
+      const changed = (row.changed_fields ?? []).filter((field) => !BOOKKEEPING_FIELDS.has(field));
+      const charged = record(details.charged_at);
+      const melding = row.action === 'update' ? (lookups.context?.(row.entity, row.entity_id) ?? null) : null;
+      const which = melding
+        ? [
+            formatValue('kind', melding.kind, lookups),
+            formatValue('group_id', melding.group_id, lookups),
+            formatValue('workshop_id', melding.workshop_id, lookups),
+            formatValue('occurred_at', melding.occurred_at, lookups),
+          ].join(', ')
+        : null;
+      if (row.action === 'update' && changed.length === 1 && changed[0] === 'charged_at') {
+        what = charged.new ? 'Melding doorbelast' : 'Doorbelast teruggezet';
+        detail = which;
+      } else if (row.action === 'update') {
+        detail = [which, changesText(row, lookups)].filter(Boolean).join(': ') || null;
+      } else {
+        if (row.action === 'delete' && row.source === 'opruimen') what = 'Melding opgeruimd (ouder dan 24 maanden)';
+        if (row.action === 'insert' && row.source === 'import') what = 'Melding ingelezen uit Excel';
+        detail = [
+          formatValue('kind', details.kind, lookups),
+          formatValue('group_id', details.group_id, lookups),
+          formatValue('workshop_id', details.workshop_id, lookups),
+          formatValue('occurred_at', details.occurred_at, lookups),
+          details.license_plate ? formatValue('license_plate', details.license_plate, lookups) : null,
+          details.contract_number ? `contract ${String(details.contract_number)}` : null,
+        ]
+          .filter(Boolean)
+          .join(', ');
+      }
+      break;
+    }
+    case 'day_closures': {
+      const day = row.action === 'update' ? (lookups.context?.(row.entity, row.entity_id) ?? null) : null;
+      detail =
+        row.action === 'update'
+          ? [day ? `${formatValue('group_id', day.group_id, lookups)}, ${formatValue('date', day.date, lookups)}` : null, changesText(row, lookups)]
+              .filter(Boolean)
+              .join(': ') || null
+          : [
+              formatValue('group_id', details.group_id, lookups),
+              formatValue('date', details.date, lookups),
+              row.action === 'insert' ? `RentLink gecontroleerd: ${formatValue('rentlink_checked', details.rentlink_checked, lookups)}` : null,
+            ]
+              .filter(Boolean)
+              .join(', ');
+      break;
+    }
     case 'vehicle_loans': {
       // Fase 5: zonder vrije tekst (aan wie, opmerkingen); wel kenteken, vestiging en tijdstippen.
       const changed = row.changed_fields ?? [];

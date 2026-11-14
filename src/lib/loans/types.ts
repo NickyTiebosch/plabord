@@ -41,6 +41,8 @@ export interface VehicleLoan {
   wasUsed: boolean | null;
   note: string | null;
   returnNote: string | null;
+  /** Wanneer de registratie is gemaakt: op die dag kan wie aanmeldde haar zelf corrigeren (V59). */
+  createdAt?: string;
 }
 
 /** Een vestiging zoals de uitleen hem nodig heeft. */

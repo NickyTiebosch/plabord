@@ -5,6 +5,7 @@
 import writeExcelFile from 'write-excel-file/node';
 import type { LoanCell, LoanCellTone, LoanSheet } from './loans';
 import type { ExportSheet } from './planning';
+import type { TitledSheet } from './registrations';
 import type { RosterCell, RosterSheet, RosterTone } from './roster';
 
 export async function buildExportWorkbook(sheets: readonly ExportSheet[]): Promise<Buffer> {
@@ -78,7 +79,11 @@ const LOAN_TONES: Record<LoanCellTone, string> = {
 const LOAN_BORDER = { borderStyle: 'thin' as const, borderColor: '#BFC9D9' };
 
 function loanCell(cell: LoanCell) {
-  const style = { ...LOAN_BORDER, ...(cell.tone ? { backgroundColor: LOAN_TONES[cell.tone] } : {}) };
+  const style = {
+    ...LOAN_BORDER,
+    ...(cell.tone ? { backgroundColor: LOAN_TONES[cell.tone] } : {}),
+    ...(cell.strong ? { fontWeight: 'bold' as const } : {}),
+  };
   if (cell.value === null || cell.value === '') return { value: undefined, ...style };
   if (cell.kind === 'date' && typeof cell.value === 'string') {
     const [year = 2000, month = 1, day = 1] = cell.value.split('-').map(Number);
@@ -91,6 +96,11 @@ function loanCell(cell: LoanCell) {
 /** De uitleen als .xlsx (fase 5, V50): titelbalk, kolomkoppen en vaste kolombreedtes. Geen keuzelijsten. */
 export async function buildLoansWorkbook(sheets: readonly LoanSheet[]): Promise<Buffer> {
   const widths = [12, 22, 15, 12, 8, 20, 24, 18, 10, 36, 13, 11, 20, 18, 14];
+  return buildTitledWorkbook(sheets.map((sheet) => ({ ...sheet, widths })));
+}
+
+/** Een export met titelbalk en kolomkoppen per tabblad, zoals de oude bestanden (fase 5 en 6). */
+export async function buildTitledWorkbook(sheets: readonly TitledSheet[]): Promise<Buffer> {
   return writeExcelFile(
     sheets.map((sheet) => ({
       sheet: sheet.sheet,
@@ -108,7 +118,7 @@ export async function buildLoansWorkbook(sheets: readonly LoanSheet[]): Promise<
         })),
         ...sheet.rows.map((row) => row.map(loanCell)),
       ],
-      columns: widths.map((width) => ({ width })),
+      columns: sheet.widths.map((width) => ({ width })),
       stickyRowsCount: 2,
     })),
   ).toBuffer();
