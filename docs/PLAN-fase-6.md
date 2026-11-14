@@ -2,12 +2,29 @@
 
 **Status: concept van 13 november 2026.** De eigenaar heeft gevraagd alle plannen te schrijven en uit te voeren, en niet per fase op akkoord te wachten. Daarom staan de keuzes hieronder als besluit, met de reden erbij. Wil je er een anders, zeg het dan; ik pas het aan. Dit plan bouwt voort op fase 5. Het geheel staat in `docs/ROUTEKAART.md`; de vaste afspraken in `CLAUDE.md`.
 
-## Wat er nodig is van de eigenaar
-Twee onderdelen kan ik pas bouwen met de Excel-bestanden erbij. Ze zaten in het eerste gesprek, maar zijn daar niet meer beschikbaar.
+## Stand van de bouw (13 november 2026)
+De eigenaar heeft de Excel-bestanden aangeleverd. De bouw gaat verder met Opus 5.5; dit is wat er staat en wat er nog moet.
 
-| Nodig | Waarvoor | Zonder dit |
-|---|---|---|
-| `Binnenvallers Registratie.xlsx` en `WPL meldingen dagregistratie.xlsx`, opnieuw als bijlage | de historie inlezen (V62) en de export in precies dezelfde kolommen (V63) | bouw ik alles behalve de historie; de export krijgt een eigen, logische opbouw |
+**Gebouwd en getest** (tak `fase-6`; lint, typecheck, 566 tests en de build slagen):
+- het datamodel met rechten en databasetests (`supabase/migrations/20261114000100_registrations.sql` en `…000200_rpc_phase6.sql`, bundel `fase-6.sql`);
+- de pure logica in `src/lib/registrations/` met tests;
+- de onderdelen Binnenvallers, Meldingen en Controle in de navigatie;
+- Binnenvallers (tellers en overzicht), Meldingen (lijst, formulier, wijzigen, archief, doorbelastlijst), dag afsluiten, de invulcontrole, de tegels op Start en Beheer → Werkplaatsen;
+- zelf corrigeren op dezelfde dag, ook bij Mobiliteit (V59);
+- de herinnering in de geplande taak (V61).
+
+**Nog te doen, in deze volgorde:**
+1. **De schermen doorlopen** op telefoon en computer met de nepdatabase (`tools/uitleg-video/mock/server.mjs`), als medewerker, teamleider en beheerder. Dat is voor fase 6 nog niet gedaan. Let op de tellers (plus en min), het formulier dat velden toont per soort melding, en zijwaarts scrollen in de rasters.
+2. **Historie inlezen (V63):** een parser in `src/lib/import/` voor de twee bestanden, een pagina onder Beheer → Import met eerst een voorbeeld, en de functie `import_registrations` die er al is. Opbouw van de bestanden:
+   - *Binnenvallers Registratie:* tabbladen Den Bosch, Eindhoven en Breda; rij 1 een titel, rij 2 de koppen (Datum, de werkplaatsen, Totaal dag, Opmerkingen). Een leeg vak is niets ingevuld, `x` is 0. De kolom Opmerkingen lezen we niet in.
+   - *WPL meldingen dagregistratie:* de drie tabbladen `Invoer …`; rij 3 de koppen (Datum, Werkplaats, Soort melding, Wat ontbrak?, Tijdstip annulering, Kenteken, Contract-/res.nr, Bijzonderheden, Doorbelasten?, Ingevuld door). Ingevuld door is een voornaam: koppelen aan een medewerker als de naam precies één keer voorkomt, anders leeg. `import_key` = tabblad en rijnummer.
+3. **De export (V64):** `src/lib/export/` met Binnenvallers (per vestiging een tabblad, dezelfde kolommen als het oude bestand) en Meldingen (per vestiging een tabblad en een tabblad Doorbelasten), routes `/binnenvallers/export` en `/meldingen/export`, knoppen onder Beheer → Export.
+4. **Logboek en gegevens per medewerker:** de teksten in `src/lib/admin/audit.ts` voor de vier nieuwe tabellen, en de tabbladen Meldingen en Dag afgesloten in `src/lib/export/employee.ts`.
+5. **Testgegevens:** `supabase/setup/testdata.sql` uitbreiden met verzonnen binnenvallers, meldingen en afgesloten dagen.
+6. **Documentatie:** `CLAUDE.md` (privacyregels: meldingen, en dat de herinnering voor het afsluiten niet over het eigen rooster gaat), `README.md`, `docs/SPEC.md`, `docs/OVERDRACHT.md`.
+7. **Pull request** van `fase-6` naar `fase-5` (of naar `main` als fase 5 dan live is), met de SQL-stappen voor het testproject en het testlijstje.
+
+Afwijking van V61 die tijdens de bouw is gekozen: de invulcontrole telt per vestiging vanaf de eerste dag die de vestiging **afsluit**, niet vanaf de eerste registratie. Anders staat na het inlezen van de historie alles rood.
 
 ## 1. Besluiten
 
@@ -113,11 +130,5 @@ Eén bundel `supabase/setup/fase-6.sql`. Alles twee keer te draaien, RLS op elke
 
 De uitlegvideo's volgen als alle fasen klaar zijn, op verzoek van de eigenaar.
 
-## 6. Wat daarna komt, en wat daarvoor nodig is
-| Fase | Kan ik bouwen zonder iets van jou? |
-|---|---|
-| 7. Rapporten en signalen | Ja, zodra fase 6 staat. |
-| 8. Locatie en zoeken | Grotendeels. Voor de startlijst heb ik `Locatie huurauto's Den Bosch.xlsx` opnieuw nodig. |
-| 9. Rentwise-export en Uitloop | Nee. Ik heb een voorbeeldexport uit Rentwise nodig (zonder klantnamen) en `Uitloop werklijst.xlsx`. |
-| 10. Lekkagecontroles | Nee. Naast de export heb ik per controle jullie regel nodig, bijvoorbeeld de vrije kilometers en wanneer aftankkosten gelden. |
-| 11. KPI's | Pas na fase 10. |
+## 6. Wat daarna komt
+De plannen voor fase 7 tot en met 11 staan in `docs/PLAN-fase-7.md` tot en met `docs/PLAN-fase-11.md`.
