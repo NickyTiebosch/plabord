@@ -90,3 +90,44 @@ describe('fase 8: locatie van huurauto’s', () => {
     await as(bas, () => expectError(db.query(`select public.log_export('locations', null)`), /beheerder of teamleider/));
   });
 });
+
+describe('fase 8: overdracht per vestiging', () => {
+  let db: PGlite;
+  let tess: TestPerson; // teamleider
+  let bas: TestPerson; // medewerker
+  let eva: TestPerson; // medewerker
+  const as = <T>(person: TestPerson, run: () => Promise<T>) => withSession(db, session(person), run);
+
+  beforeAll(async () => {
+    db = await createDatabase();
+    tess = await createPerson(db, { name: 'Tess', role: 'none', groupId: 'other' });
+    bas = await createPerson(db, { name: 'Bas' });
+    eva = await createPerson(db, { name: 'Eva', groupId: 'eindhoven' });
+    await db.query('update public.employees set is_team_lead = true where id = $1', [tess.employeeId]);
+  });
+
+  it('schrijft een notitie op eigen naam; de schrijver wijzigt hem vandaag, een ander niet, de teamleider wel', async () => {
+    const id = await as(bas, async () =>
+      (await db.query<{ id: string }>(`insert into public.handover_notes (group_id, body) values ('den_bosch', 'Sleutel S 18 ligt in de kluis') returning id`)).rows[0]?.id,
+    );
+    const row = await db.query(`select created_by from public.handover_notes where id = $1`, [id]);
+    expect(row.rows).toEqual([{ created_by: bas.employeeId }]);
+    expect((await as(eva, () => db.query(`update public.handover_notes set body = 'x' where id = $1`, [id]))).affectedRows).toBe(0);
+    expect((await as(bas, () => db.query(`update public.handover_notes set body = 'Sleutel ligt in de kluis' where id = $1`, [id]))).affectedRows).toBe(1);
+    // Gisteren geschreven: dan alleen de teamleider.
+    await db.query(`update public.handover_notes set created_at = now() - interval '1 day' where id = $1`, [id]);
+    expect((await as(bas, () => db.query(`delete from public.handover_notes where id = $1`, [id]))).affectedRows).toBe(0);
+    expect((await as(tess, () => db.query(`update public.handover_notes set body = 'Kluis' where id = $1`, [id]))).affectedRows).toBe(1);
+    await as(bas, () => expectError(db.query(`insert into public.handover_notes (group_id, body) values ('logistics', 'x')`), /handover_notes_group_fkey|foreign key/));
+  });
+
+  it('toont alleen de laatste 7 dagen en ruimt oudere notities op, zonder de tekst in het logboek', async () => {
+    await db.query(`insert into public.handover_notes (group_id, body, created_at) values ('den_bosch', 'Oud', now() - interval '8 days')`);
+    expect((await as(bas, () => db.query(`select body from public.handover_notes where body = 'Oud'`))).rows).toEqual([]);
+    await as(eva, () => db.query(`insert into public.handover_notes (group_id, body) values ('eindhoven', 'Nieuw')`));
+    expect((await db.query(`select body from public.handover_notes where body = 'Oud'`)).rows).toEqual([]);
+    const log = await db.query<{ details: Record<string, unknown> }>(`select details from public.audit_log where entity = 'handover_notes'`);
+    expect(JSON.stringify(log.rows)).not.toContain('Kluis');
+    expect(JSON.stringify(log.rows)).not.toContain('Nieuw');
+  });
+});

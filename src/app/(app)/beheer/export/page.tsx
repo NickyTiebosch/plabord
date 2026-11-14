@@ -77,6 +77,16 @@ export default async function ExportPage() {
           Locatie downloaden
         </a>
       </Card>
+      <Card className="mt-4 space-y-3 p-4">
+        <SectionTitle>Overdracht exporteren</SectionTitle>
+        <p className="text-sm text-slate-700">
+          De notities van de laatste 7 dagen, per vestiging een tabblad. Oudere notities zijn al verdwenen. Een teamleider kan dit ook, bij
+          Overdracht. Elke export komt in het logboek.
+        </p>
+        <a href="/overdracht/export" download className={buttonClass('secondary')}>
+          Overdracht downloaden
+        </a>
+      </Card>
     </>
   );
 }

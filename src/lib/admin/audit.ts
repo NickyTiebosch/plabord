@@ -57,6 +57,7 @@ export const AUDIT_ENTITIES: Record<string, string> = {
   // Fase 8.
   parking_spots: 'Plekken',
   vehicle_locations: 'Locatie',
+  handover_notes: 'Overdracht',
   export: 'Exports',
 };
 
@@ -260,6 +261,7 @@ const VERBS: Record<string, [string, string, string]> = {
   day_closures: ['Dag afgesloten', 'Dag afsluiten gewijzigd', 'Dag heropend'],
   parking_spots: ['Plek toegevoegd', 'Plek gewijzigd', 'Plek verwijderd'],
   vehicle_locations: ['Auto op een plek gezet', 'Auto verzet', 'Auto weg van het terrein'],
+  handover_notes: ['Overdracht geschreven', 'Overdracht gewijzigd', 'Overdracht verwijderd'],
 };
 
 const EXPORT_LABELS: Record<string, string> = {
@@ -268,6 +270,7 @@ const EXPORT_LABELS: Record<string, string> = {
   incidents: 'Meldingen geëxporteerd',
   reports: 'Rapport geëxporteerd',
   locations: 'Locatie geëxporteerd',
+  handover: 'Overdracht geëxporteerd',
 };
 
 /** Wat er bij volledig verwijderen (fase 3, V21) met de medewerker verdween, als aantallen. */
@@ -475,6 +478,11 @@ export function describeAudit(row: AuditRow, lookups: Lookups): AuditView {
         row.action === 'update'
           ? changesText(row, lookups)
           : [formatValue('group_id', details.group_id, lookups), typeof details.name === 'string' ? details.name : null].filter(Boolean).join(', ');
+      break;
+    case 'handover_notes':
+      // Fase 8: zonder de tekst van de notitie.
+      if (row.action === 'delete' && row.source === 'opruimen') what = 'Overdracht opgeruimd (ouder dan 7 dagen)';
+      detail = row.action === 'update' ? null : formatValue('group_id', details.group_id, lookups);
       break;
     case 'vehicle_locations': {
       // Fase 8: kenteken, vestiging en plek. Bij verzetten: van welke plek naar welke.

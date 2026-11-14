@@ -69,10 +69,11 @@
     ]
   },
   "fase-8": {
-    "title": "Fase 8: locatie van huurauto's",
-    "note": "Draai eerst fase-1.sql tot en met fase-7.sql. Deze bundel voegt twee tabellen en functies toe, met de plekken van Den Bosch als start; de app van fase 7 merkt er niets van.",
+    "title": "Fase 8: locatie van huurauto's en de overdracht",
+    "note": "Draai eerst fase-1.sql tot en met fase-7.sql. Deze bundel voegt drie tabellen en functies toe (plekken, auto's op het terrein en de overdracht per vestiging), met de plekken van Den Bosch als start; de app van fase 7 merkt er niets van.",
     "migrations": [
-      "20261116000100_locations.sql"
+      "20261116000100_locations.sql",
+      "20261116000200_handover_notes.sql"
     ]
   }
 }

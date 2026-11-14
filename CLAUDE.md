@@ -89,6 +89,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - Sinds fase 4 ook de push-abonnementen van de eigen toestellen van een medewerker (besluit V28).
   - Sinds fase 6 binnenvallers (aantallen per werkplaats per dag), meldingen (soort, werkplaats, tijdstip, kenteken, contract- of reserveringsnummer, doorbelasten en een korte toelichting) en wie een dag afsloot. Nooit klantnamen. Het logboek bewaart geen bijzonderheden van een melding. Een melding verdwijnt 24 maanden na de datum.
   - Sinds fase 8 waar een huurauto op het terrein staat: kenteken, plek, model en wie hem het laatst verzette. Geen klantgegevens.
+  - Sinds fase 8 de overdracht per vestiging: een korte notitie (hooguit 300 tekens) met wie hem schreef. Na 7 dagen weg; het logboek bewaart de tekst niet. Klantgegevens zijn niet nodig.
   - Sinds fase 5 de uitleen (besluit V41): kenteken, model, kilometerstand, bestemming, aan wie (persoon of afdeling), wie meegaf en terugnam, tijdstippen, ingezet ja of nee en een korte opmerking. Nooit klantnamen of andere klantgegevens. Het logboek bewaart geen vrije tekst van de uitleen. Een registratie verdwijnt 24 maanden na retour.
 - Afwezigheid heeft géén reden, soort of vrij tekstveld. Alles heet "Afwezig".
 - Rapporten en signalen (fase 7) tonen aantallen per vestiging en werkplaats, nooit per medewerker.
@@ -126,7 +127,7 @@ Planbord is de rooster- en verlofapp van het verhuurteam, en sinds fase 5 ook de
   - Dat geldt ook voor schermafbeeldingen, video's en de PDF van de uitleg (besluit V30): alleen het verzonnen team.
 
 ## Teststrategie
-- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/`, (fase 5) `src/lib/loans/` en (fase 6) `src/lib/registrations/` (fase 7) `src/lib/reports/` en (fase 8) `src/lib/locations/`. Een test staat naast de code als `*.test.ts`.
+- Schrijf Vitest-unit-tests voor alles in `src/lib/engine/`, `src/lib/ics/`, `src/lib/import/`, `src/lib/export/`, `src/lib/mail/`, `src/lib/push/`, (fase 5) `src/lib/loans/`, (fase 6) `src/lib/registrations/`, (fase 7) `src/lib/reports/` en (fase 8) `src/lib/locations/` en `src/lib/handover/`. Een test staat naast de code als `*.test.ts`.
 - Tests versturen nooit een echte mail of push: het versturen gaat via een transport dat je in tests vervangt.
 - Er is één gedeelde, fictieve teamfixture: `src/lib/engine/__fixtures__/team.ts`. Die heeft dezelfde opbouw als het echte team (zie SPEC, "Tests").
 - De databasetests in `supabase/tests/` draaien alle migraties op PGlite, met een nagebootst `auth`-schema en de rollen `anon`, `authenticated` en `service_role`. Ze controleren:

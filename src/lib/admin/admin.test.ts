@@ -428,6 +428,7 @@ describe('logboek', () => {
       ),
     ).toMatchObject({ what: 'Auto verzet', detail: 'GHP-39-K: plek: Achter → Zijkant' });
     expect(describeAudit(row({ ...place, action: 'delete' }), spots)).toMatchObject({ what: 'Auto weg van het terrein' });
+    expect(describeAudit(row({ entity: 'handover_notes', details: { group_id: 'breda' } }), spots)).toMatchObject({ what: 'Overdracht geschreven', detail: 'Breda' });
     expect(
       describeAudit(row({ entity: 'settings', action: 'update', changed_fields: ['signal_charge_days'], details: { signal_charge_days: { old: 14, new: 21 } } }), more),
     ).toMatchObject({ detail: 'signaal dagen op de doorbelastlijst: 14 → 21' });

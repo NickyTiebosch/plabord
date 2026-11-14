@@ -171,6 +171,7 @@ describe('gegevens van één medewerker (V20)', () => {
       'Binnenvallers',
       'Dag afgesloten',
       'Locatie',
+      'Overdracht',
       'Logboek',
     ]);
     expect(sheets[0]?.rows).toEqual([
@@ -200,7 +201,8 @@ describe('gegevens van één medewerker (V20)', () => {
     expect(sheets[10]?.rows).toEqual([['7-10-2026', 'Den Bosch', 'Volkswagen', '4', '7-10-2026 17:00']]);
     expect(sheets[11]?.rows).toEqual([['7-10-2026', 'Den Bosch', 'ja', '7-10-2026 18:10']]);
     expect(sheets[12]?.rows).toEqual([['GHP-39-K', 'Den Bosch', 'Achter', '7-10-2026 18:00']]);
-    expect(sheets[13]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
+    expect(sheets[13]?.rows).toEqual([]);
+    expect(sheets[14]?.rows).toEqual([['do 1 okt 2026 10:00', 'Afwezigheid ingevoerd – Sanne', '14 okt, hele dag, goedgekeurd']]);
   });
 
   it('noemt geen collega’s', () => {

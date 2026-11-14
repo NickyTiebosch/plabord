@@ -157,6 +157,8 @@ De opdracht staat in [`docs/SPEC.md`](docs/SPEC.md). Het plan per fase staat in 
   - **Verzetten** en **Weg** (van het terrein, bijvoorbeeld verhuurd) bij elke auto.
   - Een auto die langer dan 14 dagen niet is verzet, krijgt het label *lang niet gezien*.
 - **Zoeken op kenteken** vanaf elke pagina (het vergrootglas, of het zoekveld bovenaan op de computer): waar de auto staat, de uitleen en de meldingen.
+- **Plek bij retour:** na een retour bij Mobiliteit vraagt Planbord waar de auto nu staat. Eén tik zet hem bij Locatie.
+- **Overdracht** (`/overdracht`, en op Start): een korte notitie voor de collega van morgen, per vestiging. Na 7 dagen verdwijnt hij vanzelf.
 
 **Voor beheerders**
 - **Beheer → Plekken:** per vestiging de plekken (meerdere tegelijk, één per regel), en **Lijst inlezen** voor het oude bestand.
@@ -544,6 +546,7 @@ Agenda-apps halen de link zelf opnieuw op. Apple doet dat meestal binnen een uur
   - Het logboek bewaart geen toelichting. Een melding verdwijnt 24 maanden na de datum vanzelf.
   - De herinnering om de dag af te sluiten noemt alleen de vestiging en de dag.
 - Rapporten en signalen (fase 7) tonen alleen aantallen per vestiging en werkplaats, nooit per medewerker. De maandtotalen bewaren geen kentekens, nummers of namen.
+- De overdracht (fase 8) bewaart een korte notitie 7 dagen; het logboek bewaart de tekst niet.
 - Locatie (fase 8) bewaart per auto alleen de huidige plek, het model en wie hem het laatst verzette. De geschiedenis staat in het logboek. Geen klantgegevens.
 - De teamleider (fase 5) ziet geen werkmails. Mails en pushmeldingen na een actie van een teamleider verstuurt de server met de secret key.
 - Pushmeldingen (fase 4):

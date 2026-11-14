@@ -12,6 +12,9 @@ import { loadPlanningSnapshot } from '@/lib/db/queries';
 import { loadCounterGroups, loadDayData, loadFirstClosedDates, loadWorkshops, mapIncident } from '@/lib/db/registration-queries';
 import { loadIncidentBuckets, loadLoansBetween, loadSignalSettings } from '@/lib/db/report-queries';
 import { loadGroupsWithSpots } from '@/lib/db/location-queries';
+import { loadNotes } from '@/lib/db/handover-queries';
+import { notesFor } from '@/lib/handover/notes';
+import { formatLoanMoment } from '@/lib/loans/status';
 import { addDays, eachDay, startOfIsoWeek, todayInAmsterdam } from '@/lib/engine/dates';
 import { computePersonalSchedule } from '@/lib/engine/schedule';
 import { parseTime } from '@/lib/engine/time';
@@ -163,7 +166,7 @@ export default async function StartPage() {
   const now = new Date();
   const today = todayInAmsterdam(now);
   const to = addDays(today, DAYS_AHEAD);
-  const [snapshot, loans, attention, registrations, toCharge, signals, spotGroups] = await Promise.all([
+  const [snapshot, loans, attention, registrations, toCharge, signals, spotGroups, notes] = await Promise.all([
     loadPlanningSnapshot(viewer.supabase, { from: today, to }),
     loadLoans(viewer, now, today),
     loadAttention(viewer, today),
@@ -178,7 +181,10 @@ export default async function StartPage() {
       : Promise.resolve(0),
     loadSignals(viewer, today),
     loadGroupsWithSpots(viewer.supabase),
+    loadNotes(viewer.supabase),
   ]);
+  // De overdracht van de eigen vestiging (fase 8): de nieuwste notities.
+  const handover = registrations.group ? notesFor(notes, registrations.group.id).slice(0, 3) : [];
   // Fase 8 (V73): Locatie voor wie op een vestiging met plekken werkt, en voor beheerder en teamleider.
   const showLocations = viewer.isLead ? spotGroups.length > 0 : spotGroups.includes(viewer.groupId);
   const weeks = buildMySchedule(computePersonalSchedule(snapshot, viewer.employeeId, today, to), snapshot.groups, today);
@@ -254,6 +260,29 @@ export default async function StartPage() {
             )}
           </Card>
         </section>
+      ) : null}
+
+      {registrations.group ? (
+        <Card className="mb-6">
+          <div className="flex items-center justify-between px-4 pt-4">
+            <SectionTitle>Overdracht {registrations.group.name}</SectionTitle>
+            <Link href={`/overdracht?vestiging=${registrations.group.id}`} className="text-sm font-medium text-brand-700 hover:underline">
+              {handover.length === 0 ? 'Notitie schrijven' : 'Alles en nieuwe notitie'}
+            </Link>
+          </div>
+          {handover.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-slate-500">Geen notities van de afgelopen week.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {handover.map((note) => (
+                <li key={note.id} className="px-4 py-3 text-sm">
+                  <p className="whitespace-pre-line text-slate-900">{note.body}</p>
+                  <p className="mt-1 text-xs text-slate-500">{formatLoanMoment(note.createdAt, today)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -9,7 +9,9 @@
 - **Zichtbaar:** het onderdeel Locatie staat in het menu voor wie op een vestiging met plekken werkt, en voor beheerder en teamleider zodra een vestiging plekken heeft. Zoeken op kenteken kan iedereen, via het vergrootglas of het zoekveld bovenaan.
 - **Tabs van Locatie:** Terrein en Zoeken.
 - **Gegevens per medewerker:** een tabblad Locatie met de auto's die die medewerker het laatst verzette.
-- **Niet gebouwd** uit de routekaart: de plek vragen bij een retourmelding van Mobiliteit, en de overdrachtsnotitie per vestiging. Die stonden niet in dit plan; zeg het als je ze wilt.
+- **Aanvulling van 14 november** (de eigenaar wilde ze alsnog, uit de routekaart):
+  - **Plek bij retour:** na Retour · ingezet of Retour · niet ingezet vraagt Mobiliteit "Waar staat de auto nu?", met een knop per plek van die vestiging. Eén tik zet de auto bij Locatie; *Niet op het terrein* slaat het over. Alleen als de vestiging plekken heeft.
+  - **Overdracht per vestiging** (`/overdracht`): een notitie van hooguit 300 tekens voor de collega van morgen, op Start bij de eigen vestiging. Na 7 dagen verdwijnt hij vanzelf. De schrijver wijzigt of verwijdert hem op dezelfde dag, daarna de teamleider (zoals V59). Het logboek bewaart de tekst niet. Export voor beheerder en teamleider; de gegevens per medewerker tonen de eigen notities.
 
 
 ## 1. Besluiten

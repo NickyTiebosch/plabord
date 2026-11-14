@@ -50,6 +50,8 @@ export interface EmployeeData {
   workshops?: readonly Workshop[];
   /** Fase 8: auto's die deze medewerker het laatst op een plek zette. */
   locations?: readonly { plate: string; groupId: string; spotName: string; movedAt: string }[];
+  /** Fase 8: notities voor de overdracht die deze medewerker schreef (laatste 7 dagen). */
+  handover?: readonly { groupId: string; createdAt: string; body: string }[];
 }
 
 /** Tijdstip in Nederlandse tijd: "14-10-2026 13:05". */
@@ -241,6 +243,14 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
       rows: [...(data.locations ?? [])]
         .sort(byDate((location) => location.movedAt))
         .map((location) => [formatPlate(location.plate), groupName(location.groupId), location.spotName, formatExportMoment(location.movedAt)]),
+    },
+    {
+      // Fase 8: de notities die deze medewerker zelf schreef, met de tekst: dat zijn de eigen woorden.
+      sheet: 'Overdracht',
+      header: ['Geschreven', 'Vestiging', 'Notitie'],
+      rows: [...(data.handover ?? [])]
+        .sort(byDate((note) => note.createdAt))
+        .map((note) => [formatExportMoment(note.createdAt), groupName(note.groupId), note.body]),
     },
     {
       sheet: 'Logboek',

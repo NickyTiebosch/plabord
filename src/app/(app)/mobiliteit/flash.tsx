@@ -27,6 +27,8 @@ const MESSAGES: Record<string, { tone: Tone; text: string }> = {
   verwijderd: { tone: 'success', text: 'Registratie van {kenteken} verwijderd.' },
   'verwijderen-mislukt': { tone: 'error', text: 'Verwijderen is niet gelukt. Probeer het opnieuw.' },
   'niet-gevonden': { tone: 'warning', text: 'Deze registratie bestaat niet meer.' },
+  geplaatst: { tone: 'success', text: '{kenteken} staat op zijn plek bij Locatie.' },
+  'plaatsen-mislukt': { tone: 'error', text: 'De plek opslaan is niet gelukt. Zet de auto bij Locatie op zijn plek.' },
 };
 
 export interface FlashParams {

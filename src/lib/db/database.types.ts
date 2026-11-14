@@ -481,6 +481,12 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      handover_notes: {
+        Row: { id: string; group_id: string; has_counter: boolean; body: string; created_by: string | null; created_at: Timestamp; updated_at: Timestamp };
+        Insert: { group_id: string; body: string };
+        Update: { body?: string };
+        Relationships: [];
+      };
       monthly_incident_totals: {
         Row: { month: string; group_id: string; workshop_id: string; kind: string; total: number; chargeable: number; charged: number; refreshed_at: Timestamp };
         Insert: Record<string, never>;
