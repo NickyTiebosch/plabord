@@ -7,6 +7,7 @@ import type { PlanningData } from '../export/planning';
 import { MAIL_KINDS, MAIL_STATUSES } from '../mail/types';
 import { loadEmployeesWithAccounts, loadSignIns } from './admin-queries';
 import { mapVehicleLoan } from './loan-queries';
+import { loadWorkshops, mapDayClosure, mapIncident, mapWalkIn } from './registration-queries';
 import { counterGroupsByEmployee, mapAbsence, mapEmployee, mapRecurringShift, mapShiftOverride, mapSubstitution } from './mappers';
 import { loadGroups, must, type DbClient } from './queries';
 
@@ -34,7 +35,7 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
   const employee = await client.from('employees').select('*').eq('id', employeeId).maybeSingle();
   if (employee.error) throw new Error(`Medewerker laden mislukt: ${employee.error.message}`);
   if (!employee.data) return null;
-  const [groups, account, eligibility, shifts, absences, substitutions, overrides, feeds, mails, devices, log, signIns, loans] = await Promise.all([
+  const [groups, account, eligibility, shifts, absences, substitutions, overrides, feeds, mails, devices, log, signIns, loans, incidents, closures, walkIns, workshops] = await Promise.all([
     loadGroups(client),
     client.from('employee_accounts').select('email, user_id').eq('employee_id', employeeId).maybeSingle(),
     client.from('counter_eligibility').select('employee_id, group_id').eq('employee_id', employeeId),
@@ -51,6 +52,11 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
     loadSignIns(client, employeeId),
     // Fase 5: de uitleen die deze medewerker meegaf of retour meldde.
     client.from('vehicle_loans').select('*').or(`handed_out_by.eq.${employeeId},returned_by.eq.${employeeId}`),
+    // Fase 6: meldingen, afgesloten dagen en binnenvallers van deze medewerker.
+    client.from('incident_reports').select('*').or(`reported_by.eq.${employeeId},charged_by.eq.${employeeId}`),
+    client.from('day_closures').select('*').eq('closed_by', employeeId),
+    client.from('walk_ins').select('*').eq('updated_by', employeeId),
+    loadWorkshops(client),
   ]);
   const counters = counterGroupsByEmployee(must(eligibility, 'de inzetbaarheid'));
   const name = employee.data.name;
@@ -86,6 +92,10 @@ export async function loadEmployeeExport(client: DbClient, employeeId: string): 
     }),
     devices: must(devices, 'de toestellen').map((device) => ({ createdAt: device.created_at, lastSuccessAt: device.last_success_at })),
     loans: must(loans, 'de uitleen').map(mapVehicleLoan),
+    incidents: must(incidents, 'de meldingen').map(mapIncident),
+    closures: must(closures, 'de afgesloten dagen').map(mapDayClosure),
+    walkIns: must(walkIns, 'de binnenvallers').map(mapWalkIn),
+    workshops,
     // Wie iets deed, staat er niet in: alleen wat er wanneer met deze gegevens gebeurde.
     log: must(log, 'het logboek').map((row) => {
       const view = describeAudit(row as AuditRow, lookups);

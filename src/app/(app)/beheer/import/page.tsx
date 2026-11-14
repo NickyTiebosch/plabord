@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { PageHeader, buttonClass } from '@/components/ui';
 import { requireAdmin } from '@/lib/auth/session';
@@ -26,6 +27,13 @@ export default async function ImportPage() {
         <li>Opnieuw importeren maakt geen dubbelingen. De import verwijdert of deactiveert nooit iets.</li>
         <li>Iedereen met een e-mailadres krijgt een inlogaccount.</li>
       </ul>
+      <p className="mt-6 text-sm text-slate-700">
+        De oude bestanden van binnenvallers en meldingen lees je in via{' '}
+        <Link href="/beheer/import/historie" className="font-medium text-brand-800 underline underline-offset-2">
+          Historie inlezen
+        </Link>
+        .
+      </p>
     </>
   );
 }

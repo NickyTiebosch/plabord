@@ -73,6 +73,8 @@ $$;
 
 -- Binnenvallers (V57): per vestiging, werkplaats en dag één aantal.
 create table if not exists public.walk_ins (
+  -- Alleen voor het logboek: zo staat bij een wijziging welke werkplaats en dag het was.
+  id uuid not null default gen_random_uuid() unique,
   group_id text not null,
   workshop_id uuid not null,
   date date not null,
@@ -243,6 +245,8 @@ create policy incident_reports_delete on public.incident_reports for delete to a
 
 -- Dag afsluiten (V60): per vestiging en dag, met het vinkje dat RentLink is gecontroleerd.
 create table if not exists public.day_closures (
+  -- Alleen voor het logboek: zo staat bij een wijziging welke vestiging en dag het was.
+  id uuid not null default gen_random_uuid() unique,
   group_id text not null,
   has_counter boolean not null default true,
   date date not null,

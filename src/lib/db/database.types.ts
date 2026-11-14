@@ -379,6 +379,7 @@ export interface Database {
       };
       walk_ins: {
         Row: {
+          id: string;
           group_id: string;
           workshop_id: string;
           date: string;
@@ -438,6 +439,7 @@ export interface Database {
       };
       day_closures: {
         Row: {
+          id: string;
           group_id: string;
           has_counter: boolean;
           date: string;

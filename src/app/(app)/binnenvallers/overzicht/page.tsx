@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { GroupSwitch } from '@/components/registrations';
-import { Card, EmptyState, PageHeader } from '@/components/ui';
+import { Card, EmptyState, PageHeader, buttonClass } from '@/components/ui';
 import { requireViewerWith } from '@/lib/auth/session';
 import { loadCounterGroups, loadWalkIns, loadWorkshops } from '@/lib/db/registration-queries';
 import { todayInAmsterdam } from '@/lib/engine/dates';
@@ -27,7 +27,18 @@ export default async function WalkInsOverviewPage({ searchParams }: { searchPara
 
   return (
     <>
-      <PageHeader title="Binnenvallers: overzicht" subtitle={`${group.name} · de laatste drie weken`} />
+      <PageHeader
+        title="Binnenvallers: overzicht"
+        subtitle={`${group.name} · de laatste drie weken`}
+        actions={
+          viewer.isLead ? (
+            // Een gewone link: elke klik is één export in het logboek.
+            <a href="/binnenvallers/export" download className={buttonClass('secondary')}>
+              Download (Excel)
+            </a>
+          ) : null
+        }
+      />
       <GroupSwitch groups={groups} current={group.id} href={(groupId) => `/binnenvallers/overzicht?vestiging=${groupId}`} />
       <Card className="relative overflow-x-auto">
         <table className="w-full min-w-max text-sm">

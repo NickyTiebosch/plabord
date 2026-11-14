@@ -14,7 +14,7 @@ export default async function ExportPage() {
   const monday = weekdayOf(today) === 7 ? addDays(today, 1) : startOfIsoWeek(today);
   return (
     <>
-      <PageHeader title="Export" subtitle="Download de planning of het rooster als Excel-bestand." />
+      <PageHeader title="Export" subtitle="Download de planning, het rooster of de registraties als Excel-bestand." />
       <Card className="space-y-3 p-4">
         <SectionTitle>Planning exporteren</SectionTitle>
         <p className="text-sm text-slate-700">
@@ -50,6 +50,22 @@ export default async function ExportPage() {
         <a href="/mobiliteit/export" download className={buttonClass('secondary')}>
           Mobiliteit downloaden
         </a>
+      </Card>
+      <Card className="mt-4 space-y-3 p-4">
+        <SectionTitle>Binnenvallers en meldingen exporteren</SectionTitle>
+        <p className="text-sm text-slate-700">
+          In de opbouw van de oude Excel-bestanden: per vestiging een tabblad. Bij de meldingen staat ook wanneer en door wie iets is
+          doorbelast, met een tabblad Doorbelasten. Zonder werkmails. Een teamleider kan dit ook, bij het overzicht van Binnenvallers en het
+          archief van Meldingen. Elke export komt in het logboek.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href="/binnenvallers/export" download className={buttonClass('secondary')}>
+            Binnenvallers downloaden
+          </a>
+          <a href="/meldingen/export" download className={buttonClass('secondary')}>
+            Meldingen downloaden
+          </a>
+        </div>
       </Card>
     </>
   );

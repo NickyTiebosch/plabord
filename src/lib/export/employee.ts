@@ -11,6 +11,8 @@ import { formatDateList } from '../mail/messages';
 import type { MailKind, MailStatus } from '../mail/types';
 import { formatPlate } from '../loans/plates';
 import { DESTINATION_LABELS, type VehicleLoan } from '../loans/types';
+import { localMoment } from '../loans/time';
+import { INCIDENT_KIND_LABELS, type DayClosure, type Incident, type WalkIn, type Workshop } from '../registrations/types';
 import {
   dayPartsCell,
   formatExportDate,
@@ -39,6 +41,13 @@ export interface EmployeeData {
   log: readonly { when: string; what: string; detail: string | null }[];
   /** De uitleen (fase 5) die deze medewerker meegaf of retour meldde. */
   loans?: readonly VehicleLoan[];
+  /** Fase 6: meldingen die deze medewerker maakte of op doorbelast zette. */
+  incidents?: readonly Incident[];
+  /** Fase 6: dagen die deze medewerker afsloot. */
+  closures?: readonly DayClosure[];
+  /** Fase 6: binnenvallers die deze medewerker het laatst bijwerkte. */
+  walkIns?: readonly WalkIn[];
+  workshops?: readonly Workshop[];
 }
 
 /** Tijdstip in Nederlandse tijd: "14-10-2026 13:05". */
@@ -52,6 +61,7 @@ const byDate = <T>(key: (item: T) => string) => (a: T, b: T) => (key(a) < key(b)
 export function employeeExport(data: EmployeeData): ExportSheet[] {
   const groupName = (id: string | null) => data.groups.find((group) => group.id === id)?.name ?? id ?? '';
   const { employee } = data;
+  const workshopName = (id: string) => data.workshops?.find((workshop) => workshop.id === id)?.name ?? '';
   const feedLabel = (kind: string, groupId: string | null) =>
     kind === 'personal' ? 'Mijn rooster' : kind === 'location' ? `Vestiging ${groupName(groupId)}` : 'Verlof team';
 
@@ -180,6 +190,47 @@ export function employeeExport(data: EmployeeData): ExportSheet[] {
           [loan.handedOutBy === employee.id ? 'meegegeven' : null, loan.returnedBy === employee.id ? 'retour gemeld' : null]
             .filter(Boolean)
             .join(' en '),
+        ]),
+    },
+    {
+      // Fase 6: zonder kenteken, contractnummer en bijzonderheden; dat zijn geen gegevens over deze persoon.
+      sheet: 'Werkplaatsmeldingen',
+      header: ['Datum', 'Vestiging', 'Werkplaats', 'Soort melding', 'Wat deed deze medewerker'],
+      rows: [...(data.incidents ?? [])]
+        .sort(byDate((incident) => incident.occurredAt))
+        .map((incident) => [
+          formatExportDate(localMoment(incident.occurredAt).date),
+          groupName(incident.groupId),
+          workshopName(incident.workshopId),
+          INCIDENT_KIND_LABELS[incident.kind],
+          [incident.reportedBy === employee.id ? 'gemeld' : null, incident.chargedBy === employee.id ? 'op doorbelast gezet' : null]
+            .filter(Boolean)
+            .join(' en '),
+        ]),
+    },
+    {
+      sheet: 'Binnenvallers',
+      header: ['Datum', 'Vestiging', 'Werkplaats', 'Aantal', 'Laatst bijgewerkt'],
+      rows: [...(data.walkIns ?? [])]
+        .sort(byDate((walkIn) => walkIn.date))
+        .map((walkIn) => [
+          formatExportDate(walkIn.date),
+          groupName(walkIn.groupId),
+          workshopName(walkIn.workshopId),
+          String(walkIn.count),
+          formatExportMoment(walkIn.updatedAt),
+        ]),
+    },
+    {
+      sheet: 'Dag afgesloten',
+      header: ['Datum', 'Vestiging', 'RentLink gecontroleerd', 'Afgesloten om'],
+      rows: [...(data.closures ?? [])]
+        .sort(byDate((closure) => closure.date))
+        .map((closure) => [
+          formatExportDate(closure.date),
+          groupName(closure.groupId),
+          closure.rentlinkChecked ? 'ja' : 'nee',
+          formatExportMoment(closure.closedAt),
         ]),
     },
     {

@@ -17,6 +17,8 @@ export interface LoanCell {
   value: string | number | null;
   kind: LoanCellKind;
   tone?: LoanCellTone;
+  /** Vet, zoals een totaal. */
+  strong?: boolean;
 }
 
 export interface LoanSheet {

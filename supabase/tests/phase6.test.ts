@@ -226,6 +226,27 @@ describe('fase 6: binnenvallers, meldingen en dag afsluiten', () => {
     // Wie het oude bestand noemde blijft staan, niet de beheerder die inleest.
     const who = await db.query(`select reported_by from public.incident_reports where import_key = 'den_bosch|4'`);
     expect(who.rows).toEqual([{ reported_by: bas.employeeId }]);
+    // Zonder mark_charged: nog niet doorbelast.
+    const open = await db.query(`select charged_by from public.incident_reports where import_key = 'den_bosch|4'`);
+    expect(open.rows).toEqual([{ charged_by: null }]);
+  });
+
+  it('zet ingelezen annuleringen op doorbelast met mark_charged, alleen als ze doorbelast moesten worden', async () => {
+    const plan = {
+      mark_charged: true,
+      incidents: [
+        { workshop_id: vw, occurred_at: '2026-09-23T12:30:00+02:00', kind: 'cancellation', cancelled_at: '12:30', charge: true, import_key: 'hist|1' },
+        { workshop_id: vw, occurred_at: '2026-09-23T09:30:00+02:00', kind: 'cancellation', cancelled_at: '09:30', charge: false, import_key: 'hist|2' },
+      ],
+    };
+    await as(anna, () => db.query('select public.import_registrations($1)', [JSON.stringify(plan)]));
+    const rows = await db.query<{ import_key: string; charged_by: string | null; charged: boolean }>(
+      `select import_key, charged_by, charged_at is not null as charged from public.incident_reports where import_key like 'hist|%' order by import_key`,
+    );
+    expect(rows.rows).toEqual([
+      { import_key: 'hist|1', charged_by: anna.employeeId, charged: true },
+      { import_key: 'hist|2', charged_by: null, charged: false },
+    ]);
   });
 
   it('laat de teamleider binnenvallers en meldingen exporteren, en een medewerker niet (V64)', async () => {

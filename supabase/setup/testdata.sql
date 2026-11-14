@@ -4,8 +4,9 @@
 -- Alleen voor het Supabase-project "Planbord test". Nooit in het live project draaien.
 -- Een verzonnen team zonder e-mailadressen en zonder inlogaccounts: niemand van dit team kan
 -- inloggen. Jezelf voeg je daarna toe als beheerder, met de stappen in de README.
--- Draai eerst fase-1.sql tot en met fase-5.sql. Daarna kan dit bestand vaker draaien: wat er al
--- staat, blijft staan. Datums liggen rond vandaag.
+-- Draai eerst fase-1.sql tot en met de nieuwste fase. Daarna kan dit bestand vaker draaien: wat er al
+-- staat, blijft staan. Datums liggen rond vandaag. Onderdelen van een fase die nog niet is gedraaid,
+-- worden overgeslagen.
 -- =====================================================================
 
 begin;
@@ -117,5 +118,53 @@ insert into public.vehicle_loans (
    '30000000-0000-4000-8000-000000000005', now() - interval '1 day', 102300,
    now() - interval '20 hours', '30000000-0000-4000-8000-000000000005', null, false, null, 'Niet ingezet')
 on conflict do nothing;
+
+-- Fase 6: binnenvallers en afgesloten dagen voor de afgelopen twee weken, en een paar meldingen.
+-- Eindhoven sloot twee dagen niet af, zodat de invulcontrole rood laat zien.
+do $$
+begin
+  if to_regclass('public.walk_ins') is null then
+    return;
+  end if;
+  perform set_config('app.audit_source', 'setup', true);
+
+  insert into public.walk_ins (group_id, workshop_id, date, count)
+  select w.group_id, w.id, d::date, abs(hashtext(w.name || d::date::text)) % 5
+  from public.workshops w
+  cross join generate_series(current_date - 14, current_date - 1, interval '1 day') as d
+  where extract(isodow from d) < 6 and w.is_active
+  on conflict do nothing;
+
+  insert into public.day_closures (group_id, date, rentlink_checked, closed_by)
+  select g.id, d::date, true,
+         case g.id when 'den_bosch' then '30000000-0000-4000-8000-000000000002'::uuid
+                   when 'eindhoven' then '30000000-0000-4000-8000-000000000007'::uuid
+                   else '30000000-0000-4000-8000-000000000012'::uuid end
+  from public.groups g
+  cross join generate_series(current_date - 14, current_date - 1, interval '1 day') as d
+  where g.has_counter and extract(isodow from d) < 6
+    and not (g.id = 'eindhoven' and d::date in (current_date - 3, current_date - 4))
+  on conflict do nothing;
+
+  insert into public.incident_reports (
+    id, group_id, workshop_id, occurred_at, kind, missing, cancelled_at, charge, license_plate, contract_number, note, reported_by
+  )
+  select v.id, w.group_id, w.id, v.at, v.kind, v.missing, v.cancelled, v.charge, v.plate, v.contract, v.note, v.who
+  from (values
+    ('33000000-0000-4000-8000-000000000001'::uuid, 'den_bosch', 'Audi', now() - interval '2 days', 'cancellation', null, '11:40'::time, true,
+     'JTX38S', '681613', 'Klant niet gekomen', '30000000-0000-4000-8000-000000000002'::uuid),
+    ('33000000-0000-4000-8000-000000000002'::uuid, 'den_bosch', 'Oss', now() - interval '3 days', 'contract_license', 'both', null, null,
+     'GJR46F', '688116', null, '30000000-0000-4000-8000-000000000003'::uuid),
+    ('33000000-0000-4000-8000-000000000003'::uuid, 'eindhoven', 'Veldhoven', now() - interval '20 days', 'cancellation', null, '12:04'::time, true,
+     'GRH31P', '683319', null, '30000000-0000-4000-8000-000000000007'::uuid),
+    ('33000000-0000-4000-8000-000000000004'::uuid, 'breda', 'Halsteren', now() - interval '1 day', 'cancellation', null, '07:51'::time, false,
+     'HJH61F', '681577', 'Op tijd doorgegeven', '30000000-0000-4000-8000-000000000012'::uuid),
+    ('33000000-0000-4000-8000-000000000005'::uuid, 'breda', 'Volkswagen', now() - interval '4 days', 'wrong_vehicle', null, null, null,
+     'X221LB', '688082', null, '30000000-0000-4000-8000-000000000013'::uuid)
+  ) as v(id, group_id, workshop, at, kind, missing, cancelled, charge, plate, contract, note, who)
+  join public.workshops w on w.group_id = v.group_id and w.name = v.workshop
+  on conflict do nothing;
+end;
+$$;
 
 commit;

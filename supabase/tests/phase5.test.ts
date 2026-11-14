@@ -367,5 +367,14 @@ describe('fase 5: testgegevens voor het testproject', () => {
     expect(counts.rows[0]?.employees).toBeGreaterThanOrEqual(20);
     expect(counts.rows[0]?.loans).toBeGreaterThan(0);
     expect(counts.rows[0]?.open).toBeGreaterThan(0);
+    // Fase 6: binnenvallers, afgesloten dagen en meldingen.
+    const phase6 = await db.query<{ walk_ins: number; closures: number; incidents: number }>(
+      `select (select count(*)::int from public.walk_ins) as walk_ins,
+              (select count(*)::int from public.day_closures) as closures,
+              (select count(*)::int from public.incident_reports where id::text like '33000000-%') as incidents`,
+    );
+    expect(phase6.rows[0]?.walk_ins).toBeGreaterThan(0);
+    expect(phase6.rows[0]?.closures).toBeGreaterThan(0);
+    expect(phase6.rows[0]?.incidents).toBe(5);
   });
 });

@@ -46,10 +46,29 @@ export default async function AuditLogPage({
     const found = await supabase.from('substitutions').select('id, date, group_id, day_part').in('id', substitutionIds);
     for (const row of found.data ?? []) slots.set(row.id, row);
   }
+  // Fase 6: bij een wijziging van binnenvallers, een melding of een afgesloten dag de plek en dag erbij.
+  const contextIds = (entity: string) => [
+    ...new Set(
+      (result.data ?? [])
+        .filter((row) => row.entity === entity && row.action === 'update' && isUuid(row.entity_id))
+        .map((row) => row.entity_id as string),
+    ),
+  ];
+  const [walkInIds, incidentIds, closureIds] = [contextIds('walk_ins'), contextIds('incident_reports'), contextIds('day_closures')];
+  const [workshops, walkInRows, incidentRows, closureRows] = await Promise.all([
+    supabase.from('workshops').select('id, name'),
+    walkInIds.length > 0 ? supabase.from('walk_ins').select('id, group_id, workshop_id, date').in('id', walkInIds) : null,
+    incidentIds.length > 0 ? supabase.from('incident_reports').select('id, group_id, workshop_id, kind, occurred_at').in('id', incidentIds) : null,
+    closureIds.length > 0 ? supabase.from('day_closures').select('id, group_id, date').in('id', closureIds) : null,
+  ]);
+  const contexts = new Map<string, Record<string, unknown>>();
+  for (const row of [...(walkInRows?.data ?? []), ...(incidentRows?.data ?? []), ...(closureRows?.data ?? [])]) contexts.set(row.id, row);
   const lookups = {
     employeeName: (id: string | null | undefined) => (id ? (names.get(id) ?? 'verwijderde medewerker') : 'onbekend'),
     groupName: (id: string | null | undefined) => groups.find((group) => group.id === id)?.name ?? String(id ?? ''),
     substitution: (id: string | null | undefined) => (id ? (slots.get(id) ?? null) : null),
+    workshopName: (id: string | null | undefined) => workshops.data?.find((workshop) => workshop.id === id)?.name ?? 'verwijderde werkplaats',
+    context: (_entity: string, id: string | null | undefined) => (id ? (contexts.get(id) ?? null) : null),
   };
   const rows = (result.data ?? []).map((row) => describeAudit(row as AuditRow, lookups));
   const total = result.count ?? rows.length;

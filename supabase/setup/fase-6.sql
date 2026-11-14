@@ -89,6 +89,8 @@ $$;
 
 -- Binnenvallers (V57): per vestiging, werkplaats en dag één aantal.
 create table if not exists public.walk_ins (
+  -- Alleen voor het logboek: zo staat bij een wijziging welke werkplaats en dag het was.
+  id uuid not null default gen_random_uuid() unique,
   group_id text not null,
   workshop_id uuid not null,
   date date not null,
@@ -259,6 +261,8 @@ create policy incident_reports_delete on public.incident_reports for delete to a
 
 -- Dag afsluiten (V60): per vestiging en dag, met het vinkje dat RentLink is gecontroleerd.
 create table if not exists public.day_closures (
+  -- Alleen voor het logboek: zo staat bij een wijziging welke vestiging en dag het was.
+  id uuid not null default gen_random_uuid() unique,
   group_id text not null,
   has_counter boolean not null default true,
   date date not null,
@@ -510,11 +514,15 @@ begin
   ), saved as (
     insert into public.incident_reports (
       group_id, workshop_id, occurred_at, kind, missing, cancelled_at, charge, license_plate, contract_number, note,
-      reported_by, import_key
+      reported_by, import_key, charged_at, charged_by
     )
     select s.group_id, s.id, (r ->> 'occurred_at')::timestamptz, r ->> 'kind', r ->> 'missing', (r ->> 'cancelled_at')::time,
            (r ->> 'charge')::boolean, r ->> 'license_plate', r ->> 'contract_number', r ->> 'note',
-           (select e.id from public.employees e where e.id = (r ->> 'reported_by')::uuid), r ->> 'import_key'
+           (select e.id from public.employees e where e.id = (r ->> 'reported_by')::uuid), r ->> 'import_key',
+           -- Het oude bestand zegt niet of iets al is doorbelast. Met mark_charged komen de annuleringen
+           -- die doorbelast moesten worden binnen als doorbelast, door wie inleest en op dit moment.
+           case when coalesce((plan ->> 'mark_charged')::boolean, false) and (r ->> 'charge')::boolean then now() end,
+           case when coalesce((plan ->> 'mark_charged')::boolean, false) and (r ->> 'charge')::boolean then me end
     from rows join public.workshops s on s.id = (r ->> 'workshop_id')::uuid
     where r ->> 'import_key' is not null
     on conflict (import_key) do nothing

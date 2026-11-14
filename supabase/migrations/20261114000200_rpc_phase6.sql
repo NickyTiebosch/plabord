@@ -222,11 +222,15 @@ begin
   ), saved as (
     insert into public.incident_reports (
       group_id, workshop_id, occurred_at, kind, missing, cancelled_at, charge, license_plate, contract_number, note,
-      reported_by, import_key
+      reported_by, import_key, charged_at, charged_by
     )
     select s.group_id, s.id, (r ->> 'occurred_at')::timestamptz, r ->> 'kind', r ->> 'missing', (r ->> 'cancelled_at')::time,
            (r ->> 'charge')::boolean, r ->> 'license_plate', r ->> 'contract_number', r ->> 'note',
-           (select e.id from public.employees e where e.id = (r ->> 'reported_by')::uuid), r ->> 'import_key'
+           (select e.id from public.employees e where e.id = (r ->> 'reported_by')::uuid), r ->> 'import_key',
+           -- Het oude bestand zegt niet of iets al is doorbelast. Met mark_charged komen de annuleringen
+           -- die doorbelast moesten worden binnen als doorbelast, door wie inleest en op dit moment.
+           case when coalesce((plan ->> 'mark_charged')::boolean, false) and (r ->> 'charge')::boolean then now() end,
+           case when coalesce((plan ->> 'mark_charged')::boolean, false) and (r ->> 'charge')::boolean then me end
     from rows join public.workshops s on s.id = (r ->> 'workshop_id')::uuid
     where r ->> 'import_key' is not null
     on conflict (import_key) do nothing
